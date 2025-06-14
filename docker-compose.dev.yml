@@ -1,0 +1,36 @@
+version: "3"
+services:
+  # Backend Service
+  # api-backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile.dev
+  #   container_name: api-backend
+  #   volumes:
+  #     - ./backend:/app
+  #   ports:
+  #     - 8010:8080
+  #   depends_on:
+  #     - supabase-db-postgres
+  #   env_file:
+  #     - ./backend/.env.dev
+
+  # Frontend Service
+  user-frontend:
+    build:
+      context: ./user-frontend
+      dockerfile: Dockerfile.dev
+    container_name: nextjs-app
+    ports:
+      - 3020:3000
+    command: yarn dev
+    volumes:
+      - ./user-frontend:/app
+      # - /app/node_modules
+      - /app/.next
+    # depends_on:
+    #   - api-backend
+    env_file:
+      - ./user-frontend/.env.dev
+volumes:
+  supabase-data:
