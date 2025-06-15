@@ -1,0 +1,168 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter); /* Changed to Inter */
+  --font-mono: var(
+    --font-geist-mono
+  ); /* Keeping mono for now, can be changed if needed */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.5rem; /* Common radius, can be adjusted */
+  --background: 255 255 255; /* White background */
+  --foreground: 33 37 41; /* Dark gray text (Bootstrap's $gray-900) */
+
+  /* Shadcn default colors - will adjust specific component colors later */
+  --card: 255 255 255;
+  --card-foreground: 33 37 41;
+  --popover: 255 255 255;
+  --popover-foreground: 33 37 41;
+  --primary: 30 64 175; /* A standard blue, e.g., blue-700 */
+  --primary-foreground: 248 250 252; /* Light gray/white for text on primary */
+  --secondary: 241 245 249; /* Light gray, e.g., slate-100 */
+  --secondary-foreground: 22 30 46; /* Darker gray for text on secondary, e.g., slate-800 */
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139; /* Medium gray, e.g., slate-500 */
+  --accent: 241 245 249;
+  --accent-foreground: 22 30 46;
+  --destructive: 220 38 38; /* Red, e.g., red-600 */
+  --border: 226 232 240; /* Light gray border, e.g., slate-200 */
+  --input: 226 232 240;
+  --ring: 30 64 175; /* Blue for focus rings */
+
+  /* Chart colors can remain or be updated if charts are used */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+}
+
+.dark {
+  /* Keeping dark mode similar for now, can be fine-tuned if needed */
+  --background: 30 41 59; /* Dark slate, e.g., slate-800 */
+  --foreground: 248 250 252; /* Light gray/white */
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
+  --popover: 30 41 59;
+  --popover-foreground: 248 250 252;
+  --primary: 59 130 246; /* Lighter blue for dark mode, e.g., blue-500 */
+  --primary-foreground: 15 23 42; /* Darker text for light blue, e.g., slate-900 */
+  --secondary: 51 65 85; /* Medium dark slate, e.g., slate-700 */
+  --secondary-foreground: 248 250 252;
+  --muted: 51 65 85;
+  --muted-foreground: 148 163 184; /* Lighter gray for muted text, e.g., slate-400 */
+  --accent: 51 65 85;
+  --accent-foreground: 248 250 252;
+  --destructive: 239 68 68; /* Lighter red for dark mode, e.g., red-500 */
+  --border: 71 85 105; /* Darker border, e.g., slate-600 */
+  --input: 71 85 105;
+  --ring: 59 130 246;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+@layer base {
+  * {
+    @apply border-border; /* Removed outline-ring/50 for now, can be added if needed */
+  }
+  body {
+    @apply bg-pink-50 text-foreground; /* Updated background */
+    /* Apply a base line-height for better readability */
+    line-height: 1.6;
+    font-family: "Poppins", sans-serif; /* Added Poppins font */
+  }
+  /* Add some global heading styles if needed, or handle per component */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold leading-tight; /* Example base heading style */
+  }
+  h1 {
+    @apply text-3xl md:text-4xl;
+  } /* Example */
+  h2 {
+    @apply text-2xl md:text-3xl;
+  } /* Example */
+  p {
+    @apply mb-4;
+  } /* Example base paragraph margin */
+}
+
+.wavy-text {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4a5568; /* text-gray-700 */
+}
+
+.wavy-text span {
+  color: #ec4899; /* text-pink-500 */
+}
+
+.subscribe-button {
+  background-image: linear-gradient(
+    to right,
+    #ec4899,
+    #f472b6
+  ); /* from-pink-500 to-pink-400 */
+}

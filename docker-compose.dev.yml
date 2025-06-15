@@ -16,21 +16,21 @@ services:
   #     - ./backend/.env.dev
 
   # Frontend Service
-  user-frontend:
+  frontend:
     build:
-      context: ./user-frontend
+      context: ./frontend
       dockerfile: Dockerfile.dev
-    container_name: nextjs-app
+    container_name: wavy-frontend-app
     ports:
       - 3020:3000
     command: yarn dev
     volumes:
-      - ./user-frontend:/app
-      # - /app/node_modules
+      - ./frontend:/app
+      - /app/node_modules
       - /app/.next
     # depends_on:
     #   - api-backend
     env_file:
-      - ./user-frontend/.env.dev
+      - ./frontend/.env.dev
 volumes:
   supabase-data:

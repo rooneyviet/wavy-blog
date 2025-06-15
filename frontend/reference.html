@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Wavy - Personal Blog</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+      body {
+        font-family: "Poppins", sans-serif;
+      }
+      .wavy-text {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #4a5568;
+      }
+      .wavy-text span {
+        color: #ec4899;
+      }
+      .subscribe-button {
+        background-image: linear-gradient(to right, #ec4899, #f472b6);
+      }
+    </style>
+  </head>
+  <body class="bg-pink-50">
+    <nav class="bg-white py-4 shadow-sm sticky top-0 z-50">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+          <span class="material-icons text-pink-500 text-4xl mr-1">waves</span>
+          <h1 class="wavy-text">wavy<span>.</span></h1>
+        </div>
+        <div class="hidden md:flex items-center space-x-6">
+          <a class="text-gray-600 hover:text-pink-500" href="#">Home</a>
+          <a
+            class="text-gray-600 hover:text-pink-500 flex items-center"
+            href="#"
+            >Header Styles
+            <span class="material-icons text-xs ml-1">expand_more</span></a
+          >
+          <a
+            class="text-gray-600 hover:text-pink-500 flex items-center"
+            href="#"
+            >Post Features
+            <span class="material-icons text-xs ml-1">expand_more</span></a
+          >
+          <a
+            class="text-gray-600 hover:text-pink-500 flex items-center"
+            href="#"
+            >Features
+            <span class="material-icons text-xs ml-1">expand_more</span></a
+          >
+          <a class="text-gray-600 hover:text-pink-500" href="#">Contact</a>
+          <a
+            class="text-gray-600 hover:text-pink-500 flex items-center"
+            href="#"
+            ><span class="material-icons text-lg mr-1">search</span> Search</a
+          >
+        </div>
+        <div class="flex items-center">
+          <button
+            class="subscribe-button text-white px-6 py-2 rounded-full font-medium hover:opacity-90 transition-opacity"
+          >
+            Subscribe
+          </button>
+          <button class="md:hidden ml-4 text-gray-600">
+            <span class="material-icons text-3xl">menu</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    <main class="container mx-auto px-4 py-12">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div class="lg:col-span-2 space-y-12">
+          <article
+            class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row"
+          >
+            <div class="md:w-2/5">
+              <img
+                alt="A cute white kitten sitting on an orange background"
+                class="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR5l9GFdHjklxQjBkBA_i9i7Y4pU2xZfITv710N4cTCzFp8YdwF5_2S2AH7BlkZ7n3uor9_YAIY8hsAzYywmu1BQXPt5lmKGNYS3pOs5D5CfX0YMF9u9KJHIxjGpUMqHBelN7-G37UyDfEKbqNZz6_vKWOHBK12mIfbizhr-VTGL_inEFEpKNxlHBzsjvT1X8tHcz-ARrhBggpWLFaYGoMmR0oofRp-XWD2UIQTK5KBlceDNPU_yO8PtwuyPPiQr-bvogtuOOxhhVX"
+              />
+            </div>
+            <div class="md:w-3/5 p-8 bg-pink-50/50">
+              <h2 class="text-2xl font-semibold text-gray-800 mb-3">
+                Modern and colorful style of caricatures created by AI
+              </h2>
+              <div class="flex items-center text-sm text-gray-500 mb-4">
+                <img
+                  alt="Adriana Martins, author"
+                  class="w-8 h-8 rounded-full mr-3"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwx6fRcrJcvDAulDfM4v6SkYmLmYMGFoy4f8oa9bNZ6LMdnsdlganpw7UrfMNOzGWvBq6NLqO9fmrcX50mtADQIh4dpA5WAY74C5cmavujebQVlqH3YFXYfhqP6t4UPU6rA5uygnpcZLQKidWZcCR6Q1y-h35lVa0aqBgc7CyUWqhTHVpSWZ3g-ezXNjIuLYOzYR-c3UX3FOfT6t-TXviBvX-IVbi6C3ycCPoNedZjZWhOq3GX2mS5m6SUUMg0YIbecrRsRVf_evNd"
+                />
+                <span
+                  >By
+                  <a class="text-pink-500 font-medium" href="#"
+                    >Adriana Martins</a
+                  ></span
+                >
+                <span class="mx-2">—</span>
+                <span>October 21, 2023</span>
+              </div>
+              <p class="text-gray-600 mb-6 leading-relaxed">
+                Caricatures have long been a beloved form of art and satire.
+                With the advent of artificial intelligence (AI), the world...
+              </p>
+              <div class="flex justify-between items-center">
+                <a
+                  class="bg-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-600 transition-colors"
+                  href="#"
+                  >Read More</a
+                >
+                <div class="text-sm text-gray-500 flex items-center">
+                  <span class="material-icons text-base mr-1">schedule</span>
+                  <span>1 min read</span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article
+            class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row"
+          >
+            <div class="md:w-2/5">
+              <img
+                alt="A white analog clock on a light blue background"
+                class="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuoLQle3YpwWk9zq3dB6fqm8u3qZr0SaLAongK9Q31UReSRm48e5oMtv_46l6-QvzYw-1Dejs93pKyFvZFLB68NscrUbIMpA8iemrvjLWbaSPhGeY1WCt132_87AdRxQQ1q4_Je68wzEvDWyaIhauWXEAnbvUK3wRkIxpQ1tDEz-CU4JXBm83qDiIE-fWEI1xkOA-N02P0RpMMIiFCYXt2szyaWDbXyM0DDN7CsTgzJd0-Ablyu_hyajPdQ3TiNWAEvRlPrqwh67-s"
+              />
+            </div>
+            <div class="md:w-3/5 p-8">
+              <h2 class="text-2xl font-semibold text-gray-800 mb-3">
+                More effective schedules in remote work
+              </h2>
+              <div class="flex items-center text-sm text-gray-500 mb-4">
+                <img
+                  alt="Adriana Martins, author"
+                  class="w-8 h-8 rounded-full mr-3"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBggY5eXkXfUtFmz47IOvioq-4QfS3ul7AMDnp9EKopWb0xjjkmz3BIuLCMC8_ldfteCTtMELmYw8KAZGKoNIqzUluWwbU8fmvqBwr_EusJYm2_kwq0HUGIyMbfGz9SmwKb4hSXN-HgqdpjxRrqvvEkSr7DL0xIgbZZiyVHq3A4YAnQN_J1nvT7FMeHFCHDf2ZWippLcB9r0QbSGRwHb0wB6mez2Fxpp0pOG5wd7fCB-ARHnJRzhWNFe81p66jiJ_Uo1diEMiFrBQQm"
+                />
+                <span
+                  >By
+                  <a class="text-pink-500 font-medium" href="#"
+                    >Adriana Martins</a
+                  ></span
+                >
+                <span class="mx-2">—</span>
+                <span>October 21, 2023</span>
+              </div>
+              <p class="text-gray-600 mb-6 leading-relaxed">
+                Remote work has become increasingly prevalent, requiring
+                individuals to adapt and develop more efficient schedules to
+                maintain productivity and work-life...
+              </p>
+              <div class="flex justify-between items-center">
+                <a
+                  class="bg-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-600 transition-colors"
+                  href="#"
+                  >Read More</a
+                >
+                <div class="text-sm text-gray-500 flex items-center">
+                  <span class="material-icons text-base mr-1">schedule</span>
+                  <span>1 min read</span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article
+            class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row"
+          >
+            <div class="md:w-2/5">
+              <img
+                alt="A laptop showing code on a wooden desk"
+                class="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmCxByFeX-r_hwAb6Xa4yQYp6avuEqsTSkymQtF16V2HB9ErOFRhBQB7ZxUNLfvUZ03eWgYLXVnn3_HjiaTXhsbQPOGsIzN0V9c8S45sSnW_ygQ2UO7CpzHMox73aLNkPm26L-5JB9sKYJnKypbmvie3X2iAErY78GV5V-IvDqwPKRNDTqQLosASRS5t5zuJYZQDltn-szNVrPZ-tIYdp-ZXfp381zejAChztJKcd7dEmIsbykib9HNkIijH6RXpvbdGfG-GcOukXS"
+              />
+            </div>
+            <div class="md:w-3/5 p-8 bg-pink-50/50">
+              <h2 class="text-2xl font-semibold text-gray-800 mb-3">
+                The Future of Web Development: Trends to Watch
+              </h2>
+              <div class="flex items-center text-sm text-gray-500 mb-4">
+                <img
+                  alt="John Doe, author"
+                  class="w-8 h-8 rounded-full mr-3"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDruqQOJzOHt_xmxUGs-Enaqz4txX9nOmd5bkx0B9rYn4rVNF6NRtbhaai4Sd14Y2PQWgVlvYCGRquyp2Jr_HvJsWl9SvmShIZU1Y9OvcuTYkw4uxS4AZ7Lo3ECyivXw7CYt6wT7NxLahcSzlWb5KNGGW-mTEhdOMGwid5ly8-eGir3kN-vt__b01SBtg8rhnq8HgPFr_jdJ070X8V55Ei-Ei6Y1n9a_qlTB84tkkFgQ0aKbF_j9sfJOnP0Z0sL9bQCyDNcz5UP2ynN"
+                />
+                <span
+                  >By
+                  <a class="text-pink-500 font-medium" href="#"
+                    >John Doe</a
+                  ></span
+                >
+                <span class="mx-2">—</span>
+                <span>November 5, 2023</span>
+              </div>
+              <p class="text-gray-600 mb-6 leading-relaxed">
+                Web development is an ever-evolving field. Stay ahead of the
+                curve by learning about the latest trends and technologies
+                shaping the future...
+              </p>
+              <div class="flex justify-between items-center">
+                <a
+                  class="bg-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-600 transition-colors"
+                  href="#"
+                  >Read More</a
+                >
+                <div class="text-sm text-gray-500 flex items-center">
+                  <span class="material-icons text-base mr-1">schedule</span>
+                  <span>3 min read</span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <article
+            class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row"
+          >
+            <div class="md:w-2/5">
+              <img
+                alt="A person meditating outdoors with a sunset background"
+                class="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnUsOpTaq91YHg5ZlPWcymYg_gxQMJo8y69KLQFj-TuOFAZry7bRCTVBdD856Rjo5KNo1d3dRJOIuML2-FezDEZ4wPbvzce6FM5dLKmn7yNPkynj6b7XsW0UciRGERj_3UK3ZPFbxggoSu0JukgCsKjP8iKNkNNxDdfO0ErWM_tiAx0gYiC2Xy_N0PfDyz7VONtJr6g7a9l4cTrQP4Dc9CBBcMynbwZO8ytQbjL7K3AyUCJEIDL0silDRApDZ1wgYVMiKg0OMk5-_A"
+              />
+            </div>
+            <div class="md:w-3/5 p-8">
+              <h2 class="text-2xl font-semibold text-gray-800 mb-3">
+                Mindfulness and Productivity: Finding Balance
+              </h2>
+              <div class="flex items-center text-sm text-gray-500 mb-4">
+                <img
+                  alt="Jane Smith, author"
+                  class="w-8 h-8 rounded-full mr-3"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyd_nkbCHqdZLzYXmuqsKPdGSZ_lXXxBapu5JVRaZMsjP_sM9_loLzf6XnC7mHLM3S8ogCLpbuSqAi7tDNio182OA0WtM72atnOE2jZWB9mcl-I86d_V0y4agTkNFK1IIzv3AiFEXwhoY3iMbUAcF2IghxSskwfZQoKJaInqhl-69ImWuTFUmmNJtfdGqP0P6HX4cG087mCgvkCm7bJ8W8Vw_EvJK99hcuBHKVeiOeKSOKoRtks2mdIiC-X_vMxPiez75iAiUVAXkZ"
+                />
+                <span
+                  >By
+                  <a class="text-pink-500 font-medium" href="#"
+                    >Jane Smith</a
+                  ></span
+                >
+                <span class="mx-2">—</span>
+                <span>November 12, 2023</span>
+              </div>
+              <p class="text-gray-600 mb-6 leading-relaxed">
+                Discover how incorporating mindfulness practices into your daily
+                routine can significantly boost your productivity and overall
+                well-being...
+              </p>
+              <div class="flex justify-between items-center">
+                <a
+                  class="bg-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-600 transition-colors"
+                  href="#"
+                  >Read More</a
+                >
+                <div class="text-sm text-gray-500 flex items-center">
+                  <span class="material-icons text-base mr-1">schedule</span>
+                  <span>2 min read</span>
+                </div>
+              </div>
+            </div>
+          </article>
+          <div class="mt-12 flex justify-center items-center space-x-2">
+            <a
+              class="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-pink-100 hover:text-pink-600 transition-colors"
+              href="#"
+            >
+              <span class="material-icons">chevron_left</span>
+            </a>
+            <a
+              class="w-10 h-10 flex items-center justify-center rounded-full text-white bg-pink-500 font-medium transition-colors"
+              href="#"
+              >1</a
+            >
+            <a
+              class="w-10 h-10 flex items-center justify-center rounded-full text-gray-600 hover:bg-pink-100 hover:text-pink-600 font-medium transition-colors"
+              href="#"
+              >2</a
+            >
+            <a
+              class="w-10 h-10 flex items-center justify-center rounded-full text-gray-600 hover:bg-pink-100 hover:text-pink-600 font-medium transition-colors"
+              href="#"
+              >3</a
+            >
+            <span class="text-gray-500">...</span>
+            <a
+              class="w-10 h-10 flex items-center justify-center rounded-full text-gray-600 hover:bg-pink-100 hover:text-pink-600 font-medium transition-colors"
+              href="#"
+              >8</a
+            >
+            <a
+              class="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-pink-100 hover:text-pink-600 transition-colors"
+              href="#"
+            >
+              <span class="material-icons">chevron_right</span>
+            </a>
+          </div>
+        </div>
+        <aside class="space-y-12">
+          <div class="bg-white p-8 rounded-xl shadow-lg relative">
+            <div class="absolute -top-4 -left-3">
+              <span
+                class="material-icons text-5xl text-pink-400 opacity-70 transform rotate-12"
+                >waves</span
+              >
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">About Me</h3>
+            <div class="flex items-center mb-4">
+              <img
+                alt="Adriana Martins, Founder &amp; Editor"
+                class="w-16 h-16 rounded-full mr-4"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxktR3n6qAajniI0otFjnBDBjvK2zxiRH6ZinsEHE-csDY9ZzIzAauAhVOUsuxUsByzDOM7g5NfZcLemDWH3WCHkvnxOHPFIyQ9cNIN3bTGozriQYjhTXzuMwN0mRTlLTj5h6zOn5C41yG2a0mm8nPedftFaNLwsvYc1RZj4FY36qgsGEu_rQxQOqX58joQKtyFi2hP_305ScPGhTM2uiOuWvPYHsuQwGHxi3lZ9dnyHOFZVA_zcLEhCJZaHxXVr6WDUXGdsfbHWV8"
+              />
+              <div>
+                <h4 class="font-semibold text-gray-700">Adriana Martins</h4>
+                <p class="text-sm text-gray-500">Founder &amp; Editor</p>
+              </div>
+            </div>
+            <p class="text-gray-600 text-sm leading-relaxed mb-6">
+              Hello! My name is Adriana Martins working from Chile. I create
+              some Ghost and Wordpress themes for different markets, also, I
+              offer live support via our ticket system.
+            </p>
+            <div class="flex space-x-4 text-sm">
+              <a
+                class="flex items-center text-gray-600 hover:text-pink-500"
+                href="#"
+              >
+                <svg class="w-4 h-4 mr-1 fill-current" viewBox="0 0 24 24">
+                  <path
+                    d="M22.46 6c-.77.35-1.6.58-2.46.67.9-.53 1.59-1.37 1.92-2.38-.84.5-1.78.86-2.79 1.07C18.36 4.39 17.04 4 15.62 4c-2.66 0-4.82 2.17-4.82 4.84 0 .38.04.75.13 1.11C7.16 9.74 3.8 7.96 1.57 5.15c-.4.67-.62 1.46-.62 2.3 0 1.68.85 3.16 2.15 4.03-.79-.02-1.53-.24-2.18-.6v.06c0 2.35 1.67 4.31 3.88 4.76-.4.11-.83.17-1.28.17-.31 0-.61-.03-.91-.09.62 1.93 2.41 3.33 4.53 3.37-1.66 1.3-3.76 2.08-6.04 2.08-.39 0-.78-.02-1.16-.07 2.15 1.38 4.7 2.19 7.46 2.19 8.96 0 13.86-7.42 13.86-13.86 0-.21 0-.42-.02-.63.95-.69 1.78-1.55 2.44-2.54z"
+                  ></path>
+                </svg>
+                Twitter
+              </a>
+              <a
+                class="flex items-center text-gray-600 hover:text-pink-500"
+                href="#"
+              >
+                <svg class="w-4 h-4 mr-1 fill-current" viewBox="0 0 24 24">
+                  <path
+                    d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"
+                  ></path>
+                </svg>
+                Facebook
+              </a>
+              <a
+                class="flex items-center text-gray-600 hover:text-pink-500"
+                href="#"
+              >
+                <span class="material-icons text-base mr-1">language</span>
+                Website
+              </a>
+            </div>
+          </div>
+          <div class="bg-white p-8 rounded-xl shadow-lg relative">
+            <div class="absolute -top-4 -left-3">
+              <span
+                class="material-icons text-5xl text-pink-400 opacity-70 transform rotate-12"
+                >waves</span
+              >
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-6">
+              Popular Articles
+            </h3>
+            <div class="space-y-6">
+              <div class="flex items-start space-x-4">
+                <img
+                  alt="Cute white kitten thumbnail"
+                  class="w-20 h-20 rounded-lg object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgJEb0ceOInL65KT5afmFQkeFUGWLrJPu31CtEQWu484OS1N5KaPX3Fdm4IxiMnaGa2mwnvzEa8sR7zTLqciiG12oZH78ZtY08upwEZkpYD5ATSlY6Mba0sVLihDmSQY5PiMiZWQwOrFYgoFk9sfsJtd2DaGBhx7hQgQYDt8tPxFZmVdPxHnYNvX4UeznZzZSYYpI1E-iUn_nFBd4aRVaE-TZ0wtYT3ctRUPNgmdJZzk4dwo9HRrAHGWVSXL3IMsSYKaxxQs_aDgrq"
+                />
+                <div>
+                  <h4
+                    class="font-medium text-gray-700 hover:text-pink-500 text-sm leading-tight"
+                  >
+                    <a href="#"
+                      >Modern and colorful style of caricatures created by AI</a
+                    >
+                  </h4>
+                  <p class="text-xs text-gray-500 mt-1">October 21, 2023</p>
+                </div>
+              </div>
+              <div class="flex items-start space-x-4">
+                <img
+                  alt="Clock thumbnail"
+                  class="w-20 h-20 rounded-lg object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiKYnXhgW96WPQA6lSgTEXK0kqbEXMe9vZL3e_tG8wPkqm6M57w1xzSkQmTiyzTLGYwtk63VGJuMR6o_cf74sqK0gYgQDA3cdhP6DkYa4kLCIatT0GS7qoKyJCaPeWrLK_AylaH4t9C_49Jt55M4TUy4OpOpriwlPJQIHDjIwOE5QU7BagWjFDJs4UQIDs1owcvDiQlMgdyHxc1SwLr6EN3H1cYVaPT3nNH1v_20fp3pdfLNTrkUSES6NM8ZrBURbFaUuoRPwym6Y2"
+                />
+                <div>
+                  <h4
+                    class="font-medium text-gray-700 hover:text-pink-500 text-sm leading-tight"
+                  >
+                    <a href="#">More effective schedules in remote work</a>
+                  </h4>
+                  <p class="text-xs text-gray-500 mt-1">October 21, 2023</p>
+                </div>
+              </div>
+              <div class="flex items-start space-x-4">
+                <img
+                  alt="Laptop showing code thumbnail"
+                  class="w-20 h-20 rounded-lg object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjzy8PlObq6EQ2kXiXb5SRNRDbf_76ZovS4C8NraX4l6vzRV8ScKEuyEWK6Bvcd3Z_xaFx6C5rP-SCtDwJl7tUfIxLu9RvhHGywnUiXOLykDP5ZUvW6D51YUm-tW7vcqoOlC5i8M7EHDc0ssFrs_rLsOkyUYiD2rHJyu0CA-ExPDLBjfZ7VYGxsp5vX6N-3bjZ4cd-AAzAVtEhFZXHD9tXWMcsWDSbYNGOHnVGEk_wcKsAARSAqpahPoMjsyWPr37baWXPmyMivK7T"
+                />
+                <div>
+                  <h4
+                    class="font-medium text-gray-700 hover:text-pink-500 text-sm leading-tight"
+                  >
+                    <a href="#"
+                      >The Future of Web Development: Trends to Watch</a
+                    >
+                  </h4>
+                  <p class="text-xs text-gray-500 mt-1">November 5, 2023</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+    <footer class="bg-gray-800 text-gray-400 py-12 mt-16">
+      <div class="container mx-auto px-4 text-center">
+        <div class="flex justify-center items-center mb-4">
+          <span class="material-icons text-pink-500 text-3xl mr-1">waves</span>
+          <h1 class="text-2xl font-bold text-white">
+            wavy<span class="text-pink-500">.</span>
+          </h1>
+        </div>
+        <p class="text-sm">
+          © 2023 Wavy. All rights reserved. Designed with
+          <span class="text-pink-500">♥</span> by YourName.
+        </p>
+        <p class="text-xs mt-2">Personal Blog Theme</p>
+      </div>
+    </footer>
+  </body>
+</html>
