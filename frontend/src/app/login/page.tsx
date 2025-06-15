@@ -18,16 +18,16 @@ export default function LoginPage() {
   return (
     <>
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-12 flex items-center justify-center">
-        <Card className="bg-white p-8 sm:p-10 md:p-12 rounded-xl shadow-lg w-full max-w-md border-0">
-          <CardHeader className="text-center p-0 mb-8">
+      <main className="flex-grow container mx-auto px-4 py-10 flex items-center justify-center">
+        <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full max-w-md border-0">
+          <CardHeader className="text-center p-0 ">
             <div className="flex justify-center">
               <span className="material-icons text-pink-500 text-6xl">
                 waves
               </span>
             </div>
-            <CardTitle className="text-3xl font-semibold text-gray-800 mt-8">
-              Welcome Back!
+            <CardTitle className="text-3xl font-semibold text-gray-800 mt-0">
+              Login
             </CardTitle>
             <CardDescription className="text-gray-500 pt-2">
               Login to continue to Wavy.
@@ -110,7 +110,7 @@ export default function LoginPage() {
               </div>
             </form>
           </CardContent>
-          <CardFooter className="mt-8 text-center text-sm text-gray-500 flex-col p-0">
+          <CardFooter className=" text-center text-sm text-gray-500 flex-col p-0">
             <p>
               Don't have an account?{" "}
               <Link
