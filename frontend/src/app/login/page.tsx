@@ -51,7 +51,7 @@ export default function LoginPage() {
                     id="email"
                     name="email"
                     placeholder="you@example.com"
-                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm py-3 h-auto"
+                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm py-3 h-auto placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -73,7 +73,7 @@ export default function LoginPage() {
                     id="password"
                     name="password"
                     placeholder="••••••••"
-                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm py-3 h-auto"
+                    className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm py-3 h-auto placeholder:text-gray-400"
                   />
                 </div>
               </div>
