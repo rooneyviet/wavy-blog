@@ -1,12 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Post } from "@/types";
-import { Clock } from "lucide-react"; // Assuming lucide-react for icons
+import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BlogPostCardProps {
   post: Post;
-  isFeatured?: boolean; // To handle the alternating background for the text content part
+  isFeatured?: boolean;
 }
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, isFeatured }) => {
@@ -14,14 +14,12 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, isFeatured }) => {
     <article className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
       {post.imageUrl && (
         <div className="md:w-2/5 relative h-64 md:h-auto">
-          {" "}
-          {/* Added relative and height for Image */}
           <Image
             src={post.imageUrl}
             alt={post.title || "Blog post image"}
-            layout="fill" // Changed to fill for better responsiveness within the container
-            objectFit="cover" // Ensures the image covers the div
-            className="w-full h-full" // Removed object-cover from here as it's on Image
+            layout="fill"
+            objectFit="cover"
+            className="w-full h-full"
           />
         </div>
       )}
@@ -69,8 +67,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, isFeatured }) => {
           </Button>
           {post.readTimeMinutes && (
             <div className="text-sm text-gray-500 flex items-center">
-              <Clock className="h-4 w-4 mr-1" />{" "}
-              {/* Adjusted size to match reference.html text-base */}
+              <Clock className="h-4 w-4 mr-1" />
               <span>{post.readTimeMinutes} min read</span>
             </div>
           )}

@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google"; // Changed from Geist
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-// import Header from "@/components/layout/Header"; // Placeholder
-// import Footer from "@/components/layout/Footer"; // Placeholder
 
 const inter = Inter({
-  // Changed from Geist
   variable: "--font-inter", // Changed variable name
   subsets: ["latin"],
 });

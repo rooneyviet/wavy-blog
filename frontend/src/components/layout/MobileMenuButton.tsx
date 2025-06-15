@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react"; // Assuming lucide-react for icons
+import { Menu } from "lucide-react";
 
 const MobileMenuButton = () => {
   return (
@@ -8,8 +8,7 @@ const MobileMenuButton = () => {
       size="icon"
       className="md:hidden ml-4 text-gray-600"
     >
-      <Menu className="h-8 w-8" />{" "}
-      {/* Adjusted size to match reference.html text-3xl */}
+      <Menu className="h-8 w-8" />
       <span className="sr-only">Open menu</span>
     </Button>
   );

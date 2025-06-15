@@ -1,4 +1,4 @@
-import { Waves, Heart } from "lucide-react"; // Assuming lucide-react for icons
+import { Waves, Heart } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -6,7 +6,6 @@ const Footer = () => {
       <div className="container mx-auto px-4 text-center">
         <div className="flex justify-center items-center mb-4">
           <Waves className="text-pink-500 h-8 w-8 mr-1" />{" "}
-          {/* Adjusted size to match reference.html text-3xl */}
           <h1 className="text-2xl font-bold text-white">
             wavy<span className="text-pink-500">.</span>
           </h1>

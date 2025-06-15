@@ -1,8 +1,7 @@
 import AboutMeWidget from "./AboutMeWidget";
 import PopularArticlesWidget from "./PopularArticlesWidget";
-import { Post, Author } from "@/types"; // Assuming Author type is also in @/types
+import { Post, Author } from "@/types";
 
-// Define a more specific type for the author prop for AboutMeWidget
 interface AboutMeAuthor extends Author {
   title: string;
   bio: string;

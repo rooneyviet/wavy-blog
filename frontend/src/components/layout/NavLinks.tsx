@@ -14,7 +14,7 @@ const navLinks: NavLinkItem[] = [
   { href: "#", label: "Post Features", dropdown: true },
   { href: "#", label: "Features", dropdown: true },
   { href: "#", label: "Contact" },
-  { href: "#", label: "Search", icon: <Search className="h-5 w-5 mr-1" /> }, // Adjusted size to match reference.html text-lg
+  { href: "#", label: "Search", icon: <Search className="h-5 w-5 mr-1" /> },
 ];
 
 const NavLinks = () => {
@@ -28,8 +28,7 @@ const NavLinks = () => {
         >
           {link.icon}
           {link.label}
-          {link.dropdown && <ChevronDown className="h-4 w-4 ml-1" />}{" "}
-          {/* Adjusted size to match reference.html text-xs */}
+          {link.dropdown && <ChevronDown className="h-4 w-4 ml-1" />}
         </Link>
       ))}
     </div>

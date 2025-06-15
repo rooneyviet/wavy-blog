@@ -13,9 +13,8 @@ const Pagination: React.FC<PaginationProps> = ({
   basePath,
 }) => {
   const pageNumbers = [];
-  const maxPagesToShow = 5; // Max number of page links to show (excluding prev/next/ellipsis)
+  const maxPagesToShow = 5;
 
-  // Logic to determine which page numbers to display
   if (totalPages <= maxPagesToShow) {
     for (let i = 1; i <= totalPages; i++) {
       pageNumbers.push(i);
@@ -54,8 +53,7 @@ const Pagination: React.FC<PaginationProps> = ({
           href={`${basePath}/${currentPage - 1}`}
           className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-pink-100 hover:text-pink-600 transition-colors"
         >
-          <ChevronLeft className="h-6 w-6" />{" "}
-          {/* Matched material-icons size */}
+          <ChevronLeft className="h-6 w-6" />
         </Link>
       )}
 
@@ -85,7 +83,6 @@ const Pagination: React.FC<PaginationProps> = ({
           className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-pink-100 hover:text-pink-600 transition-colors"
         >
           <ChevronRight className="h-6 w-6" />{" "}
-          {/* Matched material-icons size */}
         </Link>
       )}
     </div>

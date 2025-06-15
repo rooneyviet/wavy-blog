@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { Waves, Twitter, Facebook, Globe } from "lucide-react"; // Using Globe for generic website
-import SocialLink from "@/components/ui/SocialLink"; // Re-using SocialLink
+import { Waves, Twitter, Facebook, Globe } from "lucide-react";
+import SocialLink from "@/components/ui/SocialLink";
 
 interface AboutMeWidgetProps {
   author: {
@@ -25,7 +25,7 @@ const AboutMeWidget: React.FC<AboutMeWidgetProps> = ({ author }) => {
       </div>
       <h3 className="text-xl font-semibold text-gray-800 mb-6">About Me</h3>
       <div className="flex items-center mb-4">
-        {author.imageUrl && ( // Conditionally render Image if imageUrl exists
+        {author.imageUrl && (
           <Image
             src={author.imageUrl}
             alt={`${author.name}, ${author.title}`}
