@@ -120,9 +120,6 @@
 }
 
 @layer base {
-  * {
-    @apply border-border; /* Removed outline-ring/50 for now, can be added if needed */
-  }
   body {
     @apply bg-pink-50 text-foreground; /* Updated background */
     /* Apply a base line-height for better readability */
@@ -165,4 +162,10 @@
     #ec4899,
     #f472b6
   ); /* from-pink-500 to-pink-400 */
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
 }

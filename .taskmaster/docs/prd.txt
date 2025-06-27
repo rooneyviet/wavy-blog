@@ -1,0 +1,122 @@
+# Product Requirements Document: Wavy Blog
+
+## 1. Introduction
+
+Wavy Blog is a personal blogging platform designed for sharing personal content. It will feature a clean, modern frontend for readers and a secure backend with an admin dashboard for content and user management. The platform will prioritize simplicity for public users and provide role-based access for content creators (Authors) and administrators (Admins).
+
+## 2. Goals
+
+*   Provide a platform for publishing and reading personal blog posts.
+*   Ensure secure access and content management for registered Authors and Admins.
+*   Implement a scalable and maintainable architecture using modern technologies, primarily leveraging AWS services.
+*   Establish a CI/CD pipeline for efficient deployment.
+
+## 3. User Roles and Permissions
+
+### 3.1. Public Users (Unauthenticated)
+*   **Access:** Read-only.
+*   **Permissions:**
+    *   View homepage (list of blog posts).
+    *   View individual blog posts.
+*   **Restrictions:** No account creation, login, commenting, liking, or subscribing features available for public users.
+
+### 3.2. Authors
+*   **Access:** Authenticated via login. Accounts are created by Admins.
+*   **Permissions:**
+    *   Log in to the platform.
+    *   Create new blog posts.
+    *   View, edit, and delete their own blog posts.
+    *   Change their own password in user settings.
+*   **Restrictions:**
+    *   Cannot view, edit, or delete posts by other authors.
+    *   Cannot access user management features (viewing, creating, editing, or deleting other users).
+
+### 3.3. Admins
+*   **Access:** Authenticated via login.
+*   **Permissions:**
+    *   Log in to the platform.
+    *   Full CRUD (Create, Read, Update, Delete) operations on all user accounts (Authors and Admins).
+    *   Full CRUD operations on all blog posts from any author.
+    *   Change their own password.
+*   **Restrictions:** None within the scope of content and user management.
+
+## 4. Features
+
+### 4.1. Frontend (Next.js)
+*   **Public-Facing:**
+    *   **Homepage:** Displays a list/feed of blog posts.
+    *   **Post View Page:** Displays the full content of a single blog post.
+    *   Clean, responsive design suitable for a personal blog (initial design references from existing `login.html` and `reference.html` can be considered for styling).
+*   **Authenticated User Area (Admin Dashboard):**
+    *   **Login Page:** Secure login form for Authors and Admins.
+    *   **Dashboard Overview:** (To be defined - could show stats or quick links).
+    *   **Post Management:**
+        *   List all posts (Admin).
+        *   List own posts (Author).
+        *   Create new post (WYSIWYG editor or Markdown).
+        *   Edit existing post.
+        *   Delete post.
+    *   **User Management (Admin only):**
+        *   List all users.
+        *   Create new users (assigning Author or Admin role).
+        *   Edit existing user details (including role).
+        *   Delete users.
+    *   **User Settings:**
+        *   Change own password (Author & Admin).
+
+### 4.2. Backend (Go - Gin Framework)
+*   **API Endpoints:**
+    *   Authentication (login for Authors/Admins).
+    *   User management (CRUD operations - Admin only).
+    *   Post management (CRUD operations - with role-based restrictions).
+    *   Password management.
+*   **Business Logic:**
+    *   Role-Based Access Control (RBAC) enforcement.
+    *   Data validation.
+*   **Integrations:**
+    *   AWS DynamoDB for data storage.
+    *   AWS S3 for image/media storage.
+    *   AWS SES for email services (e.g., password resets, notifications if needed).
+
+## 5. Technical Stack
+
+*   **Frontend:**
+    *   Framework: Next.js (React)
+    *   Styling: Tailwind CSS (potentially with shadcn/ui components as per existing setup)
+*   **Backend:**
+    *   Language: Go
+    *   Framework: Gin
+*   **Database:**
+    *   AWS DynamoDB (NoSQL)
+*   **Image Storage:**
+    *   AWS S3
+*   **Email Service:**
+    *   AWS SES
+
+## 6. Infrastructure and Deployment
+
+*   **Version Control:** GitHub
+*   **Containerization:**
+    *   Docker (for local development via `docker-compose.dev.yml` and production images)
+*   **Cloud Provider:** Amazon Web Services (AWS)
+*   **Compute:** AWS Fargate (for running containerized applications)
+*   **Container Registry:** AWS ECR (for storing Docker images)
+*   **DNS:** AWS Route 53
+*   **CI/CD:**
+    *   GitHub Actions (for triggering deployment pipelines)
+    *   AWS CodeBuild (for building application artifacts)
+    *   AWS CodeDeploy (for deploying to AWS Fargate)
+
+## 7. Non-Functional Requirements (High-Level)
+
+*   **Security:** Secure authentication, proper authorization, protection against common web vulnerabilities.
+*   **Scalability:** Architecture should allow for future scaling of users and content.
+*   **Maintainability:** Code should be well-structured and documented.
+
+## 8. Future Considerations (Out of Scope for Initial MVP)
+
+*   Public comments system.
+*   Post liking/reaction features.
+*   User subscription features.
+*   Advanced analytics for authors/admins.
+*   Search functionality for blog posts.
