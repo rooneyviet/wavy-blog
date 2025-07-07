@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Implement JWT Authentication and Middleware
+# Status: done
+# Dependencies: 5, 6
+# Priority: high
+# Description: Implement JWT generation for the login handler and create a middleware to protect post creation, update, and deletion endpoints, securing write operations for the application.
+# Details:
+In `internal/api/handlers/users.go`, update the `LoginUser` handler. After successfully validating credentials, it should generate a signed JWT using a library like `github.com/golang-jwt/jwt/v5`. The JWT claims must include the `UserID` and an expiration time. The JWT secret key should be loaded from the application's configuration. Create a new package `internal/api/middleware` with an `AuthMiddleware()` function. This middleware will extract the token from the 'Authorization: Bearer <token>' header, validate its signature and expiration, and extract the `UserID` from its claims. The extracted `UserID` should be set in the Gin context for use by subsequent handlers. If the token is missing or invalid, the middleware must abort the request with a 401 Unauthorized status. In `internal/api/router.go`, apply this new middleware to a route group that includes the protected routes: `POST /posts`, `PUT /posts/:id`, and `DELETE /posts/:id`.
+
+# Test Strategy:
+1. Attempt to access a protected endpoint, e.g., `POST /api/posts`, without an Authorization header. Verify the response is `401 Unauthorized`. 2. Attempt to access the same endpoint with an invalid or expired JWT. Verify the response is `401 Unauthorized`. 3. Send a `POST` request to `/api/users/login` with valid credentials. Verify the response is `200 OK` and contains a JWT in the response body. 4. Using the token from the successful login, send a `POST` request to `/api/posts` with the header `Authorization: Bearer <jwt>`. Verify the request succeeds with a `201 Created` status. 5. Confirm that public routes like `GET /api/posts` remain accessible without any token.

@@ -1,19 +1,19 @@
 version: "3"
 services:
   # Backend Service
-  # api-backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile.dev
-  #   container_name: api-backend
-  #   volumes:
-  #     - ./backend:/app
-  #   ports:
-  #     - 8010:8080
-  #   depends_on:
-  #     - supabase-db-postgres
-  #   env_file:
-  #     - ./backend/.env.dev
+  api-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: api-backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - 8010:8080
+    depends_on:
+      - localstack
+    env_file:
+      - ./backend/.env.dev
 
   # Frontend Service
   frontend:
@@ -27,10 +27,26 @@ services:
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
-    # depends_on:
-    #   - api-backend
+    depends_on:
+      - api-backend
     env_file:
       - ./frontend/.env.dev
+
+  # LocalStack Service for AWS Emulation
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566" # LocalStack Gateway
+      - "4510-4559:4510-4559" # External services
+    environment:
+      - SERVICES=dynamodb
+      - DEBUG=1
+      - PERSISTENCE=1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+
 volumes:
   frontend_node_modules:
-  supabase-data:
+  localstack_data:

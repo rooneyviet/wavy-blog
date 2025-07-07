@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Backend Scaffolding and Go Module Initialization
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Create the backend project directory structure and initialize the Go module. This task sets up the skeleton of the application as per the PRD.
+# Details:
+Inside the root of the project, create the `backend` directory. Within `backend`, create the specified folder structure: `cmd/api`, `internal/api/handlers`, `internal/api`, `internal/config`, `internal/domain`, `internal/repository/dynamodb`. Create empty placeholder files: `main.go`, `posts.go`, `users.go`, `router.go`, `config.go`, `post.go`, `user.go`, `dbrepo.go`, `repository.go`. Use the running `api-backend` container to initialize the Go module: `docker compose -f docker-compose.dev.yml exec api-backend go mod init wavy.blog/backend`. Then, add the Gin and AWS SDK dependencies: `docker compose exec api-backend go get github.com/gin-gonic/gin` and `docker compose exec api-backend go get github.com/aws/aws-sdk-go-v2/config github.com/aws/aws-sdk-go-v2/service/dynamodb`.
+
+# Test Strategy:
+Verify that the directory structure and all files are created correctly. Check the `go.mod` and `go.sum` files to ensure they have been created and contain the specified dependencies. The application should still build and run successfully via Docker Compose, even with just a basic `main` function.
