@@ -153,3 +153,9 @@ node_modules/
 *.sln
 *.sw?
 # OS specific
+
+# Added by Claude Task Master
+
+# Task files
+# tasks.json
+# tasks/ 

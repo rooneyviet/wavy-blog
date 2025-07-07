@@ -3,6 +3,7 @@ description: Comprehensive reference for Taskmaster MCP tools and CLI commands.
 globs: **/*
 alwaysApply: true
 ---
+
 # Taskmaster Tool & Command Reference
 
 This document provides a detailed reference for interacting with Taskmaster, covering both the recommended MCP tools, suitable for integrations like Roo Code, and the corresponding `task-master` CLI commands, designed for direct user interaction or fallback.
@@ -270,7 +271,7 @@ This document provides a detailed reference for interacting with Taskmaster, cov
 *   **CLI Command:** `task-master clear-subtasks [options]`
 *   **Description:** `Remove all subtasks from one or more specified Taskmaster parent tasks.`
 *   **Key Parameters/Options:**
-    *   `id`: `The ID(s) of the Taskmaster parent task(s) whose subtasks you want to remove, e.g., '15' or '16,18'. Required unless using `all`.) (CLI: `-i, --id <ids>`)
+    *   `id`: `The ID(s) of the Taskmaster parent task(s) whose subtasks you want to remove, e.g., '15' or '16,18'. Required unless using 'all'.` (CLI: `-i, --id <ids>`)
     *   `all`: `Tell Taskmaster to remove subtasks from all parent tasks.` (CLI: `--all`)
     *   `tag`: `Specify which tag context to operate on. Defaults to the current active tag.` (CLI: `--tag <name>`)
     *   `file`: `Path to your Taskmaster 'tasks.json' file. Default relies on auto-detection.` (CLI: `-f, --file <file>`)
@@ -554,4 +555,4 @@ Environment variables are used **only** for sensitive API keys related to AI pro
 
 ---
 
-For details on how these commands fit into the development process, see the [Development Workflow Guide](mdc:.roo/rules/dev_workflow.md).
+For details on how these commands fit into the development process, see the [dev_workflow.md](.roo/rules/dev_workflow.md).
