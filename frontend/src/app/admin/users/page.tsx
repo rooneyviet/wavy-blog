@@ -37,6 +37,17 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Define the User type for the admin section
 export interface AdminUser {
@@ -210,6 +221,8 @@ export default function ListUsersPage() {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
 
   const table = useReactTable({
     data,
@@ -230,21 +243,25 @@ export default function ListUsersPage() {
     },
   });
 
-  const deleteSelectedUsers = () => {
+  const handleDeleteClick = () => {
     const selectedIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.id);
     if (selectedIds.length === 0) {
-      alert("No users selected.");
       return;
     }
+    setSelectedUserIds(selectedIds);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
     // Implement actual deletion logic here
-    alert(`Deleting users with IDs: ${selectedIds.join(", ")}`);
-    // Example: Filter out deleted users from data
     setData((prevData) =>
-      prevData.filter((user) => !selectedIds.includes(user.id))
+      prevData.filter((user) => !selectedUserIds.includes(user.id))
     );
     table.resetRowSelection(); // Clear selection
+    setShowDeleteDialog(false);
+    setSelectedUserIds([]);
   };
 
   return (
@@ -261,12 +278,38 @@ export default function ListUsersPage() {
         />
         <div className="flex gap-2">
           {Object.keys(rowSelection).length > 0 && (
-            <Button variant="destructive" onClick={deleteSelectedUsers}>
-              Delete Selected ({Object.keys(rowSelection).length})
-            </Button>
+            <AlertDialog
+              open={showDeleteDialog}
+              onOpenChange={setShowDeleteDialog}
+            >
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" onClick={handleDeleteClick}>
+                  Delete Selected ({Object.keys(rowSelection).length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Users</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedUserIds.length}{" "}
+                    selected user{selectedUserIds.length > 1 ? "s" : ""}? This
+                    action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={confirmDelete}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <Link href="/admin/users/add" passHref>
-            <Button className="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white subscribe-button hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 h-auto">
+            <Button className="subscribe-button text-white hover:opacity-90">
               Add User
             </Button>
           </Link>

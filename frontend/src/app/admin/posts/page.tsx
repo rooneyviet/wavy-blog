@@ -38,6 +38,17 @@ import {
 } from "@/components/ui/table";
 import { Author } from "@/types"; // Assuming Author type is available
 import { Card } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Define the Post type for the admin section
 export interface AdminPost {
@@ -221,6 +232,8 @@ export default function ListPostsPage() {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [selectedPostIds, setSelectedPostIds] = React.useState<string[]>([]);
 
   const table = useReactTable({
     data,
@@ -241,19 +254,25 @@ export default function ListPostsPage() {
     },
   });
 
-  const deleteSelectedPosts = () => {
+  const handleDeleteClick = () => {
     const selectedIds = table
       .getFilteredSelectedRowModel()
       .rows.map((row) => row.original.id);
     if (selectedIds.length === 0) {
-      alert("No posts selected.");
       return;
     }
-    alert(`Deleting posts with IDs: ${selectedIds.join(", ")}`);
+    setSelectedPostIds(selectedIds);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    // Implement actual deletion logic here
     setData((prevData) =>
-      prevData.filter((post) => !selectedIds.includes(post.id))
+      prevData.filter((post) => !selectedPostIds.includes(post.id))
     );
-    table.resetRowSelection();
+    table.resetRowSelection(); // Clear selection
+    setShowDeleteDialog(false);
+    setSelectedPostIds([]);
   };
 
   return (
@@ -270,12 +289,38 @@ export default function ListPostsPage() {
         />
         <div className="flex gap-2">
           {Object.keys(rowSelection).length > 0 && (
-            <Button variant="destructive" onClick={deleteSelectedPosts}>
-              Delete Selected ({Object.keys(rowSelection).length})
-            </Button>
+            <AlertDialog
+              open={showDeleteDialog}
+              onOpenChange={setShowDeleteDialog}
+            >
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" onClick={handleDeleteClick}>
+                  Delete Selected ({Object.keys(rowSelection).length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Posts</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {selectedPostIds.length}{" "}
+                    selected post{selectedPostIds.length > 1 ? "s" : ""}? This
+                    action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={confirmDelete}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
           <Link href="/admin/posts/add" passHref>
-            <Button className="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white subscribe-button hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 h-auto">
+            <Button className="subscribe-button text-white hover:opacity-90">
               Add Post
             </Button>
           </Link>
