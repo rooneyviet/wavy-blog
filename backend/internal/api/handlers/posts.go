@@ -71,7 +71,13 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 }
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
-	posts, err := h.repo.GetAllPosts(c.Request.Context(), nil) // Passing nil for now
+	userRole := c.GetString("userRole")
+	if userRole != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to view all posts"})
+		return
+	}
+	postName := c.Query("postName")
+	posts, err := h.repo.GetAllPosts(c.Request.Context(), &postName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get posts"})
 		return
@@ -83,6 +89,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	postID := "POST#" + c.Param("id")
 
 	userID := c.GetString("userID")
+	userRole := c.GetString("userRole")
 
 	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
@@ -90,7 +97,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	if existingPost.AuthorID != userID.(string) {
+	if userRole != "admin" && existingPost.AuthorID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to update this post"})
 		return
 	}
@@ -119,6 +126,7 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 	postID := "POST#" + c.Param("id")
 
 	userID := c.GetString("userID")
+	userRole := c.GetString("userRole")
 
 	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
@@ -126,7 +134,7 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	if existingPost.AuthorID != userID.(string) {
+	if userRole != "admin" && existingPost.AuthorID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to delete this post"})
 		return
 	}

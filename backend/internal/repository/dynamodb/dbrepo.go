@@ -295,12 +295,20 @@ func (r *DynamoDBRepo) GetPostByID(ctx context.Context, postID string) (*domain.
 }
 
 func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*domain.Post, error) {
+	filter := "begins_with(PK, :pk)"
+	exprAttrVals := map[string]types.AttributeValue{
+		":pk": &types.AttributeValueMemberS{Value: "POST#"},
+	}
+
+	if postName != nil && *postName != "" {
+		filter += " and contains(Title, :title)"
+		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
+	}
+
 	result, err := r.Client.Scan(ctx, &dynamodb.ScanInput{
-		TableName:        aws.String(r.TableName),
-		FilterExpression: aws.String("begins_with(PK, :pk)"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "POST#"},
-		},
+		TableName:                 aws.String(r.TableName),
+		FilterExpression:          aws.String(filter),
+		ExpressionAttributeValues: exprAttrVals,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan posts: %w", err)
@@ -315,14 +323,29 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*do
 }
 
 func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, userID string, postName *string) ([]*domain.Post, error) {
-	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(r.TableName),
-		KeyConditionExpression: aws.String("PK = :pk and begins_with(SK, :sk)"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
-			":sk": &types.AttributeValueMemberS{Value: "POST#"},
-		},
-	})
+	keyCondExpr := "PK = :pk and begins_with(SK, :sk)"
+	exprAttrVals := map[string]types.AttributeValue{
+		":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
+		":sk": &types.AttributeValueMemberS{Value: "POST#"},
+	}
+	filterExpr := ""
+
+	if postName != nil && *postName != "" {
+		filterExpr = "contains(Title, :title)"
+		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
+	}
+
+	queryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(r.TableName),
+		KeyConditionExpression:    aws.String(keyCondExpr),
+		ExpressionAttributeValues: exprAttrVals,
+	}
+
+	if filterExpr != "" {
+		queryInput.FilterExpression = aws.String(filterExpr)
+	}
+
+	result, err := r.Client.Query(ctx, queryInput)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query posts by user: %w", err)
 	}

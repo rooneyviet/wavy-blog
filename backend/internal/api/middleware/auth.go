@@ -47,13 +47,14 @@ func AuthMiddleware(repo repository.UserRepository, secretKey string) gin.Handle
 			return
 		}
 
-		_, err = repo.GetUserByID(c.Request.Context(), userID)
+		user, err := repo.GetUserByID(c.Request.Context(), userID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			return
 		}
 
-		c.Set("userID", userID)
+		c.Set("userID", user.UserID)
+		c.Set("userRole", user.Role)
 		c.Next()
 	}
 }
