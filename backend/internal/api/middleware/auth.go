@@ -45,15 +45,15 @@ func AuthMiddleware(repo repository.UserRepository, secretKey string) gin.Handle
 			return
 		}
 
-		userID, ok := claims["userID"].(string)
+		username, ok := claims["username"].(string)
 		if !ok {
-			handlers.Unauthorized(c, "The authentication token has an invalid user ID.")
+			handlers.Unauthorized(c, "The authentication token has an invalid username.")
 			c.Abort()
 			return
 		}
 
 		// We fetch the user to ensure they still exist and have the correct role.
-		user, err := repo.GetUserByID(c.Request.Context(), userID)
+		user, err := repo.GetUserByUsername(c.Request.Context(), username)
 		if err != nil || user == nil {
 			handlers.Unauthorized(c, "The user associated with the token was not found.")
 			c.Abort()
