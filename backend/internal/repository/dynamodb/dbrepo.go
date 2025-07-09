@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -16,12 +17,13 @@ import (
 )
 
 const (
-	EmailIndex    = "EmailIndex"
-	UsernameIndex = "UsernameIndex"
+	GSI1 = "GSI1"
+	GSI2 = "GSI2"
+	GSI3 = "GSI3"
 )
 
 type DynamoDBRepo struct {
-	Client *dynamodb.Client
+	Client    *dynamodb.Client
 	TableName string
 }
 
@@ -39,7 +41,7 @@ func New(cfg *appConfig.Config) *DynamoDBRepo {
 	}
 
 	client := dynamodb.NewFromConfig(awsCfg)
-	
+
 	repo := &DynamoDBRepo{
 		Client:    client,
 		TableName: cfg.DynamoDBTableName,
@@ -63,81 +65,42 @@ func (r *DynamoDBRepo) ensureTableExists() {
 	_, err = r.Client.CreateTable(context.TODO(), &dynamodb.CreateTableInput{
 		TableName: aws.String(r.TableName),
 		AttributeDefinitions: []types.AttributeDefinition{
-			{
-				AttributeName: aws.String("PK"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("SK"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("Email"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("Username"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("Category"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("CreatedAt"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
+			{AttributeName: aws.String("PK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("SK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("GSI1PK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("GSI1SK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("GSI2PK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("GSI2SK"), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("EntityType"), AttributeType: types.ScalarAttributeTypeS},
 		},
 		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: aws.String("PK"),
-				KeyType:       types.KeyTypeHash,
-			},
-			{
-				AttributeName: aws.String("SK"),
-				KeyType:       types.KeyTypeRange,
-			},
+			{AttributeName: aws.String("PK"), KeyType: types.KeyTypeHash},
+			{AttributeName: aws.String("SK"), KeyType: types.KeyTypeRange},
 		},
 		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
 			{
-				IndexName: aws.String(EmailIndex),
+				IndexName: aws.String(GSI1),
 				KeySchema: []types.KeySchemaElement{
-					{
-						AttributeName: aws.String("Email"),
-						KeyType:       types.KeyTypeHash,
-					},
+					{AttributeName: aws.String("GSI1PK"), KeyType: types.KeyTypeHash},
+					{AttributeName: aws.String("GSI1SK"), KeyType: types.KeyTypeRange},
 				},
-				Projection: &types.Projection{
-					ProjectionType: types.ProjectionTypeAll,
-				},
+				Projection: &types.Projection{ProjectionType: types.ProjectionTypeAll},
 			},
 			{
-				IndexName: aws.String(UsernameIndex),
+				IndexName: aws.String(GSI2),
 				KeySchema: []types.KeySchemaElement{
-					{
-						AttributeName: aws.String("Username"),
-						KeyType:       types.KeyTypeHash,
-					},
+					{AttributeName: aws.String("GSI2PK"), KeyType: types.KeyTypeHash},
+					{AttributeName: aws.String("GSI2SK"), KeyType: types.KeyTypeRange},
 				},
-				Projection: &types.Projection{
-					ProjectionType: types.ProjectionTypeAll,
-				},
+				Projection: &types.Projection{ProjectionType: types.ProjectionTypeAll},
 			},
 			{
-				IndexName: aws.String("CategoryIndex"),
+				IndexName: aws.String(GSI3),
 				KeySchema: []types.KeySchemaElement{
-					{
-						AttributeName: aws.String("Category"),
-						KeyType:       types.KeyTypeHash,
-					},
-					{
-						AttributeName: aws.String("CreatedAt"),
-						KeyType:       types.KeyTypeRange,
-					},
+					{AttributeName: aws.String("EntityType"), KeyType: types.KeyTypeHash},
+					{AttributeName: aws.String("PK"), KeyType: types.KeyTypeRange},
 				},
-				Projection: &types.Projection{
-					ProjectionType: types.ProjectionTypeAll,
-				},
+				Projection: &types.Projection{ProjectionType: types.ProjectionTypeAll},
 			},
 		},
 		BillingMode: types.BillingModePayPerRequest,
@@ -151,90 +114,96 @@ func (r *DynamoDBRepo) ensureTableExists() {
 }
 
 func (r *DynamoDBRepo) CreateUser(ctx context.Context, user *domain.User) error {
-	user.UserID = "USER#" + user.UserID
-	item, err := attributevalue.MarshalMap(user)
+	user.PK = "USER#" + user.Username
+	user.SK = "METADATA#" + user.Username
+	user.EntityType = "USER"
+	userItem, err := attributevalue.MarshalMap(user)
 	if err != nil {
 		return fmt.Errorf("failed to marshal user: %w", err)
 	}
 
-	// The PK is already set from the marshaled user object.
-	// We need to construct the SK without the "USER#" prefix from the UserID.
-	userIDWithoutPrefix := strings.TrimPrefix(user.UserID, "USER#")
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + userIDWithoutPrefix}
-
-	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(r.TableName),
-		Item:      item,
-	})
+	emailUniquenessItem := domain.UserEmail{
+		PK:       "USEREMAIL#" + user.Email,
+		SK:       "USEREMAIL#" + user.Email,
+		Username: user.Username,
+	}
+	emailItem, err := attributevalue.MarshalMap(emailUniquenessItem)
 	if err != nil {
-		return fmt.Errorf("failed to put item: %w", err)
+		return fmt.Errorf("failed to marshal email uniqueness item: %w", err)
+	}
+
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                userItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                emailItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		// Check for transaction cancellation due to condition failure
+		if strings.Contains(err.Error(), "TransactionCanceledException") {
+			return fmt.Errorf("username or email already exists")
+		}
+		return fmt.Errorf("failed to create user transaction: %w", err)
 	}
 	return nil
 }
 
 func (r *DynamoDBRepo) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(r.TableName),
-		IndexName:              aws.String(EmailIndex),
-		KeyConditionExpression: aws.String("Email = :email"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":email": &types.AttributeValueMemberS{Value: email},
+	// Step 1: Get the UserEmail item to find the username.
+	emailItemResult, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(r.TableName),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USEREMAIL#" + email},
+			"SK": &types.AttributeValueMemberS{Value: "USEREMAIL#" + email},
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to query user by email: %w", err)
+		return nil, fmt.Errorf("failed to get email item: %w", err)
+	}
+	if emailItemResult.Item == nil {
+		return nil, nil // No user with this email exists.
 	}
 
-	if len(result.Items) == 0 {
-		return nil, nil // User not found
-	}
-
-	var user domain.User
-	err = attributevalue.UnmarshalMap(result.Items[0], &user)
+	var emailItem domain.UserEmail
+	err = attributevalue.UnmarshalMap(emailItemResult.Item, &emailItem)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal email item: %w", err)
 	}
-	return &user, nil
+
+	if emailItem.Username == "" {
+		return nil, fmt.Errorf("email item does not contain a username")
+	}
+
+	// Step 2: Use the username to get the full user item.
+	return r.GetUserByUsername(ctx, emailItem.Username)
 }
 
 func (r *DynamoDBRepo) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
-	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
-		TableName:              aws.String(r.TableName),
-		IndexName:              aws.String(UsernameIndex),
-		KeyConditionExpression: aws.String("Username = :username"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":username": &types.AttributeValueMemberS{Value: username},
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to query user by username: %w", err)
-	}
-
-	if len(result.Items) == 0 {
-		return nil, nil // User not found
-	}
-
-	var user domain.User
-	err = attributevalue.UnmarshalMap(result.Items[0], &user)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
-	}
-	return &user, nil
-}
-
-func (r *DynamoDBRepo) GetUserByID(ctx context.Context, userID string) (*domain.User, error) {
 	result, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + userID},
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + username},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + username},
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get item: %w", err)
+		return nil, fmt.Errorf("failed to get user by username: %w", err)
 	}
 	if result.Item == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, nil // User not found
 	}
 
 	var user domain.User
@@ -245,16 +214,23 @@ func (r *DynamoDBRepo) GetUserByID(ctx context.Context, userID string) (*domain.
 	return &user, nil
 }
 
+func (r *DynamoDBRepo) GetUserByID(ctx context.Context, userID string) (*domain.User, error) {
+	// In the new model, the primary way to get a user is by username.
+	// If UserID is the username, we can use GetUserByUsername.
+	return r.GetUserByUsername(ctx, userID)
+}
+
 func (r *DynamoDBRepo) GetAllUsers(ctx context.Context) ([]*domain.User, error) {
-	result, err := r.Client.Scan(ctx, &dynamodb.ScanInput{
-		TableName:        aws.String(r.TableName),
-		FilterExpression: aws.String("begins_with(PK, :pk)"),
+	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(r.TableName),
+		IndexName:              aws.String(GSI3),
+		KeyConditionExpression: aws.String("EntityType = :type"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "USER#"},
+			":type": &types.AttributeValueMemberS{Value: "USER"},
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan users: %w", err)
+		return nil, fmt.Errorf("failed to query all users: %w", err)
 	}
 
 	var users []*domain.User
@@ -266,64 +242,26 @@ func (r *DynamoDBRepo) GetAllUsers(ctx context.Context) ([]*domain.User, error) 
 }
 
 func (r *DynamoDBRepo) CreatePost(ctx context.Context, post *domain.Post) error {
-	// The handler provides clean IDs. The repository adds prefixes.
-	prefixedPostID := "POST#" + post.PostID
-	post.PostID = prefixedPostID // Temporarily assign for marshaling
+	post.PK = "POST#" + post.PostID
+	post.SK = "METADATA#" + post.PostID
+	post.EntityType = "POST"
+	post.GSI1PK = "POSTS_BY_USER#" + post.AuthorID
+	post.GSI1SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
+	post.GSI2PK = "POSTS_BY_CAT#" + post.Category
+	post.GSI2SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
 
 	item, err := attributevalue.MarshalMap(post)
 	if err != nil {
 		return fmt.Errorf("failed to marshal post: %w", err)
 	}
 
-	// Restore clean ID after marshaling
-	post.PostID = strings.TrimPrefix(post.PostID, "POST#")
-
-	// Overwrite PK with the correct prefixed version
-	item["PK"] = &types.AttributeValueMemberS{Value: prefixedPostID}
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + post.PostID}
-
-	// Post by user item
-	postByUserItem := make(map[string]types.AttributeValue)
-	for k, v := range item {
-		postByUserItem[k] = v
-	}
-	postByUserItem["PK"] = &types.AttributeValueMemberS{Value: "USER#" + post.AuthorID}
-	postByUserItem["SK"] = &types.AttributeValueMemberS{Value: prefixedPostID}
-
-	// Post by category item
-	postByCategoryItem := make(map[string]types.AttributeValue)
-	for k, v := range item {
-		postByCategoryItem[k] = v
-	}
-	postByCategoryItem["PK"] = &types.AttributeValueMemberS{Value: "CATEGORY#" + post.Category}
-	postByCategoryItem["SK"] = &types.AttributeValueMemberS{Value: prefixedPostID}
-
-
-	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
-		TransactItems: []types.TransactWriteItem{
-			{
-				Put: &types.Put{
-					TableName: aws.String(r.TableName),
-					Item:      item,
-				},
-			},
-			{
-				Put: &types.Put{
-					TableName: aws.String(r.TableName),
-					Item:      postByUserItem,
-				},
-			},
-			{
-				Put: &types.Put{
-					TableName: aws.String(r.TableName),
-					Item:      postByCategoryItem,
-				},
-			},
-		},
+	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String(r.TableName),
+		Item:      item,
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to put items: %w", err)
+		return fmt.Errorf("failed to put post item: %w", err)
 	}
 	return nil
 }
@@ -337,7 +275,7 @@ func (r *DynamoDBRepo) GetPostByID(ctx context.Context, postID string) (*domain.
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get item: %w", err)
+		return nil, fmt.Errorf("failed to get post: %w", err)
 	}
 	if result.Item == nil {
 		return nil, fmt.Errorf("post not found")
@@ -352,23 +290,26 @@ func (r *DynamoDBRepo) GetPostByID(ctx context.Context, postID string) (*domain.
 }
 
 func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*domain.Post, error) {
-	filter := "begins_with(PK, :pk)"
+	keyCondExpr := "EntityType = :type"
 	exprAttrVals := map[string]types.AttributeValue{
-		":pk": &types.AttributeValueMemberS{Value: "POST#"},
+		":type": &types.AttributeValueMemberS{Value: "POST"},
+	}
+	
+	queryInput := &dynamodb.QueryInput{
+		TableName:              aws.String(r.TableName),
+		IndexName:              aws.String(GSI3),
+		KeyConditionExpression: aws.String(keyCondExpr),
+		ExpressionAttributeValues: exprAttrVals,
 	}
 
 	if postName != nil && *postName != "" {
-		filter += " and contains(Title, :title)"
+		queryInput.FilterExpression = aws.String("contains(Title, :title)")
 		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
 	}
 
-	result, err := r.Client.Scan(ctx, &dynamodb.ScanInput{
-		TableName:                 aws.String(r.TableName),
-		FilterExpression:          aws.String(filter),
-		ExpressionAttributeValues: exprAttrVals,
-	})
+	result, err := r.Client.Query(ctx, queryInput)
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan posts: %w", err)
+		return nil, fmt.Errorf("failed to query all posts: %w", err)
 	}
 
 	var posts []*domain.Post
@@ -379,27 +320,23 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*do
 	return posts, nil
 }
 
-func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, userID string, postName *string) ([]*domain.Post, error) {
-	keyCondExpr := "PK = :pk and begins_with(SK, :sk)"
+func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, username string, postName *string) ([]*domain.Post, error) {
+	keyCondExpr := "GSI1PK = :pk"
 	exprAttrVals := map[string]types.AttributeValue{
-		":pk": &types.AttributeValueMemberS{Value: "USER#" + userID},
-		":sk": &types.AttributeValueMemberS{Value: "POST#"},
-	}
-	filterExpr := ""
-
-	if postName != nil && *postName != "" {
-		filterExpr = "contains(Title, :title)"
-		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
+		":pk": &types.AttributeValueMemberS{Value: "POSTS_BY_USER#" + username},
 	}
 
 	queryInput := &dynamodb.QueryInput{
-		TableName:                 aws.String(r.TableName),
-		KeyConditionExpression:    aws.String(keyCondExpr),
+		TableName:              aws.String(r.TableName),
+		IndexName:              aws.String(GSI1),
+		KeyConditionExpression: aws.String(keyCondExpr),
 		ExpressionAttributeValues: exprAttrVals,
+		ScanIndexForward:       aws.Bool(false), // Sort by SK (CreatedAt) descending
 	}
 
-	if filterExpr != "" {
-		queryInput.FilterExpression = aws.String(filterExpr)
+	if postName != nil && *postName != "" {
+		queryInput.FilterExpression = aws.String("contains(Title, :title)")
+		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
 	}
 
 	result, err := r.Client.Query(ctx, queryInput)
@@ -418,11 +355,12 @@ func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, userID string, postNa
 func (r *DynamoDBRepo) GetPostsByCategory(ctx context.Context, category string) ([]*domain.Post, error) {
 	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              aws.String(r.TableName),
-		IndexName:              aws.String("CategoryIndex"),
-		KeyConditionExpression: aws.String("Category = :category"),
+		IndexName:              aws.String(GSI2),
+		KeyConditionExpression: aws.String("GSI2PK = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":category": &types.AttributeValueMemberS{Value: category},
+			":pk": &types.AttributeValueMemberS{Value: "POSTS_BY_CAT#" + category},
 		},
+		ScanIndexForward: aws.Bool(false), // Sort by SK (CreatedAt) descending
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to query posts by category: %w", err)
@@ -436,201 +374,219 @@ func (r *DynamoDBRepo) GetPostsByCategory(ctx context.Context, category string) 
 	return posts, nil
 }
 
-func (r *DynamoDBRepo) GetUniqueCategories(ctx context.Context) ([]string, error) {
-	result, err := r.Client.Scan(ctx, &dynamodb.ScanInput{
-		TableName:        aws.String(r.TableName),
-		FilterExpression: aws.String("begins_with(PK, :pk)"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "CATEGORY#"},
-		},
-		ProjectionExpression: aws.String("Category"),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to scan categories: %w", err)
-	}
-
-	categories := make(map[string]bool)
-	for _, item := range result.Items {
-		var post domain.Post
-		err := attributevalue.UnmarshalMap(item, &post)
-		if err == nil {
-			categories[post.Category] = true
-		}
-	}
-
-	uniqueCategories := make([]string, 0, len(categories))
-	for category := range categories {
-		uniqueCategories = append(uniqueCategories, category)
-	}
-
-	return uniqueCategories, nil
-}
-
-func (r *DynamoDBRepo) UpdateUser(ctx context.Context, user *domain.User) error {
-	item, err := attributevalue.MarshalMap(user)
-	if err != nil {
-		return fmt.Errorf("failed to marshal user: %w", err)
-	}
-
-	// When updating, user.UserID already has the "USER#" prefix from being fetched.
-	// We need to construct the SK without the prefix.
-	userIDWithoutPrefix := strings.TrimPrefix(user.UserID, "USER#")
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + userIDWithoutPrefix}
-
-	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(r.TableName),
-		Item:      item,
-		ConditionExpression: aws.String("attribute_exists(PK)"), // Ensure the item exists before updating
-	})
-	if err != nil {
-		return fmt.Errorf("failed to put item: %w", err)
-	}
-	return nil
-}
-
-func (r *DynamoDBRepo) DeleteUser(ctx context.Context, userID string) error {
-	_, err := r.Client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-		TableName: aws.String(r.TableName),
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + userID},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to delete item: %w", err)
-	}
-	return nil
-}
-
-func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error {
-	item, err := attributevalue.MarshalMap(post)
-	if err != nil {
-		return fmt.Errorf("failed to marshal post: %w", err)
-	}
-
-	// The incoming post object has a prefixed PostID.
-	// We need to construct the SK with the clean ID.
-	postIDWithoutPrefix := strings.TrimPrefix(post.PostID, "POST#")
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + postIDWithoutPrefix}
-
-	// We also need to update the other two items in the transaction.
-	// For simplicity, we'll just re-create them.
-	// A more optimized approach might use UpdateItem with condition expressions.
-
-	// Post by user item
-	postByUserItem := make(map[string]types.AttributeValue)
-	for k, v := range item {
-		postByUserItem[k] = v
-	}
-	postByUserItem["PK"] = &types.AttributeValueMemberS{Value: "USER#" + post.AuthorID}
-	postByUserItem["SK"] = &types.AttributeValueMemberS{Value: post.PostID}
-
-	// Post by category item
-	postByCategoryItem := make(map[string]types.AttributeValue)
-	for k, v := range item {
-		postByCategoryItem[k] = v
-	}
-	postByCategoryItem["PK"] = &types.AttributeValueMemberS{Value: "CATEGORY#" + post.Category}
-	postByCategoryItem["SK"] = &types.AttributeValueMemberS{Value: post.PostID}
-
-
-	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
-		TransactItems: []types.TransactWriteItem{
-			{
-				Put: &types.Put{
-					TableName: aws.String(r.TableName),
-					Item:      item,
-				},
-			},
-			{
-				Put: &types.Put{
-					TableName: aws.String(r.TableName),
-					Item:      postByUserItem,
-				},
-			},
-			{
-				Put: &types.Put{
-					TableName: aws.String(r.TableName),
-					Item:      postByCategoryItem,
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to update post items: %w", err)
-	}
-	return nil
-}
-
-func (r *DynamoDBRepo) DeletePost(ctx context.Context, postID string) error {
-	// To delete a post, we must delete all three of its items.
-	// We need the full post object to get the AuthorID and Category.
-	post, err := r.GetPostByID(ctx, postID)
-	if err != nil {
-		return fmt.Errorf("failed to get post for deletion: %w", err)
-	}
-
-	prefixedPostID := post.PostID // This already has the POST# prefix from GetPostByID
-	authorID := post.AuthorID     // This is a clean UUID from the DB
-	category := post.Category
-
-	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
-		TransactItems: []types.TransactWriteItem{
-			// Delete main post item
-			{
-				Delete: &types.Delete{
-					TableName: aws.String(r.TableName),
-					Key: map[string]types.AttributeValue{
-						"PK": &types.AttributeValueMemberS{Value: prefixedPostID},
-						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
-					},
-				},
-			},
-			// Delete post by user item
-			{
-				Delete: &types.Delete{
-					TableName: aws.String(r.TableName),
-					Key: map[string]types.AttributeValue{
-						"PK": &types.AttributeValueMemberS{Value: "USER#" + authorID},
-						"SK": &types.AttributeValueMemberS{Value: prefixedPostID},
-					},
-				},
-			},
-			// Delete post by category item
-			{
-				Delete: &types.Delete{
-					TableName: aws.String(r.TableName),
-					Key: map[string]types.AttributeValue{
-						"PK": &types.AttributeValueMemberS{Value: "CATEGORY#" + category},
-						"SK": &types.AttributeValueMemberS{Value: prefixedPostID},
-					},
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to delete post items: %w", err)
-	}
-	return nil
-}
-
 func (r *DynamoDBRepo) CreateCategory(ctx context.Context, category *domain.Category) error {
+	category.PK = "CATEGORY#" + category.Name
+	category.SK = "METADATA#" + category.Name
+	category.EntityType = "CATEGORY"
+	
 	item, err := attributevalue.MarshalMap(category)
 	if err != nil {
 		return fmt.Errorf("failed to marshal category: %w", err)
 	}
 
-	item["PK"] = &types.AttributeValueMemberS{Value: "CATEGORY#" + category.ID}
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + category.ID}
-
 	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(r.TableName),
-		Item:      item,
+		TableName:           aws.String(r.TableName),
+		Item:                item,
+		ConditionExpression: aws.String("attribute_not_exists(PK)"),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to put item: %w", err)
+		if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
+			return fmt.Errorf("category already exists")
+		}
+		return fmt.Errorf("failed to put category item: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) GetAllCategories(ctx context.Context) ([]*domain.Category, error) {
+	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(r.TableName),
+		IndexName:              aws.String(GSI3),
+		KeyConditionExpression: aws.String("EntityType = :type"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":type": &types.AttributeValueMemberS{Value: "CATEGORY"},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query all categories: %w", err)
+	}
+
+	var categories []*domain.Category
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &categories)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal categories: %w", err)
+	}
+	return categories, nil
+}
+
+func (r *DynamoDBRepo) UpdateUser(ctx context.Context, user *domain.User) error {
+	// The user object from the handler won't have PK/SK, so we set them.
+	user.PK = "USER#" + user.Username
+	user.SK = "METADATA#" + user.Username
+	user.EntityType = "USER"
+
+	item, err := attributevalue.MarshalMap(user)
+	if err != nil {
+		return fmt.Errorf("failed to marshal user: %w", err)
+	}
+
+	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName:           aws.String(r.TableName),
+		Item:                item,
+		ConditionExpression: aws.String("attribute_exists(PK)"),
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
+			return fmt.Errorf("user not found")
+		}
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) DeleteUser(ctx context.Context, username string) error {
+	// First, get the user to find their email for the uniqueness item.
+	user, err := r.GetUserByUsername(ctx, username)
+	if err != nil {
+		return fmt.Errorf("could not get user to delete: %w", err)
+	}
+	if user == nil {
+		return fmt.Errorf("user not found")
+	}
+
+	// Second, find all posts by this user.
+	posts, err := r.GetPostsByUser(ctx, username, nil)
+	if err != nil {
+		return fmt.Errorf("could not get user's posts to delete: %w", err)
+	}
+
+	// Create a list of all items to delete.
+	writeRequests := []types.WriteRequest{}
+
+	// Add the user's posts to the delete list.
+	for _, post := range posts {
+		writeRequests = append(writeRequests, types.WriteRequest{
+			DeleteRequest: &types.DeleteRequest{
+				Key: map[string]types.AttributeValue{
+					"PK": &types.AttributeValueMemberS{Value: post.PK},
+					"SK": &types.AttributeValueMemberS{Value: post.SK},
+				},
+			},
+		})
+	}
+
+	// Add the user item itself.
+	writeRequests = append(writeRequests, types.WriteRequest{
+		DeleteRequest: &types.DeleteRequest{
+			Key: map[string]types.AttributeValue{
+				"PK": &types.AttributeValueMemberS{Value: "USER#" + username},
+				"SK": &types.AttributeValueMemberS{Value: "METADATA#" + username},
+			},
+		},
+	})
+
+	// Add the user's email uniqueness item.
+	writeRequests = append(writeRequests, types.WriteRequest{
+		DeleteRequest: &types.DeleteRequest{
+			Key: map[string]types.AttributeValue{
+				"PK": &types.AttributeValueMemberS{Value: "USEREMAIL#" + user.Email},
+				"SK": &types.AttributeValueMemberS{Value: "USEREMAIL#" + user.Email},
+			},
+		},
+	})
+
+	// Batch delete items, 25 at a time (DynamoDB limit).
+	for i := 0; i < len(writeRequests); i += 25 {
+		end := i + 25
+		if end > len(writeRequests) {
+			end = len(writeRequests)
+		}
+		batch := writeRequests[i:end]
+
+		_, err := r.Client.BatchWriteItem(ctx, &dynamodb.BatchWriteItemInput{
+			RequestItems: map[string][]types.WriteRequest{
+				r.TableName: batch,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to batch delete user and post items: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error {
+	// First, get the current post to check if category is changing
+	currentPost, err := r.GetPostByID(ctx, post.PostID)
+	if err != nil {
+		return fmt.Errorf("failed to get current post for update: %w", err)
+	}
+	if currentPost == nil {
+		return fmt.Errorf("post not found")
+	}
+
+	// Populate keys and GSI attributes for the update.
+	post.PK = "POST#" + post.PostID
+	post.SK = "METADATA#" + post.PostID
+	post.EntityType = "POST"
+	post.GSI1PK = "POSTS_BY_USER#" + post.AuthorID
+	post.GSI1SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
+	post.GSI2PK = "POSTS_BY_CAT#" + post.Category
+	post.GSI2SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
+
+	// Build update expression and values dynamically
+	updateExpr := "SET Title = :title, Content = :content, ThumbnailURL = :thumb, UpdatedAt = :updatedAt, Category = :cat"
+	exprAttrVals := map[string]interface{}{
+		":title":     post.Title,
+		":content":   post.Content,
+		":thumb":     post.ThumbnailURL,
+		":updatedAt": post.UpdatedAt,
+		":cat":       post.Category,
+	}
+
+	// Only update GSI2PK if category has changed
+	if currentPost.Category != post.Category {
+		updateExpr += ", GSI2PK = :gsi2pk"
+		exprAttrVals[":gsi2pk"] = "POSTS_BY_CAT#" + post.Category
+	}
+
+	marshaledVals, err := attributevalue.MarshalMap(exprAttrVals)
+	if err != nil {
+		return fmt.Errorf("failed to marshal expression values for update: %w", err)
+	}
+
+	_, err = r.Client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: aws.String(r.TableName),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: post.PK},
+			"SK": &types.AttributeValueMemberS{Value: post.SK},
+		},
+		UpdateExpression:          aws.String(updateExpr),
+		ExpressionAttributeValues: marshaledVals,
+		ConditionExpression:       aws.String("attribute_exists(PK)"),
+		ReturnValues:              types.ReturnValueUpdatedNew,
+	})
+
+	if err != nil {
+		if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
+			return fmt.Errorf("post not found")
+		}
+		return fmt.Errorf("failed to update post: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) DeletePost(ctx context.Context, postID string) error {
+	_, err := r.Client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+		TableName: aws.String(r.TableName),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "POST#" + postID},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete post: %w", err)
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,18 +20,27 @@ func NewCategoryHandler(repo repository.Repository) *CategoryHandler {
 }
 
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var category domain.Category
-	if err := c.ShouldBindJSON(&category); err != nil {
+	var input struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
 		BadRequest(c, "Invalid request payload: "+err.Error())
 		return
 	}
 
-	category.ID = uuid.New().String()
-	category.CreatedAt = time.Now()
-	category.UpdatedAt = time.Now()
+	category := &domain.Category{
+		CategoryID: uuid.New().String(),
+		Name:       input.Name,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
 
-	if err := h.repo.CreateCategory(c.Request.Context(), &category); err != nil {
-		InternalServerError(c, "Failed to create the new category.")
+	if err := h.repo.CreateCategory(c.Request.Context(), category); err != nil {
+		if strings.Contains(err.Error(), "category already exists") {
+			Conflict(c, "A category with this name already exists.")
+			return
+		}
+		InternalServerError(c, "Failed to create the new category: "+err.Error())
 		return
 	}
 
@@ -38,17 +48,18 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 }
 
 func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
-	category := c.Param("category")
-	posts, err := h.repo.GetPostsByCategory(c.Request.Context(), category)
+	categoryName := c.Param("categoryName")
+	posts, err := h.repo.GetPostsByCategory(c.Request.Context(), categoryName)
 	if err != nil {
 		InternalServerError(c, "Failed to retrieve posts for the specified category.")
 		return
 	}
-	c.JSON(http.StatusOK, posts)
+	// We need to convert posts to the response format
+	c.JSON(http.StatusOK, toPostListResponse(posts))
 }
 
 func (h *CategoryHandler) GetCategories(c *gin.Context) {
-	categories, err := h.repo.GetUniqueCategories(c.Request.Context())
+	categories, err := h.repo.GetAllCategories(c.Request.Context())
 	if err != nil {
 		InternalServerError(c, "Failed to retrieve categories.")
 		return

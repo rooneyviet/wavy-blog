@@ -29,9 +29,9 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 
 			protected := users.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret))
 			{
-				protected.GET("/:id", userHandler.GetUser)
-				protected.PUT("/:id", userHandler.UpdateUser)
-				protected.DELETE("/:id", userHandler.DeleteUser)
+				protected.GET("/:username", userHandler.GetUser)
+				protected.PUT("/:username", userHandler.UpdateUser)
+				protected.DELETE("/:username", userHandler.DeleteUser)
 			}
 
 			// Admin routes
@@ -56,7 +56,7 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 		categories := api.Group("/categories")
 		{
 			categories.GET("", categoryHandler.GetCategories)
-			categories.GET("/:category/posts", categoryHandler.GetPostsByCategory)
+			categories.GET("/:categoryName/posts", categoryHandler.GetPostsByCategory)
 
 			// Protected routes
 			protected := categories.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret))

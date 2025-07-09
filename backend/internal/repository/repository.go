@@ -18,16 +18,16 @@ type UserRepository interface {
 type PostRepository interface {
 	CreatePost(ctx context.Context, post *domain.Post) error
 	GetPostByID(ctx context.Context, postID string) (*domain.Post, error)
-	GetPostsByUser(ctx context.Context, userID string, postName *string) ([]*domain.Post, error)
+	GetPostsByUser(ctx context.Context, username string, postName *string) ([]*domain.Post, error)
 	GetAllPosts(ctx context.Context, postName *string) ([]*domain.Post, error)
 	GetPostsByCategory(ctx context.Context, category string) ([]*domain.Post, error)
-	GetUniqueCategories(ctx context.Context) ([]string, error)
 	UpdatePost(ctx context.Context, post *domain.Post) error
 	DeletePost(ctx context.Context, postID string) error
 }
 
 type CategoryRepository interface {
 	CreateCategory(ctx context.Context, category *domain.Category) error
+	GetAllCategories(ctx context.Context) ([]*domain.Category, error)
 }
 
 type Repository interface {

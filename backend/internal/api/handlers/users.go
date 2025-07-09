@@ -27,10 +27,10 @@ type UserResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// toUserResponse converts a domain.User to a UserResponse, stripping the prefix from the UserID.
+// toUserResponse converts a domain.User to a UserResponse.
 func toUserResponse(user *domain.User) UserResponse {
 	return UserResponse{
-		UserID:    strings.TrimPrefix(user.UserID, "USER#"),
+		UserID:    user.UserID,
 		Username:  user.Username,
 		Email:     user.Email,
 		Role:      user.Role,
@@ -66,28 +66,6 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Check for existing user with the same email
-	existingUser, err := h.repo.GetUserByEmail(c.Request.Context(), input.Email)
-	if err != nil {
-		InternalServerError(c, "Failed to check for existing user: "+err.Error())
-		return
-	}
-	if existingUser != nil {
-		Conflict(c, "A user with this email address already exists.")
-		return
-	}
-
-	// Check for existing user with the same username
-	existingUser, err = h.repo.GetUserByUsername(c.Request.Context(), input.Username)
-	if err != nil {
-		InternalServerError(c, "Failed to check for existing user: "+err.Error())
-		return
-	}
-	if existingUser != nil {
-		Conflict(c, "This username is already taken. Please choose a different one.")
-		return
-	}
-
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		InternalServerError(c, "Failed to secure password.")
@@ -95,16 +73,21 @@ func (h *UserHandler) Register(c *gin.Context) {
 	}
 
 	user := &domain.User{
-		UserID:       uuid.New().String(), // Generate clean UUID; repo will add prefix
+		UserID:       uuid.New().String(),
 		Username:     input.Username,
 		Email:        input.Email,
 		PasswordHash: string(hashedPassword),
+		Role:         "author", // Default role
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
 
 	if err := h.repo.CreateUser(c.Request.Context(), user); err != nil {
-		InternalServerError(c, "Failed to create user account.")
+		if strings.Contains(err.Error(), "username or email already exists") {
+			Conflict(c, "A user with this username or email already exists.")
+			return
+		}
+		InternalServerError(c, "Failed to create user account: "+err.Error())
 		return
 	}
 
@@ -124,7 +107,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	user, err := h.repo.GetUserByEmail(c.Request.Context(), input.Email)
-	if err != nil {
+	if err != nil || user == nil {
 		Unauthorized(c, "The email address or password you entered is incorrect.")
 		return
 	}
@@ -134,12 +117,11 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Extract just the UUID part from the UserID (remove "USER#" prefix)
-	userIDWithoutPrefix := strings.TrimPrefix(user.UserID, "USER#")
-	
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": userIDWithoutPrefix,
-		"exp":    time.Now().Add(time.Hour * 24).Unix(),
+		"userID":   user.UserID,
+		"username": user.Username,
+		"role":     user.Role,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	secret := c.MustGet("jwt_secret").(string)
@@ -150,18 +132,18 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"token": tokenString})
-	c.Next()
 }
 
 type UpdateUserInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email" binding:"email"`
+	Role     string `json:"role"`
 }
 
 func (h *UserHandler) GetUser(c *gin.Context) {
-	userID := c.Param("id")
-	user, err := h.repo.GetUserByID(c.Request.Context(), userID)
-	if err != nil {
+	username := c.Param("username")
+	user, err := h.repo.GetUserByUsername(c.Request.Context(), username)
+	if err != nil || user == nil {
 		NotFound(c, "User")
 		return
 	}
@@ -179,25 +161,34 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	userID := c.Param("id")
+	username := c.Param("username")
 	var input UpdateUserInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		BadRequest(c, "Invalid request payload: "+err.Error())
 		return
 	}
 
-	user, err := h.repo.GetUserByID(c.Request.Context(), userID)
-	if err != nil {
+	// Auth check
+	requestingUser := c.GetString("username")
+	requestingRole := c.GetString("role")
+	if requestingRole != "admin" && requestingUser != username {
+		Forbidden(c, "You are not authorized to update this user.")
+		return
+	}
+
+	user, err := h.repo.GetUserByUsername(c.Request.Context(), username)
+	if err != nil || user == nil {
 		NotFound(c, "User")
 		return
 	}
 
-	if input.Username != "" {
-		user.Username = input.Username
+	// Admins can update roles
+	if input.Role != "" && requestingRole == "admin" {
+		user.Role = input.Role
 	}
-	if input.Email != "" {
-		user.Email = input.Email
-	}
+
+	// Note: Changing username or email would require more complex logic
+	// to handle uniqueness constraints, which is not implemented here.
 	user.UpdatedAt = time.Now()
 
 	if err := h.repo.UpdateUser(c.Request.Context(), user); err != nil {
@@ -209,10 +200,18 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	userID := c.Param("id")
+	username := c.Param("username")
 
-	if err := h.repo.DeleteUser(c.Request.Context(), userID); err != nil {
-		InternalServerError(c, "Failed to delete user account.")
+	// Auth check
+	requestingUser := c.GetString("username")
+	requestingRole := c.GetString("role")
+	if requestingRole != "admin" && requestingUser != username {
+		Forbidden(c, "You are not authorized to delete this user.")
+		return
+	}
+
+	if err := h.repo.DeleteUser(c.Request.Context(), username); err != nil {
+		InternalServerError(c, "Failed to delete user account: "+err.Error())
 		return
 	}
 

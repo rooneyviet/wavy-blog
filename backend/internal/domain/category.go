@@ -3,8 +3,11 @@ package domain
 import "time"
 
 type Category struct {
-	ID        string    `json:"id" dynamodbav:"id"`
-	Name      string    `json:"name" dynamodbav:"name"`
-	CreatedAt time.Time `json:"created_at" dynamodbav:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" dynamodbav:"updated_at"`
+	PK         string    `json:"-" dynamodbav:"PK"`
+	SK         string    `json:"-" dynamodbav:"SK"`
+	CategoryID string    `json:"id" dynamodbav:"CategoryID"`
+	Name       string    `json:"name" dynamodbav:"Name"`
+	EntityType string    `json:"-" dynamodbav:"EntityType"`
+	CreatedAt  time.Time `json:"created_at" dynamodbav:"CreatedAt"`
+	UpdatedAt  time.Time `json:"updated_at" dynamodbav:"UpdatedAt"`
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,10 +29,10 @@ type PostResponse struct {
 // toPostResponse converts a domain.Post to a PostResponse.
 func toPostResponse(post *domain.Post) PostResponse {
 	return PostResponse{
-		PostID:       strings.TrimPrefix(post.PostID, "POST#"),
+		PostID:       post.PostID,
 		Title:        post.Title,
 		Content:      post.Content,
-		AuthorID:     strings.TrimPrefix(post.AuthorID, "USER#"),
+		AuthorID:     post.AuthorID, // Now stores username directly
 		Category:     post.Category,
 		ThumbnailURL: post.ThumbnailURL,
 		CreatedAt:    post.CreatedAt,
@@ -75,22 +74,17 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("userID")
-	if !exists {
-		Unauthorized(c, "User ID not found in context. Please log in.")
-		return
-	}
-	userID, ok := userIDValue.(string)
-	if !ok {
-		InternalServerError(c, "Invalid user ID format in context.")
+	username := c.GetString("username")
+	if username == "" {
+		Unauthorized(c, "Username not found in context. Please log in.")
 		return
 	}
 
 	post := &domain.Post{
-		PostID:       uuid.New().String(), // Generate clean UUID
+		PostID:       uuid.New().String(),
 		Title:        input.Title,
 		Content:      input.Content,
-		AuthorID:     userID, // Clean userID from auth middleware
+		AuthorID:     username, // Use username from token
 		Category:     input.Category,
 		ThumbnailURL: input.ThumbnailURL,
 		CreatedAt:    time.Now(),
@@ -98,19 +92,11 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	if err := h.repo.CreatePost(c.Request.Context(), post); err != nil {
-		InternalServerError(c, "Failed to create the new post.")
+		InternalServerError(c, "Failed to create the new post: "+err.Error())
 		return
 	}
 
-	// To return the response with the correct prefixed ID stripped, we fetch it back.
-	// A more optimized way might be to have CreatePost return the created object.
-	createdPost, err := h.repo.GetPostByID(c.Request.Context(), post.PostID)
-	if err != nil {
-		InternalServerError(c, "Failed to retrieve created post.")
-		return
-	}
-
-	c.JSON(http.StatusCreated, toPostResponse(createdPost))
+	c.JSON(http.StatusCreated, toPostResponse(post))
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
@@ -136,17 +122,8 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 func (h *PostHandler) UpdatePost(c *gin.Context) {
 	postID := c.Param("id")
 
-	userIDValue, exists := c.Get("userID")
-	if !exists {
-		Unauthorized(c, "User ID not found in context. Please log in.")
-		return
-	}
-	userID, ok := userIDValue.(string)
-	if !ok {
-		InternalServerError(c, "Invalid user ID format in context.")
-		return
-	}
-	userRole := c.GetString("userRole")
+	username := c.GetString("username")
+	userRole := c.GetString("role")
 
 	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
@@ -154,8 +131,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	// AuthorID in existingPost is clean, so this comparison is correct.
-	if userRole != "admin" && existingPost.AuthorID != userID {
+	if userRole != "admin" && existingPost.AuthorID != username {
 		Forbidden(c, "You are not authorized to update this post.")
 		return
 	}
@@ -173,7 +149,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	existingPost.UpdatedAt = time.Now()
 
 	if err := h.repo.UpdatePost(c.Request.Context(), existingPost); err != nil {
-		InternalServerError(c, "Failed to update the post.")
+		InternalServerError(c, "Failed to update the post: "+err.Error())
 		return
 	}
 
@@ -183,26 +159,16 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 func (h *PostHandler) DeletePost(c *gin.Context) {
 	postID := c.Param("id")
 
-	userIDValue, exists := c.Get("userID")
-	if !exists {
-		Unauthorized(c, "User ID not found in context. Please log in.")
-		return
-	}
-	userID, ok := userIDValue.(string)
-	if !ok {
-		InternalServerError(c, "Invalid user ID format in context.")
-		return
-	}
-	userRole := c.GetString("userRole")
+	username := c.GetString("username")
+	userRole := c.GetString("role")
 
-	// We must fetch the post to check for ownership before deleting.
 	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		NotFound(c, "Post")
 		return
 	}
 
-	if userRole != "admin" && existingPost.AuthorID != userID {
+	if userRole != "admin" && existingPost.AuthorID != username {
 		Forbidden(c, "You are not authorized to delete this post.")
 		return
 	}
