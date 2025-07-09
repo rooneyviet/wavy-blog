@@ -12,8 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/wavy-blog/backend/internal/domain"
 	appConfig "github.com/wavy-blog/backend/internal/config"
+	"github.com/wavy-blog/backend/internal/domain"
+	"github.com/wavy-blog/backend/internal/service"
 )
 
 const (
@@ -241,37 +242,86 @@ func (r *DynamoDBRepo) GetAllUsers(ctx context.Context) ([]*domain.User, error) 
 	return users, nil
 }
 
+func (r *DynamoDBRepo) SlugExists(ctx context.Context, slug string) (bool, error) {
+	result, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(r.TableName),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+			"SK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+		},
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to check slug existence: %w", err)
+	}
+	return result.Item != nil, nil
+}
+
 func (r *DynamoDBRepo) CreatePost(ctx context.Context, post *domain.Post) error {
-	post.PK = "POST#" + post.PostID
-	post.SK = "METADATA#" + post.PostID
+	baseSlug := service.Slugify(post.Title)
+	slug, err := service.GenerateUniqueSlug(baseSlug, func(s string) (bool, error) {
+		return r.SlugExists(ctx, s)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to generate unique slug: %w", err)
+	}
+	post.Slug = slug
+
+	post.PK = "POST#" + post.Slug
+	post.SK = "METADATA#" + post.Slug
 	post.EntityType = "POST"
 	post.GSI1PK = "POSTS_BY_USER#" + post.AuthorID
 	post.GSI1SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
 	post.GSI2PK = "POSTS_BY_CAT#" + post.Category
 	post.GSI2SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
 
-	item, err := attributevalue.MarshalMap(post)
+	postItem, err := attributevalue.MarshalMap(post)
 	if err != nil {
 		return fmt.Errorf("failed to marshal post: %w", err)
 	}
 
-	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(r.TableName),
-		Item:      item,
+	slugUniquenessItem := domain.SlugUniqueness{
+		PK: "SLUG#" + post.Slug,
+		SK: "SLUG#" + post.Slug,
+	}
+	slugItem, err := attributevalue.MarshalMap(slugUniquenessItem)
+	if err != nil {
+		return fmt.Errorf("failed to marshal slug uniqueness item: %w", err)
+	}
+
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                postItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                slugItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+		},
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to put post item: %w", err)
+		if strings.Contains(err.Error(), "TransactionCanceledException") {
+			return fmt.Errorf("post with this slug already exists")
+		}
+		return fmt.Errorf("failed to create post transaction: %w", err)
 	}
 	return nil
 }
 
-func (r *DynamoDBRepo) GetPostByID(ctx context.Context, postID string) (*domain.Post, error) {
+func (r *DynamoDBRepo) GetPostBySlug(ctx context.Context, slug string) (*domain.Post, error) {
 	result, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "POST#" + postID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
+			"PK": &types.AttributeValueMemberS{Value: "POST#" + slug},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + slug},
 		},
 	})
 	if err != nil {
@@ -294,7 +344,7 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*do
 	exprAttrVals := map[string]types.AttributeValue{
 		":type": &types.AttributeValueMemberS{Value: "POST"},
 	}
-	
+
 	queryInput := &dynamodb.QueryInput{
 		TableName:              aws.String(r.TableName),
 		IndexName:              aws.String(GSI3),
@@ -375,25 +425,57 @@ func (r *DynamoDBRepo) GetPostsByCategory(ctx context.Context, category string) 
 }
 
 func (r *DynamoDBRepo) CreateCategory(ctx context.Context, category *domain.Category) error {
-	category.PK = "CATEGORY#" + category.Name
-	category.SK = "METADATA#" + category.Name
+	baseSlug := service.Slugify(category.Name)
+	slug, err := service.GenerateUniqueSlug(baseSlug, func(s string) (bool, error) {
+		return r.SlugExists(ctx, s)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to generate unique slug for category: %w", err)
+	}
+	category.Slug = slug
+
+	category.PK = "CATEGORY#" + category.Slug
+	category.SK = "METADATA#" + category.Slug
 	category.EntityType = "CATEGORY"
-	
-	item, err := attributevalue.MarshalMap(category)
+
+	categoryItem, err := attributevalue.MarshalMap(category)
 	if err != nil {
 		return fmt.Errorf("failed to marshal category: %w", err)
 	}
 
-	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName:           aws.String(r.TableName),
-		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(PK)"),
-	})
+	slugUniquenessItem := domain.SlugUniqueness{
+		PK: "SLUG#" + category.Slug,
+		SK: "SLUG#" + category.Slug,
+	}
+	slugItem, err := attributevalue.MarshalMap(slugUniquenessItem)
 	if err != nil {
-		if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
-			return fmt.Errorf("category already exists")
+		return fmt.Errorf("failed to marshal slug uniqueness item: %w", err)
+	}
+
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                categoryItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                slugItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		if strings.Contains(err.Error(), "TransactionCanceledException") {
+			return fmt.Errorf("category with this slug already exists")
 		}
-		return fmt.Errorf("failed to put category item: %w", err)
+		return fmt.Errorf("failed to create category transaction: %w", err)
 	}
 	return nil
 }
@@ -509,65 +591,146 @@ func (r *DynamoDBRepo) DeleteUser(ctx context.Context, username string) error {
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("failed to batch delete user and post items: %w", err)
+			// Note: In a real-world scenario, you'd want to handle unprocessed items.
+			return fmt.Errorf("failed to batch delete user and related items: %w", err)
 		}
 	}
 
 	return nil
 }
 
-func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error {
-	// The handler has already fetched the post, so we receive the updated domain object.
-	// We just need to persist the changes.
-
-	// Build the update expression and attribute values dynamically.
-	updateExpr := "SET Title = :title, Content = :content, ThumbnailURL = :thumb, UpdatedAt = :updatedAt, Category = :cat, GSI2PK = :gsi2pk, GSI2SK = :gsi2sk"
-	exprAttrVals := map[string]interface{}{
-		":title":     post.Title,
-		":content":   post.Content,
-		":thumb":     post.ThumbnailURL,
-		":updatedAt": post.UpdatedAt,
-		":cat":       post.Category,
-		":gsi2pk":   "POSTS_BY_CAT#" + post.Category,
-		":gsi2sk":   "POST#" + post.UpdatedAt.Format(time.RFC3339), // Use UpdatedAt for fresh content sorting
+func (r *DynamoDBRepo) UpdatePost(ctx context.Context, oldSlug string, post *domain.Post) error {
+	// If the title is updated, the slug might change.
+	newSlug := service.Slugify(post.Title)
+	if newSlug != oldSlug {
+		// Check if the new slug is available.
+		exists, err := r.SlugExists(ctx, newSlug)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return fmt.Errorf("new slug '%s' already exists", newSlug)
+		}
+		post.Slug = newSlug
+	} else {
+		post.Slug = oldSlug
 	}
 
-	marshaledVals, err := attributevalue.MarshalMap(exprAttrVals)
+	post.PK = "POST#" + post.Slug
+	post.SK = "METADATA#" + post.Slug
+	post.EntityType = "POST"
+	post.GSI1PK = "POSTS_BY_USER#" + post.AuthorID
+	post.GSI1SK = "POST#" + post.CreatedAt.Format(time.RFC3339) // CreatedAt should not change on update
+	post.GSI2PK = "POSTS_BY_CAT#" + post.Category
+	post.GSI2SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
+
+	postItem, err := attributevalue.MarshalMap(post)
 	if err != nil {
-		return fmt.Errorf("failed to marshal expression values for update: %w", err)
+		return fmt.Errorf("failed to marshal post: %w", err)
 	}
 
-	_, err = r.Client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-		TableName: aws.String(r.TableName),
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "POST#" + post.PostID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + post.PostID},
+	// If slug has not changed, we can just PutItem
+	if newSlug == oldSlug {
+		_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName:           aws.String(r.TableName),
+			Item:                postItem,
+			ConditionExpression: aws.String("attribute_exists(PK)"),
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
+				return fmt.Errorf("post not found")
+			}
+			return fmt.Errorf("failed to update post: %w", err)
+		}
+		return nil
+	}
+
+	// If slug has changed, we need a transaction to ensure data integrity.
+	// 1. Delete old slug uniqueness item
+	// 2. Delete old post item
+	// 3. Create new slug uniqueness item
+	// 4. Create new post item
+	slugUniquenessItem := domain.SlugUniqueness{
+		PK: "SLUG#" + post.Slug,
+		SK: "SLUG#" + post.Slug,
+	}
+	slugItem, err := attributevalue.MarshalMap(slugUniquenessItem)
+	if err != nil {
+		return fmt.Errorf("failed to marshal new slug uniqueness item: %w", err)
+	}
+
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "SLUG#" + oldSlug},
+						"SK": &types.AttributeValueMemberS{Value: "SLUG#" + oldSlug},
+					},
+				},
+			},
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "POST#" + oldSlug},
+						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + oldSlug},
+					},
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName:           aws.String(r.TableName),
+					Item:                slugItem,
+					ConditionExpression: aws.String("attribute_not_exists(PK)"),
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName: aws.String(r.TableName),
+					Item:      postItem,
+				},
+			},
 		},
-		UpdateExpression:          aws.String(updateExpr),
-		ExpressionAttributeValues: marshaledVals,
-		ConditionExpression:       aws.String("attribute_exists(PK)"), // Ensure the post exists before updating
-		ReturnValues:              types.ReturnValueUpdatedNew,
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
-			return fmt.Errorf("post not found")
+		if strings.Contains(err.Error(), "TransactionCanceledException") {
+			return fmt.Errorf("failed to update post, new slug might already be taken or original post was deleted")
 		}
-		return fmt.Errorf("failed to update post: %w", err)
+		return fmt.Errorf("failed to execute post update transaction: %w", err)
 	}
+
 	return nil
 }
 
-func (r *DynamoDBRepo) DeletePost(ctx context.Context, postID string) error {
-	_, err := r.Client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-		TableName: aws.String(r.TableName),
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: "POST#" + postID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
+func (r *DynamoDBRepo) DeletePost(ctx context.Context, slug string) error {
+	_, err := r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "POST#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + slug},
+					},
+				},
+			},
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+					},
+				},
+			},
 		},
 	})
+
 	if err != nil {
-		return fmt.Errorf("failed to delete post: %w", err)
+		return fmt.Errorf("failed to delete post and slug items: %w", err)
 	}
 	return nil
 }

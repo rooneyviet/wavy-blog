@@ -43,14 +43,14 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 
 		posts := api.Group("/posts")
 		{
-			posts.GET("/:id", postHandler.GetPost)
+			posts.GET("/:slug", postHandler.GetPost)
 			posts.GET("", postHandler.GetPosts)
 
 			// Protected routes
 			protected := posts.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret))
 			protected.POST("", postHandler.CreatePost)
-			protected.PUT("/:id", postHandler.UpdatePost)
-			protected.DELETE("/:id", postHandler.DeletePost)
+			protected.PUT("/:slug", postHandler.UpdatePost)
+			protected.DELETE("/:slug", postHandler.DeletePost)
 		}
 
 		categories := api.Group("/categories")

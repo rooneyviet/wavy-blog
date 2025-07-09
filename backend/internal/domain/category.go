@@ -5,7 +5,7 @@ import "time"
 type Category struct {
 	PK         string    `json:"-" dynamodbav:"PK"`
 	SK         string    `json:"-" dynamodbav:"SK"`
-	CategoryID string    `json:"id" dynamodbav:"CategoryID"`
+	Slug       string    `json:"slug" dynamodbav:"Slug"`
 	Name       string    `json:"name" dynamodbav:"Name"`
 	EntityType string    `json:"-" dynamodbav:"EntityType"`
 	CreatedAt  time.Time `json:"created_at" dynamodbav:"CreatedAt"`

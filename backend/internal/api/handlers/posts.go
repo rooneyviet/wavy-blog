@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/wavy-blog/backend/internal/domain"
 	"github.com/wavy-blog/backend/internal/repository"
 )
@@ -18,7 +17,7 @@ type PostHandler struct {
 
 // PostResponse defines the structure for post data returned to the client.
 type PostResponse struct {
-	PostID       string    `json:"postID"`
+	Slug         string    `json:"slug"`
 	Title        string    `json:"title"`
 	Content      string    `json:"content"`
 	AuthorID     string    `json:"authorID"`
@@ -31,7 +30,7 @@ type PostResponse struct {
 // toPostResponse converts a domain.Post to a PostResponse.
 func toPostResponse(post *domain.Post) PostResponse {
 	return PostResponse{
-		PostID:       post.PostID,
+		Slug:         post.Slug,
 		Title:        post.Title,
 		Content:      post.Content,
 		AuthorID:     post.AuthorID, // Now stores username directly
@@ -83,7 +82,6 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	post := &domain.Post{
-		PostID:       uuid.New().String(),
 		Title:        input.Title,
 		Content:      input.Content,
 		AuthorID:     username, // Use username from token
@@ -102,8 +100,8 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
-	postID := strings.TrimSpace(c.Param("id"))
-	post, err := h.repo.GetPostByID(c.Request.Context(), postID)
+	slug := strings.TrimSpace(c.Param("slug"))
+	post, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
 		NotFound(c, "Post")
 		return
@@ -122,13 +120,13 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {
-	postID := strings.TrimSpace(c.Param("id"))
-	log.Printf("Attempting to update post with ID: '%s'", postID)
+	slug := strings.TrimSpace(c.Param("slug"))
+	log.Printf("Attempting to update post with slug: '%s'", slug)
 
 	username := c.GetString("username")
 	userRole := c.GetString("role")
 
-	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
+	existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
 		NotFound(c, "Post")
 		return
@@ -145,13 +143,16 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
+	// Keep a copy of the old slug before updating the post
+	oldSlug := existingPost.Slug
+
 	existingPost.Title = input.Title
 	existingPost.Content = input.Content
 	existingPost.Category = input.Category
 	existingPost.ThumbnailURL = input.ThumbnailURL
 	existingPost.UpdatedAt = time.Now()
 
-	if err := h.repo.UpdatePost(c.Request.Context(), existingPost); err != nil {
+	if err := h.repo.UpdatePost(c.Request.Context(), oldSlug, existingPost); err != nil {
 		InternalServerError(c, "Failed to update the post: "+err.Error())
 		return
 	}
@@ -160,12 +161,12 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) DeletePost(c *gin.Context) {
-	postID := strings.TrimSpace(c.Param("id"))
+	slug := strings.TrimSpace(c.Param("slug"))
 
 	username := c.GetString("username")
 	userRole := c.GetString("role")
 
-	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
+	existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
 		NotFound(c, "Post")
 		return
@@ -176,7 +177,7 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.DeletePost(c.Request.Context(), postID); err != nil {
+	if err := h.repo.DeletePost(c.Request.Context(), slug); err != nil {
 		InternalServerError(c, "Failed to delete the post.")
 		return
 	}

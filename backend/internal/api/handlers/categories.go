@@ -6,13 +6,36 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/wavy-blog/backend/internal/domain"
 	"github.com/wavy-blog/backend/internal/repository"
 )
 
 type CategoryHandler struct {
 	repo repository.Repository
+}
+
+type CategoryResponse struct {
+	Slug      string    `json:"slug"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func toCategoryResponse(category *domain.Category) CategoryResponse {
+	return CategoryResponse{
+		Slug:      category.Slug,
+		Name:      category.Name,
+		CreatedAt: category.CreatedAt,
+		UpdatedAt: category.UpdatedAt,
+	}
+}
+
+func toCategoryListResponse(categories []*domain.Category) []CategoryResponse {
+	res := make([]CategoryResponse, len(categories))
+	for i, c := range categories {
+		res[i] = toCategoryResponse(c)
+	}
+	return res
 }
 
 func NewCategoryHandler(repo repository.Repository) *CategoryHandler {
@@ -29,14 +52,13 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	}
 
 	category := &domain.Category{
-		CategoryID: uuid.New().String(),
-		Name:       input.Name,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		Name:      input.Name,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if err := h.repo.CreateCategory(c.Request.Context(), category); err != nil {
-		if strings.Contains(err.Error(), "category already exists") {
+		if strings.Contains(err.Error(), "category with this slug already exists") {
 			Conflict(c, "A category with this name already exists.")
 			return
 		}
@@ -44,7 +66,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, category)
+	c.JSON(http.StatusCreated, toCategoryResponse(category))
 }
 
 func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
@@ -54,7 +76,6 @@ func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
 		InternalServerError(c, "Failed to retrieve posts for the specified category.")
 		return
 	}
-	// We need to convert posts to the response format
 	c.JSON(http.StatusOK, toPostListResponse(posts))
 }
 
@@ -64,5 +85,5 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 		InternalServerError(c, "Failed to retrieve categories.")
 		return
 	}
-	c.JSON(http.StatusOK, categories)
+	c.JSON(http.StatusOK, toCategoryListResponse(categories))
 }

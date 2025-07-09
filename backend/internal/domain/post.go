@@ -5,7 +5,7 @@ import "time"
 type Post struct {
 	PK           string    `json:"-" dynamodbav:"PK"`
 	SK           string    `json:"-" dynamodbav:"SK"`
-	PostID       string    `json:"postID" dynamodbav:"PostID"`
+	Slug         string    `json:"slug" dynamodbav:"Slug"`
 	Title        string    `json:"title" dynamodbav:"Title"`
 	Content      string    `json:"content" dynamodbav:"Content"`
 	AuthorID     string    `json:"authorID" dynamodbav:"AuthorID"` // This will be the username
@@ -20,4 +20,8 @@ type Post struct {
 	GSI1SK string `json:"-" dynamodbav:"GSI1SK,omitempty"`
 	GSI2PK string `json:"-" dynamodbav:"GSI2PK,omitempty"` // For posts by category
 	GSI2SK string `json:"-" dynamodbav:"GSI2SK,omitempty"`
+}
+type SlugUniqueness struct {
+	PK string `dynamodbav:"PK"` // SLUG#<slug>
+	SK string `dynamodbav:"SK"` // SLUG#<slug>
 }
