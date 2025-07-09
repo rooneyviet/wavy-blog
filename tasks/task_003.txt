@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Implement Create Category API Endpoint
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Implement a new API endpoint `POST /api/categories` for creating post categories. This endpoint must be protected by JWT middleware and restricted to users with an 'admin' role.
+# Details:
+First, introduce role-based access control. Modify the `User` model in `internal/domain/user.go` to include a `Role` string field. Update the `RegisterUser` handler to default this role to 'user'. Next, create a new `AdminMiddleware` in `internal/api/middleware`. This middleware will run after the existing `AuthMiddleware`, fetch the user's details from the database using their ID from the JWT context, and abort with a 403 Forbidden error if the user's role is not 'admin'. Then, extend the `DatabaseRepo` interface in `internal/repository/repository.go` with `CreateCategory(ctx context.Context, categoryName string) error`. Implement this method in `dbrepo.go` to perform a DynamoDB `PutItem` operation, creating an item with PK `CATEGORY#{categoryName}` and SK `METADATA`. Create a new handler `CreateCategory` in a new file `internal/api/handlers/categories.go`. This handler will parse the category name from the request body and call the repository method. Finally, in `router.go`, add the `POST /api/categories` route, applying both the `AuthMiddleware` and the new `AdminMiddleware` to it.
+
+# Test Strategy:
+1. Manually update a user's `Role` to 'admin' in the DynamoDB table for testing. 2. Attempt to POST to `/api/categories` without a JWT. Verify a `401 Unauthorized` response. 3. Log in as a regular (non-admin) user and use their JWT to POST to `/api/categories`. Verify a `403 Forbidden` response. 4. Log in as the admin user and use their JWT to POST a new category (e.g., `{"name": "Technology"}`). Verify a `201 Created` response. 5. Attempt to create the same category again with the admin JWT. Verify a `409 Conflict` response. 6. Send a GET request to the `/api/categories` endpoint (from Task 7) and confirm that the new 'Technology' category is present in the returned list.

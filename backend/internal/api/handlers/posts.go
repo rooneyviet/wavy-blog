@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,41 @@ import (
 
 type PostHandler struct {
 	repo repository.PostRepository
+}
+
+// PostResponse defines the structure for post data returned to the client.
+type PostResponse struct {
+	PostID       string    `json:"postID"`
+	Title        string    `json:"title"`
+	Content      string    `json:"content"`
+	AuthorID     string    `json:"authorID"`
+	Category     string    `json:"category"`
+	ThumbnailURL string    `json:"thumbnailURL"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// toPostResponse converts a domain.Post to a PostResponse.
+func toPostResponse(post *domain.Post) PostResponse {
+	return PostResponse{
+		PostID:       strings.TrimPrefix(post.PostID, "POST#"),
+		Title:        post.Title,
+		Content:      post.Content,
+		AuthorID:     strings.TrimPrefix(post.AuthorID, "USER#"),
+		Category:     post.Category,
+		ThumbnailURL: post.ThumbnailURL,
+		CreatedAt:    post.CreatedAt,
+		UpdatedAt:    post.UpdatedAt,
+	}
+}
+
+// toPostListResponse converts a slice of domain.Post to a slice of PostResponse.
+func toPostListResponse(posts []*domain.Post) []PostResponse {
+	res := make([]PostResponse, len(posts))
+	for i, p := range posts {
+		res[i] = toPostResponse(p)
+	}
+	return res
 }
 
 func NewPostHandler(repo repository.PostRepository) *PostHandler {
@@ -35,17 +71,26 @@ type UpdatePostInput struct {
 func (h *PostHandler) CreatePost(c *gin.Context) {
 	var input CreatePostInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		BadRequest(c, "Invalid request payload: "+err.Error())
 		return
 	}
 
-	userID := c.GetString("userID")
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		Unauthorized(c, "User ID not found in context. Please log in.")
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		InternalServerError(c, "Invalid user ID format in context.")
+		return
+	}
 
 	post := &domain.Post{
-		PostID:       "POST#" + uuid.New().String(),
+		PostID:       uuid.New().String(), // Generate clean UUID
 		Title:        input.Title,
 		Content:      input.Content,
-		AuthorID:     userID.(string),
+		AuthorID:     userID, // Clean userID from auth middleware
 		Category:     input.Category,
 		ThumbnailURL: input.ThumbnailURL,
 		CreatedAt:    time.Now(),
@@ -53,58 +98,71 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	if err := h.repo.CreatePost(c.Request.Context(), post); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
+		InternalServerError(c, "Failed to create the new post.")
 		return
 	}
 
-	c.JSON(http.StatusCreated, post)
+	// To return the response with the correct prefixed ID stripped, we fetch it back.
+	// A more optimized way might be to have CreatePost return the created object.
+	createdPost, err := h.repo.GetPostByID(c.Request.Context(), post.PostID)
+	if err != nil {
+		InternalServerError(c, "Failed to retrieve created post.")
+		return
+	}
+
+	c.JSON(http.StatusCreated, toPostResponse(createdPost))
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
 	postID := c.Param("id")
-	post, err := h.repo.GetPostByID(c.Request.Context(), "POST#"+postID)
+	post, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		NotFound(c, "Post")
 		return
 	}
-	c.JSON(http.StatusOK, post)
+	c.JSON(http.StatusOK, toPostResponse(post))
 }
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
-	userRole := c.GetString("userRole")
-	if userRole != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to view all posts"})
-		return
-	}
 	postName := c.Query("postName")
 	posts, err := h.repo.GetAllPosts(c.Request.Context(), &postName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get posts"})
+		InternalServerError(c, "Failed to retrieve posts.")
 		return
 	}
-	c.JSON(http.StatusOK, posts)
+	c.JSON(http.StatusOK, toPostListResponse(posts))
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {
-	postID := "POST#" + c.Param("id")
+	postID := c.Param("id")
 
-	userID := c.GetString("userID")
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		Unauthorized(c, "User ID not found in context. Please log in.")
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		InternalServerError(c, "Invalid user ID format in context.")
+		return
+	}
 	userRole := c.GetString("userRole")
 
 	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		NotFound(c, "Post")
 		return
 	}
 
+	// AuthorID in existingPost is clean, so this comparison is correct.
 	if userRole != "admin" && existingPost.AuthorID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to update this post"})
+		Forbidden(c, "You are not authorized to update this post.")
 		return
 	}
 
 	var input UpdatePostInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		BadRequest(c, "Invalid request payload: "+err.Error())
 		return
 	}
 
@@ -115,34 +173,44 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	existingPost.UpdatedAt = time.Now()
 
 	if err := h.repo.UpdatePost(c.Request.Context(), existingPost); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+		InternalServerError(c, "Failed to update the post.")
 		return
 	}
 
-	c.JSON(http.StatusOK, existingPost)
+	c.JSON(http.StatusOK, toPostResponse(existingPost))
 }
 
 func (h *PostHandler) DeletePost(c *gin.Context) {
-	postID := "POST#" + c.Param("id")
+	postID := c.Param("id")
 
-	userID := c.GetString("userID")
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		Unauthorized(c, "User ID not found in context. Please log in.")
+		return
+	}
+	userID, ok := userIDValue.(string)
+	if !ok {
+		InternalServerError(c, "Invalid user ID format in context.")
+		return
+	}
 	userRole := c.GetString("userRole")
 
+	// We must fetch the post to check for ownership before deleting.
 	existingPost, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		NotFound(c, "Post")
 		return
 	}
 
 	if userRole != "admin" && existingPost.AuthorID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to delete this post"})
+		Forbidden(c, "You are not authorized to delete this post.")
 		return
 	}
 
 	if err := h.repo.DeletePost(c.Request.Context(), postID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post"})
+		InternalServerError(c, "Failed to delete the post.")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully."})
 }

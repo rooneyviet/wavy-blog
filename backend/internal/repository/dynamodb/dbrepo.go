@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -15,7 +16,8 @@ import (
 )
 
 const (
-	EmailIndex = "EmailIndex"
+	EmailIndex    = "EmailIndex"
+	UsernameIndex = "UsernameIndex"
 )
 
 type DynamoDBRepo struct {
@@ -74,6 +76,10 @@ func (r *DynamoDBRepo) ensureTableExists() {
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 			{
+				AttributeName: aws.String("Username"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+			{
 				AttributeName: aws.String("Category"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
@@ -98,6 +104,18 @@ func (r *DynamoDBRepo) ensureTableExists() {
 				KeySchema: []types.KeySchemaElement{
 					{
 						AttributeName: aws.String("Email"),
+						KeyType:       types.KeyTypeHash,
+					},
+				},
+				Projection: &types.Projection{
+					ProjectionType: types.ProjectionTypeAll,
+				},
+			},
+			{
+				IndexName: aws.String(UsernameIndex),
+				KeySchema: []types.KeySchemaElement{
+					{
+						AttributeName: aws.String("Username"),
 						KeyType:       types.KeyTypeHash,
 					},
 				},
@@ -133,12 +151,16 @@ func (r *DynamoDBRepo) ensureTableExists() {
 }
 
 func (r *DynamoDBRepo) CreateUser(ctx context.Context, user *domain.User) error {
+	user.UserID = "USER#" + user.UserID
 	item, err := attributevalue.MarshalMap(user)
 	if err != nil {
 		return fmt.Errorf("failed to marshal user: %w", err)
 	}
 
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + user.UserID}
+	// The PK is already set from the marshaled user object.
+	// We need to construct the SK without the "USER#" prefix from the UserID.
+	userIDWithoutPrefix := strings.TrimPrefix(user.UserID, "USER#")
+	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + userIDWithoutPrefix}
 
 	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(r.TableName),
@@ -164,7 +186,32 @@ func (r *DynamoDBRepo) GetUserByEmail(ctx context.Context, email string) (*domai
 	}
 
 	if len(result.Items) == 0 {
-		return nil, fmt.Errorf("user not found")
+		return nil, nil // User not found
+	}
+
+	var user domain.User
+	err = attributevalue.UnmarshalMap(result.Items[0], &user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
+	}
+	return &user, nil
+}
+
+func (r *DynamoDBRepo) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
+	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(r.TableName),
+		IndexName:              aws.String(UsernameIndex),
+		KeyConditionExpression: aws.String("Username = :username"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":username": &types.AttributeValueMemberS{Value: username},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user by username: %w", err)
+	}
+
+	if len(result.Items) == 0 {
+		return nil, nil // User not found
 	}
 
 	var user domain.User
@@ -219,11 +266,20 @@ func (r *DynamoDBRepo) GetAllUsers(ctx context.Context) ([]*domain.User, error) 
 }
 
 func (r *DynamoDBRepo) CreatePost(ctx context.Context, post *domain.Post) error {
-	// Main post item
+	// The handler provides clean IDs. The repository adds prefixes.
+	prefixedPostID := "POST#" + post.PostID
+	post.PostID = prefixedPostID // Temporarily assign for marshaling
+
 	item, err := attributevalue.MarshalMap(post)
 	if err != nil {
 		return fmt.Errorf("failed to marshal post: %w", err)
 	}
+
+	// Restore clean ID after marshaling
+	post.PostID = strings.TrimPrefix(post.PostID, "POST#")
+
+	// Overwrite PK with the correct prefixed version
+	item["PK"] = &types.AttributeValueMemberS{Value: prefixedPostID}
 	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + post.PostID}
 
 	// Post by user item
@@ -232,7 +288,7 @@ func (r *DynamoDBRepo) CreatePost(ctx context.Context, post *domain.Post) error 
 		postByUserItem[k] = v
 	}
 	postByUserItem["PK"] = &types.AttributeValueMemberS{Value: "USER#" + post.AuthorID}
-	postByUserItem["SK"] = &types.AttributeValueMemberS{Value: post.PostID}
+	postByUserItem["SK"] = &types.AttributeValueMemberS{Value: prefixedPostID}
 
 	// Post by category item
 	postByCategoryItem := make(map[string]types.AttributeValue)
@@ -240,7 +296,8 @@ func (r *DynamoDBRepo) CreatePost(ctx context.Context, post *domain.Post) error 
 		postByCategoryItem[k] = v
 	}
 	postByCategoryItem["PK"] = &types.AttributeValueMemberS{Value: "CATEGORY#" + post.Category}
-	postByCategoryItem["SK"] = &types.AttributeValueMemberS{Value: post.PostID}
+	postByCategoryItem["SK"] = &types.AttributeValueMemberS{Value: prefixedPostID}
+
 
 	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
 		TransactItems: []types.TransactWriteItem{
@@ -275,7 +332,7 @@ func (r *DynamoDBRepo) GetPostByID(ctx context.Context, postID string) (*domain.
 	result, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: postID},
+			"PK": &types.AttributeValueMemberS{Value: "POST#" + postID},
 			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
 		},
 	})
@@ -415,11 +472,15 @@ func (r *DynamoDBRepo) UpdateUser(ctx context.Context, user *domain.User) error 
 		return fmt.Errorf("failed to marshal user: %w", err)
 	}
 
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + user.UserID}
+	// When updating, user.UserID already has the "USER#" prefix from being fetched.
+	// We need to construct the SK without the prefix.
+	userIDWithoutPrefix := strings.TrimPrefix(user.UserID, "USER#")
+	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + userIDWithoutPrefix}
 
 	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(r.TableName),
 		Item:      item,
+		ConditionExpression: aws.String("attribute_exists(PK)"), // Ensure the item exists before updating
 	})
 	if err != nil {
 		return fmt.Errorf("failed to put item: %w", err)
@@ -447,7 +508,122 @@ func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error 
 		return fmt.Errorf("failed to marshal post: %w", err)
 	}
 
-	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + post.PostID}
+	// The incoming post object has a prefixed PostID.
+	// We need to construct the SK with the clean ID.
+	postIDWithoutPrefix := strings.TrimPrefix(post.PostID, "POST#")
+	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + postIDWithoutPrefix}
+
+	// We also need to update the other two items in the transaction.
+	// For simplicity, we'll just re-create them.
+	// A more optimized approach might use UpdateItem with condition expressions.
+
+	// Post by user item
+	postByUserItem := make(map[string]types.AttributeValue)
+	for k, v := range item {
+		postByUserItem[k] = v
+	}
+	postByUserItem["PK"] = &types.AttributeValueMemberS{Value: "USER#" + post.AuthorID}
+	postByUserItem["SK"] = &types.AttributeValueMemberS{Value: post.PostID}
+
+	// Post by category item
+	postByCategoryItem := make(map[string]types.AttributeValue)
+	for k, v := range item {
+		postByCategoryItem[k] = v
+	}
+	postByCategoryItem["PK"] = &types.AttributeValueMemberS{Value: "CATEGORY#" + post.Category}
+	postByCategoryItem["SK"] = &types.AttributeValueMemberS{Value: post.PostID}
+
+
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Put: &types.Put{
+					TableName: aws.String(r.TableName),
+					Item:      item,
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName: aws.String(r.TableName),
+					Item:      postByUserItem,
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName: aws.String(r.TableName),
+					Item:      postByCategoryItem,
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to update post items: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) DeletePost(ctx context.Context, postID string) error {
+	// To delete a post, we must delete all three of its items.
+	// We need the full post object to get the AuthorID and Category.
+	post, err := r.GetPostByID(ctx, postID)
+	if err != nil {
+		return fmt.Errorf("failed to get post for deletion: %w", err)
+	}
+
+	prefixedPostID := post.PostID // This already has the POST# prefix from GetPostByID
+	authorID := post.AuthorID     // This is a clean UUID from the DB
+	category := post.Category
+
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			// Delete main post item
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: prefixedPostID},
+						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
+					},
+				},
+			},
+			// Delete post by user item
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "USER#" + authorID},
+						"SK": &types.AttributeValueMemberS{Value: prefixedPostID},
+					},
+				},
+			},
+			// Delete post by category item
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "CATEGORY#" + category},
+						"SK": &types.AttributeValueMemberS{Value: prefixedPostID},
+					},
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete post items: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) CreateCategory(ctx context.Context, category *domain.Category) error {
+	item, err := attributevalue.MarshalMap(category)
+	if err != nil {
+		return fmt.Errorf("failed to marshal category: %w", err)
+	}
+
+	item["PK"] = &types.AttributeValueMemberS{Value: "CATEGORY#" + category.ID}
+	item["SK"] = &types.AttributeValueMemberS{Value: "METADATA#" + category.ID}
 
 	_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(r.TableName),
@@ -455,20 +631,6 @@ func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error 
 	})
 	if err != nil {
 		return fmt.Errorf("failed to put item: %w", err)
-	}
-	return nil
-}
-
-func (r *DynamoDBRepo) DeletePost(ctx context.Context, postID string) error {
-	_, err := r.Client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-		TableName: aws.String(r.TableName),
-		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: postID},
-			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + postID},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to delete item: %w", err)
 	}
 	return nil
 }

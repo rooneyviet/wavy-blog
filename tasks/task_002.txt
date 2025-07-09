@@ -1,0 +1,13 @@
+# Task ID: 2
+# Title: Fix 404 Error on Login Endpoint
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Investigate and resolve the 404 Not Found error occurring on the `POST /api/users/login` endpoint. The issue is likely a misconfiguration in either the Gin router definition or the Bruno API client request URL.
+# Details:
+The `Login User` request in the Bruno collection is failing with a 404 error, indicating the server cannot find the requested resource. To resolve this, perform the following checks:
+1. **Router Configuration**: Open `internal/api/router.go`. Verify that the user routes are correctly registered. The login route should be defined as `userRoutes.POST("/login", handler.LoginUser)`. Ensure the `userRoutes` group is correctly mounted under the main `/api` group as `/users`.
+2. **Bruno Request URL**: Open the `bruno-tests` collection. Select the `Login User` request. Check the URL field. It should be exactly `{{baseUrl}}/users/login`. Correct any typos, such as `/user/login` or `/api/login`.
+
+# Test Strategy:
+1. Before making any changes, run the `Login User` request in the Bruno collection to confirm the 404 error. 2. Apply the necessary correction in either the router or the Bruno request file. 3. Relaunch the application. 4. Run the `Login User` request again in Bruno. 5. Verify that the request now succeeds with a `200 OK` status code and that the response body contains a valid JWT token.

@@ -1,6 +1,6 @@
 # Task ID: 9
 # Title: Implement Update and Delete User API Endpoints
-# Status: pending
+# Status: done
 # Dependencies: 4, 5, 8
 # Priority: high
 # Description: Implement the API endpoints for updating and deleting user profiles. This includes creating the repository methods and HTTP handlers, ensuring the endpoints are protected by JWT authentication.

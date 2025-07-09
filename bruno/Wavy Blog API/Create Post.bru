@@ -1,0 +1,30 @@
+meta {
+  name: Create Post
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host}}/api/posts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "title": "My First Post",
+    "content": "This is the content of my first post.",
+    "authorID": "user123",
+    "category": "Technology",
+    "thumbnailURL": "http://example.com/thumbnail.jpg"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  bru.setVar("postID", jsonData.id);
+}

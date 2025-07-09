@@ -1,0 +1,23 @@
+meta {
+  name: Update Post
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{host}}/api/posts/{{postID}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "title": "My First Post - Updated",
+    "content": "This is the updated content of my first post.",
+    "category": "Tech"
+  }
+}

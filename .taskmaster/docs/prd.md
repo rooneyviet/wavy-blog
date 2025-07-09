@@ -49,6 +49,17 @@ We will use a single-table design in DynamoDB to store all application data.
 - **Primary Key**:
   - Partition Key (PK): `string`
   - Sort Key (SK): `string`
+- **Global Secondary Indexes (GSIs)**:
+  - **EmailIndex**:
+    - **Partition Key**: `Email`
+    - **Purpose**: Allows for efficient querying of users by their email address. This is crucial for checking if an email is already registered.
+  - **UsernameIndex**:
+    - **Partition Key**: `Username`
+    - **Purpose**: Allows for efficient querying of users by their username. This is crucial for checking if a username is already taken.
+  - **CategoryIndex**:
+    - **Partition Key**: `Category`
+    - **Sort Key**: `CreatedAt`
+    - **Purpose**: Allows for efficient querying of posts by category, sorted by creation date.
 
 ### Entity Schemas:
 
@@ -56,7 +67,7 @@ We will use a single-table design in DynamoDB to store all application data.
 
 - **PK**: `USER#<UserID>`
 - **SK**: `METADATA#<UserID>`
-- **Attributes**: `UserID`, `Username`, `Email`, `PasswordHash`, `CreatedAt`, `UpdatedAt`
+- **Attributes**: `UserID`, `Username`, `Email`, `PasswordHash`, `CreatedAt`, `UpdatedAt`, `Role`
 
 **Post**
 
@@ -83,21 +94,29 @@ The backend will expose the following RESTful API endpoints under the `/api` pre
 ### User Management
 
 - `POST /users/register`: Register a new user.
+  - **Request Body**: `{ "username": "string", "email": "string", "password": "string" }`
+  - **Response (201)**: `{ "message": "User created successfully" }`
+  - **Response (409)**: `{ "error": "User with this email/username already exists" }`
 - `POST /users/login`: Authenticate a user and return a token.
-- `GET /users`: Get a list of all users (Admin).
-- `GET /users/:id`: Get a single user by ID (Admin).
+  - **Request Body**: `{ "email": "string", "password": "string" }`
+  - **Response (200)**: `{ "token": "jwt_token" }`
+- `GET /users`: Get a list of all users (Admin only).
+- `GET /users/:id`: Get a single user by ID (Admin only).
+- `PUT /users/:id`: Update a user's details (Admin only).
+- `DELETE /users/:id`: Delete a user (Admin only).
 
 ### Post Management
 
-- `POST /posts`: Create a new blog post.
-- `GET /posts`: Get a list of all blog posts (paginated).
-- `GET /posts/:id`: Get a single post by ID.
-- `PUT /posts/:id`: Update a post.
-- `DELETE /posts/:id`: Delete a post.
+- `POST /posts`: Create a new blog post (Authenticated users).
+- `GET /posts`: Get a list of all blog posts (Public, paginated).
+- `GET /posts/:id`: Get a single post by ID (Public).
+- `PUT /posts/:id`: Update a post (Author only).
+- `DELETE /posts/:id`: Delete a post (Author only).
 
 ### Category Management
 
-- `GET /categories`: Get a list of all unique post categories.
+- `POST /categories`: Create a new category (Admin only).
+- `GET /categories`: Get a list of all unique post categories (Public).
 
 ## 6. High-Level Implementation Plan
 

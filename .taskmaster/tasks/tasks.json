@@ -134,11 +134,41 @@
         ],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create Bruno Project for API Testing",
+        "description": "Create a Bruno project to automate API testing. This includes setting up collections and requests for user registration, login, and post creation, with scripting to handle JWT authentication.",
+        "details": "In the project root, create a new directory named `bruno-tests`. Inside this directory, initialize a new Bruno collection. Create a 'local' environment to store variables, starting with `baseUrl` set to `http://localhost:8080/api`. Configure three requests within the collection:\n1. **Register User**: A `POST` request to `{{baseUrl}}/users/register` with a JSON body containing `username`, `email`, and `password`.\n2. **Login User**: A `POST` request to `{{baseUrl}}/users/login` with the same `email` and `password`. In the 'Tests' tab of this request, add a script to parse the response body, extract the `access_token`, and set it as a collection variable named `authToken` using `bru.setVar('authToken', res.body.access_token);`.\n3. **Create Post**: A `POST` request to `{{baseUrl}}/posts`. In the 'Auth' tab, select 'Bearer Token' and use the `{{authToken}}` variable. The request body should be JSON with `title`, `content`, and `category` fields.",
+        "testStrategy": "1. Run the 'Register User' request and verify a `201 Created` response.\n2. Run the 'Login User' request. Verify a `200 OK` response and inspect the Bruno collection variables to confirm that `authToken` has been set with a valid JWT.\n3. Run the 'Create Post' request. Verify it succeeds with a `201 Created` response, which confirms the bearer token was correctly extracted and used for authentication.\n4. Ensure the entire `bruno-tests` directory and its contents are committed to the repository.",
+        "status": "done",
+        "dependencies": [
+          5,
+          6,
+          8
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Fix 404 Error in Bruno Login Request by Correcting Port",
+        "description": "Correct the port number in the Bruno 'local' environment configuration to resolve the 404 Not Found error when executing the login API request. The port must match the one exposed by the backend service in the Docker environment.",
+        "details": "The 'Login User' request in the Bruno collection is failing with a 404 error because the `baseUrl` variable in the 'local' environment points to the wrong port. Locate the Bruno environment configuration file (likely within the `bruno-tests` directory). Inspect the `docker-compose.dev.yml` file to find the host port mapped to the `api-backend` service's container port (e.g., '8090:8080'). Update the `baseUrl` variable in the Bruno 'local' environment to use the correct host port. For example, change `http://localhost:8080/api` to `http://localhost:8090/api` if the host port is 8090.",
+        "testStrategy": "1. Ensure the backend application is running via `docker compose -f docker-compose.dev.yml up`. 2. Open the API collection in Bruno. 3. Run the 'Register User' request to ensure a test user exists. 4. Run the 'Login User' request using the same credentials. 5. Verify that the request now succeeds with a `200 OK` status code, resolving the previous `404 Not Found` error. 6. Check the collection variables to confirm that the `authToken` has been successfully extracted and stored from the response.",
+        "status": "done",
+        "dependencies": [
+          1,
+          5,
+          11
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-07-07T12:12:29.200Z",
-      "updated": "2025-07-08T12:06:55.621Z",
+      "updated": "2025-07-09T01:06:24.604Z",
       "description": "Tasks for master context"
     }
   }

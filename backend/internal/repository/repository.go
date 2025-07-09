@@ -8,6 +8,7 @@ import (
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
 	GetUserByID(ctx context.Context, userID string) (*domain.User, error)
 	GetAllUsers(ctx context.Context) ([]*domain.User, error)
 	UpdateUser(ctx context.Context, user *domain.User) error
@@ -25,7 +26,12 @@ type PostRepository interface {
 	DeletePost(ctx context.Context, postID string) error
 }
 
+type CategoryRepository interface {
+	CreateCategory(ctx context.Context, category *domain.Category) error
+}
+
 type Repository interface {
-    UserRepository
-    PostRepository
+	UserRepository
+	PostRepository
+	CategoryRepository
 }

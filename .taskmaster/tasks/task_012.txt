@@ -1,0 +1,11 @@
+# Task ID: 12
+# Title: Fix 404 Error in Bruno Login Request by Correcting Port
+# Status: pending
+# Dependencies: 1, 5, 11
+# Priority: medium
+# Description: Correct the port number in the Bruno 'local' environment configuration to resolve the 404 Not Found error when executing the login API request. The port must match the one exposed by the backend service in the Docker environment.
+# Details:
+The 'Login User' request in the Bruno collection is failing with a 404 error because the `baseUrl` variable in the 'local' environment points to the wrong port. Locate the Bruno environment configuration file (likely within the `bruno-tests` directory). Inspect the `docker-compose.dev.yml` file to find the host port mapped to the `api-backend` service's container port (e.g., '8090:8080'). Update the `baseUrl` variable in the Bruno 'local' environment to use the correct host port. For example, change `http://localhost:8080/api` to `http://localhost:8090/api` if the host port is 8090.
+
+# Test Strategy:
+1. Ensure the backend application is running via `docker compose -f docker-compose.dev.yml up`. 2. Open the API collection in Bruno. 3. Run the 'Register User' request to ensure a test user exists. 4. Run the 'Login User' request using the same credentials. 5. Verify that the request now succeeds with a `200 OK` status code, resolving the previous `404 Not Found` error. 6. Check the collection variables to confirm that the `authToken` has been successfully extracted and stored from the response.
