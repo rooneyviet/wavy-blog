@@ -517,38 +517,19 @@ func (r *DynamoDBRepo) DeleteUser(ctx context.Context, username string) error {
 }
 
 func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error {
-	// First, get the current post to check if category is changing
-	currentPost, err := r.GetPostByID(ctx, post.PostID)
-	if err != nil {
-		return fmt.Errorf("failed to get current post for update: %w", err)
-	}
-	if currentPost == nil {
-		return fmt.Errorf("post not found")
-	}
+	// The handler has already fetched the post, so we receive the updated domain object.
+	// We just need to persist the changes.
 
-	// Populate keys and GSI attributes for the update.
-	post.PK = "POST#" + post.PostID
-	post.SK = "METADATA#" + post.PostID
-	post.EntityType = "POST"
-	post.GSI1PK = "POSTS_BY_USER#" + post.AuthorID
-	post.GSI1SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
-	post.GSI2PK = "POSTS_BY_CAT#" + post.Category
-	post.GSI2SK = "POST#" + post.CreatedAt.Format(time.RFC3339)
-
-	// Build update expression and values dynamically
-	updateExpr := "SET Title = :title, Content = :content, ThumbnailURL = :thumb, UpdatedAt = :updatedAt, Category = :cat"
+	// Build the update expression and attribute values dynamically.
+	updateExpr := "SET Title = :title, Content = :content, ThumbnailURL = :thumb, UpdatedAt = :updatedAt, Category = :cat, GSI2PK = :gsi2pk, GSI2SK = :gsi2sk"
 	exprAttrVals := map[string]interface{}{
 		":title":     post.Title,
 		":content":   post.Content,
 		":thumb":     post.ThumbnailURL,
 		":updatedAt": post.UpdatedAt,
 		":cat":       post.Category,
-	}
-
-	// Only update GSI2PK if category has changed
-	if currentPost.Category != post.Category {
-		updateExpr += ", GSI2PK = :gsi2pk"
-		exprAttrVals[":gsi2pk"] = "POSTS_BY_CAT#" + post.Category
+		":gsi2pk":   "POSTS_BY_CAT#" + post.Category,
+		":gsi2sk":   "POST#" + post.UpdatedAt.Format(time.RFC3339), // Use UpdatedAt for fresh content sorting
 	}
 
 	marshaledVals, err := attributevalue.MarshalMap(exprAttrVals)
@@ -559,12 +540,12 @@ func (r *DynamoDBRepo) UpdatePost(ctx context.Context, post *domain.Post) error 
 	_, err = r.Client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: post.PK},
-			"SK": &types.AttributeValueMemberS{Value: post.SK},
+			"PK": &types.AttributeValueMemberS{Value: "POST#" + post.PostID},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + post.PostID},
 		},
 		UpdateExpression:          aws.String(updateExpr),
 		ExpressionAttributeValues: marshaledVals,
-		ConditionExpression:       aws.String("attribute_exists(PK)"),
+		ConditionExpression:       aws.String("attribute_exists(PK)"), // Ensure the post exists before updating
 		ReturnValues:              types.ReturnValueUpdatedNew,
 	})
 

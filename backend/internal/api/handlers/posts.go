@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -100,7 +102,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
-	postID := c.Param("id")
+	postID := strings.TrimSpace(c.Param("id"))
 	post, err := h.repo.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		NotFound(c, "Post")
@@ -120,7 +122,8 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {
-	postID := c.Param("id")
+	postID := strings.TrimSpace(c.Param("id"))
+	log.Printf("Attempting to update post with ID: '%s'", postID)
 
 	username := c.GetString("username")
 	userRole := c.GetString("role")
@@ -157,7 +160,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) DeletePost(c *gin.Context) {
-	postID := c.Param("id")
+	postID := strings.TrimSpace(c.Param("id"))
 
 	username := c.GetString("username")
 	userRole := c.GetString("role")
