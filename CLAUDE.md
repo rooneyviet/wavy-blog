@@ -390,7 +390,7 @@ This guide outlines best practices for developing the backend API using the Gin 
   - Use the Bruno CLI to run tests. You specify individual files.
   - To run specific, related tests in sequence (e.g., login then perform an action):
     ```bash
-    bru run "Login.bru" "Create Post.bru" --env demo
+    bru run "Login.bru" "CreatePost.bru" --env demo
     ```
 
 - **Writing Comprehensive Tests:**
