@@ -42,11 +42,6 @@ bru run Login.bru --env demo
     docker exec localstack awslocal dynamodb delete-table --table-name WavyBlog
     ```
 
-### Port Mapping
-
-- **Backend API:** `http://localhost:8010`
-- **Frontend App:** `http://localhost:3020`
-
 ## Debugging Workflow
 
 When an error is reported, follow this systematic approach:

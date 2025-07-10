@@ -4,43 +4,6 @@
 
 This document outlines the requirements for the backend implementation of the Wavy Blog application. The backend will be a Go-based service using the Gin framework, running entirely within a Docker environment. It will provide a RESTful API for the existing frontend to consume.
 
-**IMPORTANT NOTE:** There is no `Go` installation on the host machine. All development, building, and running of the backend service **MUST** be done through Docker Compose, using the `docker compose -f docker-compose.dev.yml up --build` command.
-
-## 2. Services
-
-The `docker-compose.dev.yml` file will be updated to include two new services:
-
-1.  **`api-backend`**: The main Go/Gin application service.
-2.  **`localstack`**: A local cloud service emulator for AWS services, specifically for DynamoDB.
-
-## 3. Backend Folder Structure
-
-A new `backend` directory will be created with the following structure:
-
-```
-backend/
-├── cmd/
-│   └── api/
-│       └── main.go         # Main application entry point
-├── internal/
-│   ├── api/
-│   │   ├── handlers/       # HTTP handlers for API routes
-│   │   │   ├── posts.go
-│   │   │   └── users.go
-│   │   └── router.go       # Gin router setup
-│   ├── config/
-│   │   └── config.go       # Configuration management
-│   ├── domain/             # Core domain models (structs)
-│   │   ├── post.go
-│   │   └── user.go
-│   └── repository/
-│       ├── dynamodb/       # DynamoDB implementation
-│       │   └── dbrepo.go
-│       └── repository.go   # Repository interface
-├── Dockerfile.dev          # Dockerfile for development
-└── .env.dev                # Environment variables for development
-```
-
 ## 4. Database Design (DynamoDB Single-Table)
 
 We will use a single-table design in DynamoDB to store all application data.
