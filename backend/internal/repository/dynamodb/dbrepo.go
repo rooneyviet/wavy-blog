@@ -221,6 +221,38 @@ func (r *DynamoDBRepo) GetUserByID(ctx context.Context, userID string) (*domain.
 	return r.GetUserByUsername(ctx, userID)
 }
 
+func (r *DynamoDBRepo) GetUserByRefreshToken(ctx context.Context, refreshToken string) (*domain.User, error) {
+	// Query all users and filter by refresh token
+	// Note: In a production system, you might want to create a GSI for refresh tokens
+	// for better performance, but for now we'll scan all users
+	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(r.TableName),
+		IndexName:              aws.String(GSI3),
+		KeyConditionExpression: aws.String("EntityType = :type"),
+		FilterExpression:       aws.String("RefreshToken = :token AND RefreshTokenExpiresAt > :now"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":type":  &types.AttributeValueMemberS{Value: "USER"},
+			":token": &types.AttributeValueMemberS{Value: refreshToken},
+			":now":   &types.AttributeValueMemberS{Value: time.Now().Format(time.RFC3339)},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user by refresh token: %w", err)
+	}
+
+	if len(result.Items) == 0 {
+		return nil, nil // No user found with this refresh token
+	}
+
+	// Return the first matching user
+	var user domain.User
+	err = attributevalue.UnmarshalMap(result.Items[0], &user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
+	}
+	return &user, nil
+}
+
 func (r *DynamoDBRepo) GetAllUsers(ctx context.Context) ([]*domain.User, error) {
 	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              aws.String(r.TableName),
@@ -522,6 +554,31 @@ func (r *DynamoDBRepo) UpdateUser(ctx context.Context, user *domain.User) error 
 			return fmt.Errorf("user not found")
 		}
 		return fmt.Errorf("failed to update user: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) UpdateUserRefreshToken(ctx context.Context, userID string, refreshToken string, expiresAt time.Time) error {
+	// Update only the refresh token fields for the user
+	_, err := r.Client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: aws.String(r.TableName),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "USER#" + userID},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + userID},
+		},
+		UpdateExpression: aws.String("SET RefreshToken = :token, RefreshTokenExpiresAt = :expiresAt, UpdatedAt = :updatedAt"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":token":     &types.AttributeValueMemberS{Value: refreshToken},
+			":expiresAt": &types.AttributeValueMemberS{Value: expiresAt.Format(time.RFC3339)},
+			":updatedAt": &types.AttributeValueMemberS{Value: time.Now().Format(time.RFC3339)},
+		},
+		ConditionExpression: aws.String("attribute_exists(PK)"),
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "ConditionalCheckFailedException") {
+			return fmt.Errorf("user not found")
+		}
+		return fmt.Errorf("failed to update user refresh token: %w", err)
 	}
 	return nil
 }

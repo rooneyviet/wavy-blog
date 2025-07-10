@@ -6,15 +6,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/wavy-blog/backend/internal/config"
 	"github.com/wavy-blog/backend/internal/domain"
 	"github.com/wavy-blog/backend/internal/repository"
+	"github.com/wavy-blog/backend/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
 	repo repository.UserRepository
+	cfg  *config.Config
 }
 
 // UserResponse defines the structure for user data returned to the client.
@@ -49,8 +51,8 @@ func toUserListResponse(users []*domain.User) []UserResponse {
 }
 
 
-func NewUserHandler(repo repository.UserRepository) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(repo repository.UserRepository, cfg *config.Config) *UserHandler {
+	return &UserHandler{repo: repo, cfg: cfg}
 }
 
 type RegisterUserInput struct {
@@ -117,21 +119,87 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID":   user.UserID,
-		"username": user.Username,
-		"role":     user.Role,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(),
-	})
-
-	secret := c.MustGet("jwt_secret").(string)
-	tokenString, err := token.SignedString([]byte(secret))
+	// Generate access token
+	accessToken, err := utils.GenerateAccessToken(user, h.cfg)
 	if err != nil {
 		InternalServerError(c, "Could not generate authentication token.")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	// Generate refresh token
+	refreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		InternalServerError(c, "Could not generate refresh token.")
+		return
+	}
+
+	// Store refresh token in database
+	refreshTokenExpiration := utils.GetRefreshTokenExpiration(h.cfg)
+	if err := h.repo.UpdateUserRefreshToken(c.Request.Context(), user.Username, refreshToken, refreshTokenExpiration); err != nil {
+		InternalServerError(c, "Could not store refresh token.")
+		return
+	}
+
+	// Set refresh token as HTTP-only cookie
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("refresh_token", refreshToken, int(h.cfg.RefreshTokenExpirationHours*3600), "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": accessToken,
+		"user": toUserResponse(user),
+	})
+}
+
+func (h *UserHandler) Refresh(c *gin.Context) {
+	// Get refresh token from HTTP-only cookie
+	refreshToken, err := c.Cookie("refresh_token")
+	if err != nil {
+		Unauthorized(c, "Refresh token not found.")
+		return
+	}
+
+	// Find user by refresh token
+	user, err := h.repo.GetUserByRefreshToken(c.Request.Context(), refreshToken)
+	if err != nil || user == nil {
+		Unauthorized(c, "Invalid refresh token.")
+		return
+	}
+
+	// Check if refresh token has expired
+	if time.Now().After(user.RefreshTokenExpiresAt) {
+		Unauthorized(c, "Refresh token has expired.")
+		return
+	}
+
+	// Generate new access token
+	newAccessToken, err := utils.GenerateAccessToken(user, h.cfg)
+	if err != nil {
+		InternalServerError(c, "Could not generate new access token.")
+		return
+	}
+
+	// Optionally rotate refresh token for enhanced security
+	newRefreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		InternalServerError(c, "Could not generate new refresh token.")
+		return
+	}
+
+	// Update refresh token in database
+	refreshTokenExpiration := utils.GetRefreshTokenExpiration(h.cfg)
+	if err := h.repo.UpdateUserRefreshToken(c.Request.Context(), user.Username, newRefreshToken, refreshTokenExpiration); err != nil {
+		InternalServerError(c, "Could not update refresh token.")
+		return
+	}
+
+	// Set new refresh token as HTTP-only cookie
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("refresh_token", newRefreshToken, int(h.cfg.RefreshTokenExpirationHours*3600), "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token": newAccessToken,
+		"user": toUserResponse(user),
+	})
 }
 
 type UpdateUserInput struct {

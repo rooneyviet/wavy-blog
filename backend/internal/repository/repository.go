@@ -2,6 +2,7 @@ package repository
 
 import (
     "context"
+    "time"
     "github.com/wavy-blog/backend/internal/domain"
 )
 
@@ -10,8 +11,10 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
 	GetUserByID(ctx context.Context, userID string) (*domain.User, error)
+	GetUserByRefreshToken(ctx context.Context, refreshToken string) (*domain.User, error)
 	GetAllUsers(ctx context.Context) ([]*domain.User, error)
 	UpdateUser(ctx context.Context, user *domain.User) error
+	UpdateUserRefreshToken(ctx context.Context, userID string, refreshToken string, expiresAt time.Time) error
 	DeleteUser(ctx context.Context, userID string) error
 }
 

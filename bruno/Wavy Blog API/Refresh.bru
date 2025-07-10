@@ -1,25 +1,22 @@
 meta {
-  name: Login
+  name: Refresh
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
-  url: {{host}}/api/users/login
-  body: json
+  url: {{host}}/api/users/refresh
+  body: none
   auth: none
-}
-
-body:json {
-  {
-    "email": "test@example.com",
-    "password": "password123"
-  }
 }
 
 script:post-response {
   const jsonData = res.getBody();
-  bru.setVar("access_token", jsonData.access_token);
+  
+  // Update access token with the new one
+  if (jsonData.access_token) {
+    bru.setVar("access_token", jsonData.access_token);
+  }
   
   // Store user data for reference
   if (jsonData.user) {
@@ -29,14 +26,13 @@ script:post-response {
 }
 
 tests {
-  test("should login successfully", function() {
+  test("should refresh token successfully", function() {
     expect(res.getStatus()).to.equal(200);
     const data = res.getBody();
     expect(data.access_token).to.be.a('string');
     expect(data.user).to.be.an('object');
     expect(data.user.userID).to.be.a('string');
     expect(data.user.username).to.be.a('string');
-    expect(data.user.email).to.equal("test@example.com");
   });
 
   test("should have correct headers", function() {
@@ -44,5 +40,13 @@ tests {
     if (contentType) {
       expect(contentType).to.include("application/json");
     }
+  });
+
+  test("should set refresh token cookie", function() {
+    const cookies = res.getHeaders()["set-cookie"];
+    expect(cookies).to.be.an('array');
+    const refreshCookie = cookies.find(cookie => cookie.includes("refresh_token="));
+    expect(refreshCookie).to.exist;
+    expect(refreshCookie).to.include("HttpOnly");
   });
 }

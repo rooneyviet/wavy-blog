@@ -4,19 +4,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wavy-blog/backend/internal/api/handlers"
 	"github.com/wavy-blog/backend/internal/api/middleware"
+	"github.com/wavy-blog/backend/internal/config"
 	"github.com/wavy-blog/backend/internal/repository"
 )
 
-func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
+func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// Share JWT secret with handlers
 	r.Use(func(c *gin.Context) {
-		c.Set("jwt_secret", jwtSecret)
+		c.Set("jwt_secret", cfg.JWTSecret)
 		c.Next()
 	})
 
-	userHandler := handlers.NewUserHandler(repo)
+	userHandler := handlers.NewUserHandler(repo, cfg)
 	postHandler := handlers.NewPostHandler(repo)
 	categoryHandler := handlers.NewCategoryHandler(repo)
 
@@ -26,8 +27,9 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 		{
 			users.POST("/register", userHandler.Register)
 			users.POST("/login", userHandler.Login)
+			users.POST("/refresh", userHandler.Refresh)
 
-			protected := users.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret))
+			protected := users.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
 			{
 				protected.GET("/:username", userHandler.GetUser)
 				protected.PUT("/:username", userHandler.UpdateUser)
@@ -35,7 +37,7 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 			}
 
 			// Admin routes
-			admin := users.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret), middleware.AdminMiddleware())
+			admin := users.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret), middleware.AdminMiddleware())
 			{
 				admin.GET("", userHandler.GetUsers)
 			}
@@ -47,7 +49,7 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 			posts.GET("", postHandler.GetPosts)
 
 			// Protected routes
-			protected := posts.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret))
+			protected := posts.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
 			protected.POST("", postHandler.CreatePost)
 			protected.PUT("/:slug", postHandler.UpdatePost)
 			protected.DELETE("/:slug", postHandler.DeletePost)
@@ -59,7 +61,7 @@ func SetupRouter(repo repository.Repository, jwtSecret string) *gin.Engine {
 			categories.GET("/:categoryName/posts", categoryHandler.GetPostsByCategory)
 
 			// Protected routes
-			protected := categories.Group("").Use(middleware.AuthMiddleware(repo, jwtSecret))
+			protected := categories.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
 			protected.POST("", middleware.AdminMiddleware(), categoryHandler.CreateCategory)
 		}
 	}
