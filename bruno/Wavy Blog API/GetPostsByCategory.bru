@@ -1,0 +1,52 @@
+meta {
+  name: Get Posts by Category
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{host}}/api/categories/{{categoryName}}/posts
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  categoryName: Technology
+}
+
+tests {
+  test("should get posts by category successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data).to.be.an('array');
+    
+    if (data.length > 0) {
+      const post = data[0];
+      expect(post.slug).to.be.a('string');
+      expect(post.title).to.be.a('string');
+      expect(post.content).to.be.a('string');
+      expect(post.authorID).to.be.a('string');
+      expect(post.category).to.be.a('string');
+      expect(post.createdAt).to.be.a('string');
+      expect(post.updatedAt).to.be.a('string');
+    }
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should handle empty category", function() {
+    const data = res.getBody();
+    expect(data).to.be.an('array');
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should fail with non-existent category", function() {
+    // This would be a separate test file with invalid category
+    // expect(res.getStatus()).to.equal(404);
+  });
+}

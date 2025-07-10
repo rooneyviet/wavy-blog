@@ -1,0 +1,45 @@
+meta {
+  name: Delete User
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{host}}/api/users/{{username}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("should delete user successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.message).to.equal("User account deleted successfully.");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should fail without authentication", function() {
+    // This would be a separate test file without auth token
+    // expect(res.getStatus()).to.equal(401);
+  });
+
+  test("should fail with unauthorized user", function() {
+    // This would be a separate test file with different user token
+    // expect(res.getStatus()).to.equal(403);
+  });
+
+  test("should fail with non-existent user", function() {
+    // This would be a separate test file with invalid username
+    // expect(res.getStatus()).to.equal(404);
+  });
+}

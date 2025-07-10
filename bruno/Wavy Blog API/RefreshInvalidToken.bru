@@ -18,8 +18,9 @@ tests {
   test("should fail with invalid refresh token", function() {
     expect(res.getStatus()).to.equal(401);
     const data = res.getBody();
-    expect(data.error).to.be.a('string');
-    expect(data.error).to.include("Invalid refresh token");
+    expect(data.code).to.equal(401);
+    expect(data.message).to.be.a('string');
+    expect(data.details).to.be.a('string');
   });
 
   test("should have correct headers", function() {
@@ -27,5 +28,10 @@ tests {
     if (contentType) {
       expect(contentType).to.include("application/json");
     }
+  });
+
+  test("should not return access_token", function() {
+    const data = res.getBody();
+    expect(data.access_token).to.be.undefined;
   });
 }

@@ -1,0 +1,36 @@
+meta {
+  name: Get Post
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{host}}/api/posts/{{postSlug}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  postSlug: sample-post-slug
+}
+
+tests {
+  test("should get post successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.title).to.be.a('string');
+    expect(data.content).to.be.a('string');
+    expect(data.authorID).to.be.a('string');
+    expect(data.category).to.be.a('string');
+    expect(data.createdAt).to.be.a('string');
+    expect(data.updatedAt).to.be.a('string');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}

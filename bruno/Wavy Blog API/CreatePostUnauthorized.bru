@@ -1,0 +1,43 @@
+meta {
+  name: Create Post Unauthorized
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{host}}/api/posts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "My First Post",
+    "content": "This is the content of my first post.",
+    "category": "Technology",
+    "thumbnailURL": "http://example.com/thumbnail.jpg"
+  }
+}
+
+tests {
+  test("should fail without authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+    const data = res.getBody();
+    expect(data.code).to.equal(401);
+    expect(data.message).to.be.a('string');
+    expect(data.details).to.be.a('string');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should not return post data", function() {
+    const data = res.getBody();
+    expect(data.slug).to.be.undefined;
+    expect(data.title).to.be.undefined;
+  });
+}
