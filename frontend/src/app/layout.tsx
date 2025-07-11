@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import QueryProvider from "@/providers/QueryProvider";
 
 const inter = Inter({
   variable: "--font-inter", // Changed variable name
@@ -39,15 +40,17 @@ export default function RootLayout({
           inter.variable // Apply Inter font variable
         )}
       >
-        {/* Header will be rendered by page.tsx or individual layouts now */}
-        <div className="flex flex-col min-h-screen">
-          {/* Adjusted main container width to max-w-7xl, which is a common width for blogs.
+        <QueryProvider>
+          {/* Header will be rendered by page.tsx or individual layouts now */}
+          <div className="flex flex-col min-h-screen">
+            {/* Adjusted main container width to max-w-7xl, which is a common width for blogs.
               The target site's content appears to be around this width.
               Removed default container class from here, will apply it in page.tsx for more control.
           */}
-          <main className="flex-grow">{children}</main>
-          {/* Footer will be rendered by page.tsx or individual layouts now */}
-        </div>
+            <main className="flex-grow">{children}</main>
+            {/* Footer will be rendered by page.tsx or individual layouts now */}
+          </div>
+        </QueryProvider>
       </body>
     </html>
   );
