@@ -62,6 +62,14 @@ When an error is reported, follow this systematic approach:
 
 **IMPORTANT:** Focus exclusively on fixing the reported error. Do not address unrelated issues or refactor code outside the scope of the bug.
 
+## Documentation Update Requirements
+
+When making changes to the codebase, ensure documentation is kept up-to-date:
+
+- **DynamoDB Changes**: After updating any DynamoDB-related code (table structure, entities, access patterns, GSIs, etc.), update the [`documents/dynamodb_structure.md`](documents/dynamodb_structure.md) file to reflect these changes.
+
+- **API Changes**: After updating any API endpoints (adding, modifying, or deleting routes, changing request/response schemas, authentication requirements, etc.), update the [`documents/api_specs.md`](documents/api_specs.md) file to reflect these changes.
+
 ---
 
 # NextJS Style Guide and Clean Architecture Principles
@@ -319,7 +327,23 @@ Structure your application into logical layers to manage complexity and improve 
 - **CSS Modules:** `ComponentName.module.css` (e.g., `UserProfile.module.css`)
 - **Test Files:** `ComponentName.test.tsx` or `fileName.spec.ts`
 
-## 6. Performance Optimization
+## 6. Data Fetching and Server-Side Rendering
+
+- **Server-Side Data Loading:** Always load API data from the server render side using Next.js App Router's data fetching capabilities.
+
+- **TanStack Query (React Query):** Use TanStack Query for client-side data fetching, caching, synchronization, and updating. This provides:
+
+  - Automatic background refetching
+  - Optimistic updates
+  - Caching and cache invalidation
+  - Error handling and retry logic
+  - Loading states management
+
+- **Suspense and Skeleton Loading:** Use React Suspense to handle loading states gracefully. Provide skeleton components as fallbacks to improve perceived performance during data fetching.
+
+- **Client Component Strategy:** Avoid adding `"use client"` to large components. Only add `"use client"` to interactive components that require client-side JavaScript (buttons, inputs, forms, etc.). Keep server components as the default for better performance and SEO.
+
+## 7. Performance Optimization
 
 - **Code Splitting:** Use `React.lazy()` and `Suspense` to split code by routes or features, improving initial load time.
 - **Memoization:** Use `React.memo` for components, `useMemo` for expensive calculations, and `useCallback` for functions passed as props to prevent unnecessary re-renders.
@@ -327,24 +351,24 @@ Structure your application into logical layers to manage complexity and improve 
 - **Virtualization:** For long lists, use libraries like `react-window` or `react-virtualized`.
 - **Zustand State:** Use Zustand state management to reduce re-renders and improve performance.
 
-## 7. Styling
+## 8. Styling
 
 - **Tailwind CSS:** Always use Tailwind.
 
-## 8. Typing (TypeScript)
+## 9. Typing (TypeScript)
 
 - **TypeScript:** Strongly recommended for type safety, better autocompletion, and refactoring confidence.
 - **Define Props and State:** Clearly type component props and state.
 - **Utility Types:** Leverage TypeScript's utility types (`Partial`, `Pick`, `Omit`, etc.).
 - **Avoid `any`:** Use `unknown` or more specific types instead of `any` where possible.
 
-## 9. Linting and Formatting
+## 10. Linting and Formatting
 
 - **ESLint:** Enforce code quality and consistency. Configure with React-specific plugins (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`).
 - **Prettier:** Automate code formatting for a consistent style across the codebase.
 - **Integrate with Git Hooks:** Use tools like Husky and lint-staged to run linters/formatters before commits.
 
-## 10. Testing
+## 11. Testing
 
 - **Unit Tests:** Test individual components, hooks, and utility functions in isolation (e.g., using Jest, React Testing Library).
 - **Integration Tests:** Test interactions between components or layers.
