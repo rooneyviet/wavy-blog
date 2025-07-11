@@ -142,7 +142,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	// Set refresh token as HTTP-only cookie
 	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("refresh_token", refreshToken, int(h.cfg.RefreshTokenExpirationHours*3600), "/", "", false, true)
+	c.SetCookie("refresh_token", refreshToken, int(h.cfg.JWTRefreshTokenExpiration.Seconds()), "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
@@ -194,7 +194,7 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 
 	// Set new refresh token as HTTP-only cookie
 	c.SetSameSite(http.SameSiteStrictMode)
-	c.SetCookie("refresh_token", newRefreshToken, int(h.cfg.RefreshTokenExpirationHours*3600), "/", "", false, true)
+	c.SetCookie("refresh_token", newRefreshToken, int(h.cfg.JWTRefreshTokenExpiration.Seconds()), "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": newAccessToken,

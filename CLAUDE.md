@@ -6,6 +6,11 @@ This guide covers essential commands and procedures for the development environm
 
 All services are managed via Docker Compose. Refer to the [`docker-compose.dev.yml`](docker-compose.dev.yml:1) for detailed service configurations.
 
+### Go Specific Commands
+
+- There will be no `Go` installation on the host machine. All Go commands will be executed inside the Docker container managed by `docker compose`.
+  Ex: `docker compose -f docker-compose.dev.yml build api-backend`
+
 ### General Commands
 
 - **Run the application:**

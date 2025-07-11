@@ -4,6 +4,7 @@ import (
     "log"
     "os"
     "strconv"
+    "time"
 
     "github.com/joho/godotenv"
 )
@@ -14,8 +15,8 @@ type Config struct {
 	DynamoDBEndpoint  string
 	DynamoDBTableName string
 	JWTSecret         string
-	JWTExpirationHours int
-	RefreshTokenExpirationHours int
+	JWTAccessTokenExpiration  time.Duration
+	JWTRefreshTokenExpiration time.Duration
 }
 
 func Load() *Config {
@@ -30,8 +31,8 @@ func Load() *Config {
         DynamoDBEndpoint:  getEnv("DYNAMODB_ENDPOINT", "http://localhost:4566"),
         DynamoDBTableName: getEnv("DYNAMODB_TABLE", "WavyBlog"),
         JWTSecret:         getEnv("JWT_SECRET", "default-secret"),
-        JWTExpirationHours: getEnvInt("JWT_EXPIRATION_HOURS", 240), // 10 days as requested
-        RefreshTokenExpirationHours: getEnvInt("REFRESH_TOKEN_EXPIRATION_HOURS", 168), // 7 days
+        JWTAccessTokenExpiration:  time.Duration(getEnvInt("JWT_ACCESS_TOKEN_EXPIRES_IN", 3600)) * time.Second,  // Default 1 hour
+        JWTRefreshTokenExpiration: time.Duration(getEnvInt("JWT_REFRESH_TOKEN_EXPIRES_IN", 1209600)) * time.Second, // Default 14 days
        }
       }
 

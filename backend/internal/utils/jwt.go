@@ -16,7 +16,7 @@ func GenerateAccessToken(user *domain.User, cfg *config.Config) (string, error) 
 		"userID":   user.UserID,
 		"username": user.Username,
 		"role":     user.Role,
-		"exp":      time.Now().Add(time.Hour * time.Duration(cfg.JWTExpirationHours)).Unix(),
+		"exp":      time.Now().Add(cfg.JWTAccessTokenExpiration).Unix(),
 	})
 
 	return token.SignedString([]byte(cfg.JWTSecret))
@@ -33,5 +33,5 @@ func GenerateRefreshToken() (string, error) {
 
 // GetRefreshTokenExpiration returns the expiration time for refresh tokens
 func GetRefreshTokenExpiration(cfg *config.Config) time.Time {
-	return time.Now().Add(time.Hour * time.Duration(cfg.RefreshTokenExpirationHours))
+	return time.Now().Add(cfg.JWTRefreshTokenExpiration)
 }
