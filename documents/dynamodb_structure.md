@@ -62,7 +62,7 @@
 | Title | String | Post title | `"My First Post"` |
 | Content | String | Post content (markdown) | `"# Hello World\nThis is my first post..."` |
 | AuthorID | String | Author's username | `"john_doe"` |
-| Category | String | Post category | `"technology"` |
+| Category | String | Post category slug | `"technology"` |
 | ThumbnailURL | String | Post thumbnail image URL | `"https://example.com/thumb.jpg"` |
 | IsPublished | Boolean | Publication status | `true` |
 | CreatedAt | Timestamp | Creation timestamp | `"2024-01-15T10:30:00Z"` |
@@ -94,14 +94,16 @@
 4. **Get Post by Slug**: `PK = "POST#<slug>"`
 5. **Get All Posts**: Query GSI3 where `EntityType = "POST"`
 6. **Get Posts by User**: Query GSI1 where `GSI1PK = "POSTS_BY_USER#<username>"`
-7. **Get Posts by Category**: Query GSI2 where `GSI2PK = "POSTS_BY_CAT#<category>"`
-8. **Get All Categories**: Query GSI3 where `EntityType = "CATEGORY"`
-9. **Check Slug Uniqueness**: `PK = "SLUG#<slug>"`
+7. **Get Posts by Category**: Query GSI2 where `GSI2PK = "POSTS_BY_CAT#<categorySlug>"`
+8. **Get Category by Slug**: `PK = "CATEGORY#<categorySlug>"`
+9. **Get All Categories**: Query GSI3 where `EntityType = "CATEGORY"`
+10. **Check Slug Uniqueness**: `PK = "SLUG#<slug>"`
 
 ## Design Principles
 
 - **Single Table Design**: All entities in one table with proper prefixing
 - **No Scan Operations**: GSI3 eliminates expensive scans
 - **Transactional Integrity**: Critical operations use DynamoDB transactions
-- **Unique Constraints**: Email and slug uniqueness enforced via separate entities
+- **Unique Constraints**: Email and slug uniqueness enforced via separate entities  
+- **Category Validation**: Posts reference categories by slug with existence validation
 - **Time-based Sorting**: Posts sorted by creation date using RFC3339 format

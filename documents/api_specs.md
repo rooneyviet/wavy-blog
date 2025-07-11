@@ -101,15 +101,15 @@ All API endpoints are prefixed with `/api`
 
 ### Create Post
 
-| Field                | Value                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| **Method**           | POST                                                                                        |
-| **URL**              | `/api/posts`                                                                                |
-| **Authentication**   | Required (Bearer token)                                                                     |
-| **Request Body**     | `{"title": "string", "content": "string", "category": "string", "thumbnailURL": "string?"}` |
-| **Validation**       | title: required, content: required, category: required                                      |
-| **Success Response** | 201: Post object with auto-generated slug                                                   |
-| **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 500: Server error                                  |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Method**           | POST                                                                                              |
+| **URL**              | `/api/posts`                                                                                      |
+| **Authentication**   | Required (Bearer token)                                                                           |
+| **Request Body**     | `{"title": "string", "content": "string", "categorySlug": "string", "thumbnailURL": "string?"}` |
+| **Validation**       | title: required, content: required, categorySlug: required + must exist                           |
+| **Success Response** | 201: Post object with auto-generated slug                                                         |
+| **Error Responses**  | 400: Invalid payload/category not found, 401: Unauthorized, 500: Server error                     |
 
 ### Get Post by Slug
 
@@ -135,16 +135,16 @@ All API endpoints are prefixed with `/api`
 
 ### Update Post
 
-| Field                | Value                                                                                       |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| **Method**           | PUT                                                                                         |
-| **URL**              | `/api/posts/:slug`                                                                          |
-| **Authentication**   | Required (Bearer token)                                                                     |
-| **Authorization**    | Author can update own posts, admin can update any post                                      |
-| **Path Parameters**  | `slug`: string                                                                              |
-| **Request Body**     | `{"title": "string", "content": "string", "category": "string", "thumbnailURL": "string?"}` |
-| **Success Response** | 200: Updated post object (slug may change if title changed)                                 |
-| **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error  |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Method**           | PUT                                                                                               |
+| **URL**              | `/api/posts/:slug`                                                                                |
+| **Authentication**   | Required (Bearer token)                                                                           |
+| **Authorization**    | Author can update own posts, admin can update any post                                            |
+| **Path Parameters**  | `slug`: string                                                                                    |
+| **Request Body**     | `{"title": "string", "content": "string", "categorySlug": "string", "thumbnailURL": "string?"}` |
+| **Success Response** | 200: Updated post object (slug may change if title changed)                                       |
+| **Error Responses**  | 400: Invalid payload/category not found, 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error |
 
 ### Delete Post
 
@@ -188,9 +188,9 @@ All API endpoints are prefixed with `/api`
 | Field                | Value                                                |
 | -------------------- | ---------------------------------------------------- |
 | **Method**           | GET                                                  |
-| **URL**              | `/api/categories/:categoryName/posts`                |
+| **URL**              | `/api/categories/:categorySlug/posts`                |
 | **Authentication**   | Not required                                         |
-| **Path Parameters**  | `categoryName`: string                               |
+| **Path Parameters**  | `categorySlug`: string                               |
 | **Success Response** | 200: Array of post objects in the specified category |
 | **Error Responses**  | 500: Server error                                    |
 

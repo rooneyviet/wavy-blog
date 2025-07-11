@@ -58,7 +58,7 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 		categories := api.Group("/categories")
 		{
 			categories.GET("", categoryHandler.GetCategories)
-			categories.GET("/:categoryName/posts", categoryHandler.GetPostsByCategory)
+			categories.GET("/:categorySlug/posts", categoryHandler.GetPostsByCategory)
 
 			// Protected routes
 			protected := categories.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))

@@ -18,7 +18,7 @@ body:json {
   {
     "title": "My First Post",
     "content": "This is the content of my first post.",
-    "category": "Technology",
+    "categorySlug": "{{categorySlug}}",
     "thumbnailURL": "http://example.com/thumbnail.jpg"
   }
 }
@@ -38,7 +38,7 @@ tests {
     expect(data.slug).to.be.a('string');
     expect(data.title).to.equal("My First Post");
     expect(data.content).to.equal("This is the content of my first post.");
-    expect(data.category).to.equal("Technology");
+    expect(data.category).to.equal(bru.getVar("categorySlug"));
     expect(data.authorID).to.be.a('string');
     expect(data.createdAt).to.be.a('string');
     expect(data.updatedAt).to.be.a('string');

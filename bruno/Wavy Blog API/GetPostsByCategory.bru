@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{host}}/api/categories/{{categoryName}}/posts
+  url: {{host}}/api/categories/{{categorySlug}}/posts
   body: none
   auth: none
 }
 
 vars:pre-request {
-  categoryName: Technology
+  categorySlug: technology
 }
 
 tests {

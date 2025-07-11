@@ -57,14 +57,14 @@ func NewPostHandler(repo repository.PostRepository) *PostHandler {
 type CreatePostInput struct {
 	Title        string `json:"title" binding:"required"`
 	Content      string `json:"content" binding:"required"`
-	Category     string `json:"category" binding:"required"`
+	CategorySlug string `json:"categorySlug" binding:"required"`
 	ThumbnailURL string `json:"thumbnailURL"`
 }
 
 type UpdatePostInput struct {
 	Title        string `json:"title" binding:"required"`
 	Content      string `json:"content" binding:"required"`
-	Category     string `json:"category" binding:"required"`
+	CategorySlug string `json:"categorySlug" binding:"required"`
 	ThumbnailURL string `json:"thumbnailURL"`
 }
 
@@ -81,11 +81,22 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		return
 	}
 
+	// Validate that the category exists
+	category, err := h.repo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
+	if err != nil {
+		InternalServerError(c, "Failed to validate category: "+err.Error())
+		return
+	}
+	if category == nil {
+		BadRequest(c, "Category with slug '"+input.CategorySlug+"' does not exist")
+		return
+	}
+
 	post := &domain.Post{
 		Title:        input.Title,
 		Content:      input.Content,
 		AuthorID:     username, // Use username from token
-		Category:     input.Category,
+		Category:     input.CategorySlug, // Use category slug
 		ThumbnailURL: input.ThumbnailURL,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -143,12 +154,23 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
+	// Validate that the category exists
+	category, err := h.repo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
+	if err != nil {
+		InternalServerError(c, "Failed to validate category: "+err.Error())
+		return
+	}
+	if category == nil {
+		BadRequest(c, "Category with slug '"+input.CategorySlug+"' does not exist")
+		return
+	}
+
 	// Keep a copy of the old slug before updating the post
 	oldSlug := existingPost.Slug
 
 	existingPost.Title = input.Title
 	existingPost.Content = input.Content
-	existingPost.Category = input.Category
+	existingPost.Category = input.CategorySlug // Use category slug
 	existingPost.ThumbnailURL = input.ThumbnailURL
 	existingPost.UpdatedAt = time.Now()
 

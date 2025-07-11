@@ -434,13 +434,13 @@ func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, username string, post
 	return posts, nil
 }
 
-func (r *DynamoDBRepo) GetPostsByCategory(ctx context.Context, category string) ([]*domain.Post, error) {
+func (r *DynamoDBRepo) GetPostsByCategory(ctx context.Context, categorySlug string) ([]*domain.Post, error) {
 	result, err := r.Client.Query(ctx, &dynamodb.QueryInput{
 		TableName:              aws.String(r.TableName),
 		IndexName:              aws.String(GSI2),
 		KeyConditionExpression: aws.String("GSI2PK = :pk"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":pk": &types.AttributeValueMemberS{Value: "POSTS_BY_CAT#" + category},
+			":pk": &types.AttributeValueMemberS{Value: "POSTS_BY_CAT#" + categorySlug},
 		},
 		ScanIndexForward: aws.Bool(false), // Sort by SK (CreatedAt) descending
 	})
@@ -510,6 +510,29 @@ func (r *DynamoDBRepo) CreateCategory(ctx context.Context, category *domain.Cate
 		return fmt.Errorf("failed to create category transaction: %w", err)
 	}
 	return nil
+}
+
+func (r *DynamoDBRepo) GetCategoryBySlug(ctx context.Context, slug string) (*domain.Category, error) {
+	result, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(r.TableName),
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: "CATEGORY#" + slug},
+			"SK": &types.AttributeValueMemberS{Value: "METADATA#" + slug},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get category: %w", err)
+	}
+	if result.Item == nil {
+		return nil, nil // Category not found
+	}
+
+	var category domain.Category
+	err = attributevalue.UnmarshalMap(result.Item, &category)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal category: %w", err)
+	}
+	return &category, nil
 }
 
 func (r *DynamoDBRepo) GetAllCategories(ctx context.Context) ([]*domain.Category, error) {

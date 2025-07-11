@@ -70,8 +70,8 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 }
 
 func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
-	categoryName := c.Param("categoryName")
-	posts, err := h.repo.GetPostsByCategory(c.Request.Context(), categoryName)
+	categorySlug := c.Param("categorySlug")
+	posts, err := h.repo.GetPostsByCategory(c.Request.Context(), categorySlug)
 	if err != nil {
 		InternalServerError(c, "Failed to retrieve posts for the specified category.")
 		return
