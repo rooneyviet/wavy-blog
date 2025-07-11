@@ -14,7 +14,10 @@ interface AboutMeAuthor extends Author {
 
 interface SidebarProps {
   authorData: AboutMeAuthor;
-  popularArticles: Pick<Post, "slug" | "title" | "imageUrl" | "publishDate">[];
+  popularArticles: Pick<
+    Post,
+    "slug" | "title" | "thumbnailURL" | "publishDate"
+  >[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ authorData, popularArticles }) => {
