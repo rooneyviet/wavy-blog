@@ -1,0 +1,52 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host}}/api/users/refresh
+  body: none
+  auth: none
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  
+  // Update access token with the new one
+  if (jsonData.access_token) {
+    bru.setVar("access_token", jsonData.access_token);
+  }
+  
+  // Store user data for reference
+  if (jsonData.user) {
+    bru.setVar("user_id", jsonData.user.userID);
+    bru.setVar("username", jsonData.user.username);
+  }
+}
+
+tests {
+  test("should refresh token successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.access_token).to.be.a('string');
+    expect(data.user).to.be.an('object');
+    expect(data.user.userID).to.be.a('string');
+    expect(data.user.username).to.be.a('string');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should set refresh token cookie", function() {
+    const cookies = res.getHeaders()["set-cookie"];
+    expect(cookies).to.be.an('array');
+    const refreshCookie = cookies.find(cookie => cookie.includes("refresh_token="));
+    expect(refreshCookie).to.exist;
+    expect(refreshCookie).to.include("HttpOnly");
+  });
+}

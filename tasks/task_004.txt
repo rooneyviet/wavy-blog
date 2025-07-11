@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Implement User Management Repository Methods
+# Status: pending
+# Dependencies: 3
+# Priority: high
+# Description: Implement the repository methods for creating and retrieving users. This provides the data access layer required by the user management API handlers to perform their functions, including checking for uniqueness.
+# Details:
+In the `internal/repository/repository.go` file, define the user-specific methods in the `DatabaseRepo` interface, including `CreateUser(ctx, user)`, `GetUserByEmail(ctx, email)`, and `GetUserByUsername(ctx, username)`. Implement these methods in `internal/repository/dynamodb/dbrepo.go`. The `GetUserByEmail` and `GetUserByUsername` methods are critical for the `Register` handler (Task 5) to enforce that new users have a unique email and username. These retrieval methods should be implemented to use an efficient DynamoDB query, which may require a Global Secondary Index (GSI) on those attributes. The `CreateUser` method will perform the `PutItem` operation to save the new user record.
+
+# Test Strategy:
+Unit tests should be written for the new repository methods. Using a mock DynamoDB client: 1. Test `CreateUser` and assert that the `PutItem` call receives the correctly marshalled user data. 2. Test `GetUserByEmail` by mocking a `Query` response containing a user item and verifying the method correctly unmarshalls and returns the user struct. 3. Test `GetUserByEmail` for a non-existent email by mocking an empty `Query` response and verifying the method returns a `nil` user and a specific 'not found' error. 4. Repeat tests #2 and #3 for the `GetUserByUsername` method. The functional testing of the uniqueness constraint will occur in Task 5.

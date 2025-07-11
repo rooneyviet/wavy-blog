@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Implement API Router and User Management Endpoints
+# Status: done
+# Dependencies: 2, 4
+# Priority: medium
+# Description: Set up the Gin router and implement the HTTP handlers for all User Management API endpoints.
+# Details:
+In `internal/api/router.go`, create a `SetupRouter` function that initializes a new Gin engine. It should take the `DatabaseRepo` as a dependency. Create a `/api` route group. In `internal/api/handlers/users.go`, create handlers for `POST /users/register`, `POST /users/login`, `GET /users`, and `GET /users/:id`. The `register` handler will hash the password (using `bcrypt`) before calling the repository. The `login` handler will verify credentials and generate a JWT token (using a library like `golang-jwt/jwt/v5`). The `main.go` file will initialize the repository, pass it to the router, and start the HTTP server.
+
+# Test Strategy:
+Use an API client like Postman or Insomnia to test the endpoints. 1. Send a POST request to `/api/users/register` with user data and verify a 201 response. 2. Use the new credentials to POST to `/api/users/login` and verify a JWT is returned. 3. Attempt to access protected endpoints (e.g., `GET /users`) without and with the token to test authentication middleware. 4. Check the DynamoDB table via AWS CLI to confirm the user record was created correctly.

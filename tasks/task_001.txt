@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Fix UserID Type Assertion Error in Post Handlers
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Resolve a runtime panic in `internal/api/handlers/posts.go` caused by an incorrect type assertion when retrieving the `userID` from the Gin context. The error `invalid operation: userID (variable of type string) is not an interface` indicates a flawed approach to accessing context values set by the authentication middleware.
+# Details:
+The authentication middleware (from Task #8) places the user's ID into the Gin context using `c.Set("userID", userID)`. The value stored is an `interface{}` wrapping a `string`. The handlers in `internal/api/handlers/posts.go` are incorrectly attempting to retrieve this value, leading to a panic. Locate all instances in `posts.go` where `c.Get("userID")` is used. Replace the faulty logic with a safe type assertion pattern. The correct implementation should first check for the key's existence and then safely assert its type to a string, handling potential errors gracefully. This pattern must be applied to all relevant handlers within the file, including those for creating, updating, and deleting posts.
+
+# Test Strategy:
+Use the Bruno API testing project (Task #11) or a similar tool like Postman. 1. Execute the 'Login User' request to obtain a valid JWT for an existing user. 2. Using the obtained JWT in an Authorization Bearer header, send a request to a protected post endpoint, such as `POST /api/posts` or `PUT /api/posts/:id`. 3. Before the fix, this request would result in a 500 Internal Server Error. After the fix, verify that the request succeeds with the appropriate status code (e.g., 201 Created or 200 OK). 4. Perform a subsequent GET request for the created/updated post to confirm the change was persisted correctly and associated with the correct user.

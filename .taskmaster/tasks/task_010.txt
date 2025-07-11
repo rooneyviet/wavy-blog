@@ -1,0 +1,11 @@
+# Task ID: 10
+# Title: Implement Update and Delete Post API Endpoints
+# Status: done
+# Dependencies: 6, 8
+# Priority: high
+# Description: Implement the API endpoints for updating and deleting posts. This includes creating the repository methods and HTTP handlers, ensuring the endpoints are protected by JWT authentication.
+# Details:
+First, extend the `DatabaseRepo` interface in `internal/repository/repository.go` with `UpdatePost(ctx context.Context, post models.Post) error` and `DeletePost(ctx context.Context, postID, authorID string) error`. Implement these methods in `internal/repository/dynamodb/dbrepo.go`. The `UpdatePost` method should use a DynamoDB `UpdateItem` operation to modify the main post item (PK: `POST#{postID}`). It must also update the denormalized data in the `PostByUser` item (PK: `USER#{authorID}`, SK: `POST#{postID}`). The `DeletePost` method must perform a transactional write (`TransactWriteItems`) to atomically delete the three related items: the main `Post` item, the `PostByUser` item, and the `PostByCategory` item. In `internal/api/handlers/posts.go`, create `UpdatePost` and `DeletePost` handlers. These handlers must extract the `UserID` from the JWT context, fetch the post by its ID to verify the `AuthorID` matches the user's ID, and then call the appropriate repository method. Finally, register the new `PUT /api/posts/:id` and `DELETE /api/posts/:id` routes in `router.go` within the route group protected by the `AuthMiddleware`.
+
+# Test Strategy:
+1. Register and log in two separate users (User A and User B) to obtain their JWTs. 2. Using User A's JWT, create a new post. 3. Using User A's JWT, send a `PUT` request to `/api/posts/{post_id}` with updated title and content. Verify a `200 OK` response and that a subsequent `GET` request for the post returns the updated data. 4. Using User B's JWT, attempt to send a `PUT` request to the same post ID. Verify the response is `403 Forbidden`. 5. Using User B's JWT, attempt to send a `DELETE` request for the post. Verify the response is `403 Forbidden`. 6. Using User A's JWT, send a `DELETE` request for the post. Verify a `204 No Content` response. 7. Attempt to `GET` the post by its ID and verify a `404 Not Found` response.

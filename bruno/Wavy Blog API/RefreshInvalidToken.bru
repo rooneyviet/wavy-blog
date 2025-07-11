@@ -1,0 +1,37 @@
+meta {
+  name: Refresh Invalid Token
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{host}}/api/users/refresh
+  body: none
+  auth: none
+}
+
+headers {
+  Cookie: refresh_token=invalid_token_here
+}
+
+tests {
+  test("should fail with invalid refresh token", function() {
+    expect(res.getStatus()).to.equal(401);
+    const data = res.getBody();
+    expect(data.code).to.equal(401);
+    expect(data.message).to.be.a('string');
+    expect(data.details).to.be.a('string');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should not return access_token", function() {
+    const data = res.getBody();
+    expect(data.access_token).to.be.undefined;
+  });
+}

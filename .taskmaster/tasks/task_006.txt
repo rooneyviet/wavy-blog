@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Implement Post Management API Endpoints
+# Status: done
+# Dependencies: 5
+# Priority: medium
+# Description: Implement the HTTP handlers for all Post Management API endpoints, including CRUD operations.
+# Details:
+In `internal/api/handlers/posts.go`, create handlers for `POST /posts`, `GET /posts`, `GET /posts/:id`, `PUT /posts/:id`, and `DELETE /posts/:id`. These handlers will receive the request, validate the input (and JWT for protected routes), call the appropriate methods on the `DatabaseRepo` interface, and return the response. The `POST /posts` handler will create multiple items in DynamoDB as per the single-table design (Post, PostByUser, PostByCategory). The `GET /posts` handler should support pagination using query parameters and perform a Scan or Query operation. The router in `router.go` should be updated to map these handlers to their respective routes.
+
+# Test Strategy:
+Using an API client: 1. Register and log in a user to get a JWT. 2. Use the token to send a POST request to `/api/posts` to create a new post. 3. Send a GET request to `/api/posts` to verify the new post is in the list. 4. Send a GET request to `/api/posts/:id` to fetch the specific post. 5. Send PUT and DELETE requests to test update and delete functionality. Verify changes in the DynamoDB table.

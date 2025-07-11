@@ -1,0 +1,17 @@
+# Task ID: 11
+# Title: Create Bruno Project for API Testing
+# Status: done
+# Dependencies: 5, 6, 8
+# Priority: high
+# Description: Create a Bruno project to automate API testing. This includes setting up collections and requests for user registration, login, and post creation, with scripting to handle JWT authentication.
+# Details:
+In the project root, create a new directory named `bruno-tests`. Inside this directory, initialize a new Bruno collection. Create a 'local' environment to store variables, starting with `baseUrl` set to `http://localhost:8080/api`. Configure three requests within the collection:
+1. **Register User**: A `POST` request to `{{baseUrl}}/users/register` with a JSON body containing `username`, `email`, and `password`.
+2. **Login User**: A `POST` request to `{{baseUrl}}/users/login` with the same `email` and `password`. In the 'Tests' tab of this request, add a script to parse the response body, extract the `access_token`, and set it as a collection variable named `authToken` using `bru.setVar('authToken', res.body.access_token);`.
+3. **Create Post**: A `POST` request to `{{baseUrl}}/posts`. In the 'Auth' tab, select 'Bearer Token' and use the `{{authToken}}` variable. The request body should be JSON with `title`, `content`, and `category` fields.
+
+# Test Strategy:
+1. Run the 'Register User' request and verify a `201 Created` response.
+2. Run the 'Login User' request. Verify a `200 OK` response and inspect the Bruno collection variables to confirm that `authToken` has been set with a valid JWT.
+3. Run the 'Create Post' request. Verify it succeeds with a `201 Created` response, which confirms the bearer token was correctly extracted and used for authentication.
+4. Ensure the entire `bruno-tests` directory and its contents are committed to the repository.

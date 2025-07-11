@@ -1,0 +1,11 @@
+# Task ID: 9
+# Title: Implement Update and Delete User API Endpoints
+# Status: done
+# Dependencies: 4, 5, 8
+# Priority: high
+# Description: Implement the API endpoints for updating and deleting user profiles. This includes creating the repository methods and HTTP handlers, ensuring the endpoints are protected by JWT authentication.
+# Details:
+This task involves extending the user management functionality. First, in `internal/repository/repository.go`, add `UpdateUser(ctx context.Context, user models.User) error` and `DeleteUser(ctx context.Context, userID string) error` to the `DatabaseRepo` interface. Then, implement these methods in `internal/repository/dynamodb/dbrepo.go`. The `UpdateUser` method should use a DynamoDB `UpdateItem` operation to modify user attributes, disallowing changes to `UserID` and `Email`, and automatically updating the `UpdatedAt` timestamp. The `DeleteUser` method will use `DeleteItem` to remove the user's primary record. In `internal/api/handlers/users.go`, create `UpdateUser` and `DeleteUser` handlers. These handlers must extract the user ID from the JWT claims (added by the auth middleware) and compare it against the user ID from the URL path (`:id`) to ensure a user can only modify or delete their own account. Finally, register the new `PUT /users/:id` and `DELETE /users/:id` routes in `internal/api/router.go` within the route group protected by the `AuthMiddleware`.
+
+# Test Strategy:
+1. Register two users, User A and User B, and log them in to obtain their respective JWTs. 2. Using User A's JWT, send a `PUT` request to `/api/users/{user_a_id}` with updated data (e.g., new username). Verify a `200 OK` response with the updated user object. 3. Using User B's JWT, attempt to send a `PUT` request to `/api/users/{user_a_id}`. Verify the response is `403 Forbidden`. 4. Attempt to send a `PUT` request to `/api/users/{user_a_id}` without any JWT. Verify the response is `401 Unauthorized`. 5. Using User A's JWT, send a `DELETE` request to `/api/users/{user_a_id}`. Verify a `204 No Content` response. 6. Attempt to log in as User A and verify it fails, confirming deletion.

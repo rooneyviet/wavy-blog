@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Implement DynamoDB Repository Layer
+# Status: done
+# Dependencies: 1, 3
+# Priority: high
+# Description: Define the repository interface and implement it for DynamoDB, including table creation logic and connection to LocalStack.
+# Details:
+In `internal/repository/repository.go`, define a `DatabaseRepo` interface with methods for user and post operations (e.g., `CreateUser`, `GetUserByEmail`, `CreatePost`, `GetPostByID`, `GetPostsByUser`, etc.). In `internal/repository/dynamodb/dbrepo.go`, create a `DynamoDBRepo` struct that holds the DynamoDB client. Implement the `DatabaseRepo` interface. The implementation will use the AWS SDK for Go v2. The functions will construct `PutItem`, `GetItem`, `Query`, and `Scan` inputs based on the single-table design schema (e.g., for `CreateUser`, create two items: one with PK `USER#<UserID>` and SK `METADATA#<UserID>`, and for `CreatePost`, create items for the post itself, the user-post link, and the category-post link). Add a utility function `CreateTableIfNotExists` that is called on application startup to create the `WavyBlog` table in LocalStack with the specified PK and SK.
+
+# Test Strategy:
+Write integration tests for the repository implementation. The tests should run against the LocalStack container. Each function in the repository (e.g., `CreateUser`, `GetPostByID`) should have a corresponding test that writes data to DynamoDB and then reads it back to verify correctness. Use the AWS CLI to manually inspect the `WavyBlog` table in LocalStack to confirm the single-table design patterns are being written correctly.

@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Standardize and Enhance API Error Responses
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Refactor all API handlers to return structured, descriptive error messages instead of generic strings. This will improve client-side error handling and provide clearer feedback without exposing sensitive system details.
+# Details:
+Create a standardized error response model and a centralized helper function for sending error responses. The error model should include a machine-readable error code and a human-readable message. Refactor all handlers in `internal/api/handlers/` and the authentication middleware in `internal/api/middleware/` to use this new system. For example, a failed login attempt should return a 401 status with a body like `{"error": {"code": "INVALID_CREDENTIALS", "message": "The email or password provided is incorrect."}}` instead of a generic message. Ensure that internal Go errors are mapped to these standardized API errors and are not exposed directly to the client.
+
+# Test Strategy:
+Trigger various error conditions across all endpoints and verify the response format. 1. Test user login with an incorrect password and assert the response body matches the new structured error format for `INVALID_CREDENTIALS`. 2. Test accessing a protected endpoint (e.g., `POST /posts`) with an invalid JWT and verify the `401 Unauthorized` response contains the new error structure. 3. Test creating a user with an email that already exists and verify the `409 Conflict` response structure. 4. Test fetching a resource with a non-existent ID (e.g., `GET /posts/invalid-id`) and verify the `404 Not Found` response structure. 5. Test updating or deleting a resource owned by another user and verify the `403 Forbidden` response structure.

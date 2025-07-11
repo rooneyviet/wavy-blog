@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Implement Category Endpoint and Finalize API
+# Status: done
+# Dependencies: 6
+# Priority: low
+# Description: Implement the final API endpoint for retrieving unique post categories and perform final integration checks.
+# Details:
+In `internal/repository/dynamodb/dbrepo.go`, add a `GetUniqueCategories` method. This method will perform a DynamoDB query targeting items with a PK prefix of `CATEGORY#`. It will need to process the results to return a list of unique category names. In `internal/api/handlers/posts.go` (or a new `categories.go`), create a handler for `GET /categories`. This handler will call the new repository method and return the list of unique categories as a JSON array. Update the router in `router.go` to include this new endpoint. This task also includes a final review of all code, adding logging middleware, and ensuring consistent error handling across all endpoints.
+
+# Test Strategy:
+1. Create several posts with a mix of new and existing categories using the `/api/posts` endpoint. 2. Send a GET request to `/api/categories`. 3. Verify that the response is a JSON array of strings, containing each unique category name exactly once. 4. Manually query the DynamoDB table for `PK` starting with `CATEGORY#` to cross-reference the results and ensure correctness.

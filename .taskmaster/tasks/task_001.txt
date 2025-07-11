@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Docker Environment Setup for Backend and LocalStack
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Create the Docker environment for the Go backend and LocalStack. This includes the Dockerfile for the Go application and a docker-compose file to orchestrate the services.
+# Details:
+In the project root, update `docker-compose.dev.yml` to define two services: `api-backend` and `localstack`. The `api-backend` service should build from `backend/Dockerfile.dev` and mount the `backend` directory for live reloading. It should also use `.env.dev` for environment variables. The `localstack` service should use the `localstack/localstack` image and expose the necessary ports for DynamoDB (4566). Create `backend/Dockerfile.dev` using a multi-stage build: a `builder` stage with `golang:1.21-alpine` to build the app and a final stage using `alpine` to run the binary. Create `backend/.env.dev` with variables like `AWS_REGION`, `AWS_ENDPOINT` (pointing to `http://localstack:4566`), `DYNAMODB_TABLE_NAME=WavyBlog`.
+
+# Test Strategy:
+Run `docker compose -f docker-compose.dev.yml up --build`. Verify that both `api-backend` and `localstack` containers start without errors. Check the logs to ensure the services are running. Use the AWS CLI (can be run from another container or host if installed) to list tables against the LocalStack endpoint to confirm it's operational: `aws --endpoint-url=http://localhost:4566 dynamodb list-tables`.

@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Define Domain Models and Configuration Management
+# Status: done
+# Dependencies: 2
+# Priority: high
+# Description: Define the core domain models (User, Post) and implement the configuration loading logic for the application.
+# Details:
+In `internal/domain/user.go`, define the `User` struct with fields `UserID`, `Username`, `Email`, `PasswordHash`, `CreatedAt`, `UpdatedAt`. Use `json` and `dynamodbav` tags for marshalling. In `internal/domain/post.go`, define the `Post` struct with fields `PostID`, `Title`, `Content`, `AuthorID`, `Category`, `ThumbnailURL`, `CreatedAt`, `UpdatedAt`. In `internal/config/config.go`, create a `Config` struct and a `LoadConfig` function that reads environment variables from `.env.dev` (e.g., using a library like `godotenv` and `os.Getenv`) to populate the struct. The `main.go` file should call `LoadConfig` on startup.
+
+# Test Strategy:
+Write unit tests for the `LoadConfig` function to ensure it correctly reads and parses environment variables. For domain models, ensure the project compiles successfully after defining the structs. No runtime tests are needed for the models themselves.

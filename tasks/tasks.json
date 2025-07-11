@@ -1,0 +1,68 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Fix UserID Type Assertion Error in Post Handlers",
+        "description": "Resolve a runtime panic in `internal/api/handlers/posts.go` caused by an incorrect type assertion when retrieving the `userID` from the Gin context. The error `invalid operation: userID (variable of type string) is not an interface` indicates a flawed approach to accessing context values set by the authentication middleware.",
+        "details": "The authentication middleware (from Task #8) places the user's ID into the Gin context using `c.Set(\"userID\", userID)`. The value stored is an `interface{}` wrapping a `string`. The handlers in `internal/api/handlers/posts.go` are incorrectly attempting to retrieve this value, leading to a panic. Locate all instances in `posts.go` where `c.Get(\"userID\")` is used. Replace the faulty logic with a safe type assertion pattern. The correct implementation should first check for the key's existence and then safely assert its type to a string, handling potential errors gracefully. This pattern must be applied to all relevant handlers within the file, including those for creating, updating, and deleting posts.",
+        "testStrategy": "Use the Bruno API testing project (Task #11) or a similar tool like Postman. 1. Execute the 'Login User' request to obtain a valid JWT for an existing user. 2. Using the obtained JWT in an Authorization Bearer header, send a request to a protected post endpoint, such as `POST /api/posts` or `PUT /api/posts/:id`. 3. Before the fix, this request would result in a 500 Internal Server Error. After the fix, verify that the request succeeds with the appropriate status code (e.g., 201 Created or 200 OK). 4. Perform a subsequent GET request for the created/updated post to confirm the change was persisted correctly and associated with the correct user.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Fix 404 Error on Login Endpoint",
+        "description": "Investigate and resolve the 404 Not Found error occurring on the `POST /api/users/login` endpoint. The issue is likely a misconfiguration in either the Gin router definition or the Bruno API client request URL.",
+        "details": "The `Login User` request in the Bruno collection is failing with a 404 error, indicating the server cannot find the requested resource. To resolve this, perform the following checks:\n1. **Router Configuration**: Open `internal/api/router.go`. Verify that the user routes are correctly registered. The login route should be defined as `userRoutes.POST(\"/login\", handler.LoginUser)`. Ensure the `userRoutes` group is correctly mounted under the main `/api` group as `/users`.\n2. **Bruno Request URL**: Open the `bruno-tests` collection. Select the `Login User` request. Check the URL field. It should be exactly `{{baseUrl}}/users/login`. Correct any typos, such as `/user/login` or `/api/login`.",
+        "testStrategy": "1. Before making any changes, run the `Login User` request in the Bruno collection to confirm the 404 error. 2. Apply the necessary correction in either the router or the Bruno request file. 3. Relaunch the application. 4. Run the `Login User` request again in Bruno. 5. Verify that the request now succeeds with a `200 OK` status code and that the response body contains a valid JWT token.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement Create Category API Endpoint",
+        "description": "Implement a new API endpoint `POST /api/categories` for creating post categories. This endpoint must be protected by JWT middleware and restricted to users with an 'admin' role.",
+        "details": "First, introduce role-based access control. Modify the `User` model in `internal/domain/user.go` to include a `Role` string field. Update the `RegisterUser` handler to default this role to 'user'. Next, create a new `AdminMiddleware` in `internal/api/middleware`. This middleware will run after the existing `AuthMiddleware`, fetch the user's details from the database using their ID from the JWT context, and abort with a 403 Forbidden error if the user's role is not 'admin'. Then, extend the `DatabaseRepo` interface in `internal/repository/repository.go` with `CreateCategory(ctx context.Context, categoryName string) error`. Implement this method in `dbrepo.go` to perform a DynamoDB `PutItem` operation, creating an item with PK `CATEGORY#{categoryName}` and SK `METADATA`. Create a new handler `CreateCategory` in a new file `internal/api/handlers/categories.go`. This handler will parse the category name from the request body and call the repository method. Finally, in `router.go`, add the `POST /api/categories` route, applying both the `AuthMiddleware` and the new `AdminMiddleware` to it.",
+        "testStrategy": "1. Manually update a user's `Role` to 'admin' in the DynamoDB table for testing. 2. Attempt to POST to `/api/categories` without a JWT. Verify a `401 Unauthorized` response. 3. Log in as a regular (non-admin) user and use their JWT to POST to `/api/categories`. Verify a `403 Forbidden` response. 4. Log in as the admin user and use their JWT to POST a new category (e.g., `{\"name\": \"Technology\"}`). Verify a `201 Created` response. 5. Attempt to create the same category again with the admin JWT. Verify a `409 Conflict` response. 6. Send a GET request to the `/api/categories` endpoint (from Task 7) and confirm that the new 'Technology' category is present in the returned list.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement User Management Repository Methods",
+        "description": "Implement the repository methods for creating and retrieving users. This provides the data access layer required by the user management API handlers to perform their functions, including checking for uniqueness.",
+        "details": "In the `internal/repository/repository.go` file, define the user-specific methods in the `DatabaseRepo` interface, including `CreateUser(ctx, user)`, `GetUserByEmail(ctx, email)`, and `GetUserByUsername(ctx, username)`. Implement these methods in `internal/repository/dynamodb/dbrepo.go`. The `GetUserByEmail` and `GetUserByUsername` methods are critical for the `Register` handler (Task 5) to enforce that new users have a unique email and username. These retrieval methods should be implemented to use an efficient DynamoDB query, which may require a Global Secondary Index (GSI) on those attributes. The `CreateUser` method will perform the `PutItem` operation to save the new user record.",
+        "testStrategy": "Unit tests should be written for the new repository methods. Using a mock DynamoDB client: 1. Test `CreateUser` and assert that the `PutItem` call receives the correctly marshalled user data. 2. Test `GetUserByEmail` by mocking a `Query` response containing a user item and verifying the method correctly unmarshalls and returns the user struct. 3. Test `GetUserByEmail` for a non-existent email by mocking an empty `Query` response and verifying the method returns a `nil` user and a specific 'not found' error. 4. Repeat tests #2 and #3 for the `GetUserByUsername` method. The functional testing of the uniqueness constraint will occur in Task 5.",
+        "status": "pending",
+        "dependencies": [
+          3
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Standardize and Enhance API Error Responses",
+        "description": "Refactor all API handlers to return structured, descriptive error messages instead of generic strings. This will improve client-side error handling and provide clearer feedback without exposing sensitive system details.",
+        "details": "Create a standardized error response model and a centralized helper function for sending error responses. The error model should include a machine-readable error code and a human-readable message. Refactor all handlers in `internal/api/handlers/` and the authentication middleware in `internal/api/middleware/` to use this new system. For example, a failed login attempt should return a 401 status with a body like `{\"error\": {\"code\": \"INVALID_CREDENTIALS\", \"message\": \"The email or password provided is incorrect.\"}}` instead of a generic message. Ensure that internal Go errors are mapped to these standardized API errors and are not exposed directly to the client.",
+        "testStrategy": "Trigger various error conditions across all endpoints and verify the response format. 1. Test user login with an incorrect password and assert the response body matches the new structured error format for `INVALID_CREDENTIALS`. 2. Test accessing a protected endpoint (e.g., `POST /posts`) with an invalid JWT and verify the `401 Unauthorized` response contains the new error structure. 3. Test creating a user with an email that already exists and verify the `409 Conflict` response structure. 4. Test fetching a resource with a non-existent ID (e.g., `GET /posts/invalid-id`) and verify the `404 Not Found` response structure. 5. Test updating or deleting a resource owned by another user and verify the `403 Forbidden` response structure.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-08T13:46:20.282Z",
+      "description": "Default tasks context",
+      "updated": "2025-07-09T02:07:36.384Z"
+    }
+  }
+}

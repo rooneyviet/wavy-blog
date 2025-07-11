@@ -1,0 +1,40 @@
+meta {
+  name: Get Categories
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{host}}/api/categories
+  body: none
+  auth: none
+}
+
+tests {
+  test("should get categories successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data).to.be.an('array');
+    
+    if (data.length > 0) {
+      const category = data[0];
+      expect(category.slug).to.be.a('string');
+      expect(category.name).to.be.a('string');
+      expect(category.created_at).to.be.a('string');
+      expect(category.updated_at).to.be.a('string');
+    }
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should handle empty results", function() {
+    const data = res.getBody();
+    expect(data).to.be.an('array');
+    expect(res.getStatus()).to.equal(200);
+  });
+}

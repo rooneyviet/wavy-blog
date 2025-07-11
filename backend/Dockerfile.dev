@@ -1,0 +1,21 @@
+# Use the official Golang image to create a build artifact.
+FROM golang:1.22-alpine
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+# Copy the go.mod file to download dependencies
+COPY go.mod ./
+
+# Download dependencies. This will also generate a go.sum file.
+RUN go mod download
+
+# Copy the rest of the source code.
+COPY . .
+
+# Expose port 8080 to the outside world
+EXPOSE 8080
+
+# Command to build and run the executable on container start.
+# This ensures the binary is built within the mounted volume.
+CMD ["sh", "-c", "go build -o ./out/api ./cmd/api && ./out/api"]
