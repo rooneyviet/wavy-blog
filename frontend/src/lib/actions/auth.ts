@@ -9,7 +9,7 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required."),
 });
 
-export async function login(_prevState: FormState | null, formData: FormData): Promise<FormState> {
+export async function login(_prevState: FormState | undefined, formData: FormData): Promise<FormState> {
   const validatedFields = loginSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
