@@ -18,7 +18,7 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 	})
 
 	userHandler := handlers.NewUserHandler(repo, cfg)
-	postHandler := handlers.NewPostHandler(repo)
+	postHandler := handlers.NewPostHandler(repo, repo)
 	categoryHandler := handlers.NewCategoryHandler(repo)
 
 	api := r.Group("/api")

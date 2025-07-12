@@ -12,7 +12,8 @@ import (
 )
 
 type PostHandler struct {
-	repo repository.PostRepository
+	repo     repository.PostRepository
+	userRepo repository.UserRepository
 }
 
 // PostResponse defines the structure for post data returned to the client.
@@ -21,37 +22,48 @@ type PostResponse struct {
 	Title        string    `json:"title"`
 	Content      string    `json:"content"`
 	AuthorID     string    `json:"authorID"`
+	AuthorName   string    `json:"authorName"`
 	Category     string    `json:"category"`
 	ThumbnailURL string    `json:"thumbnailURL"`
+	Status       string    `json:"status"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 // toPostResponse converts a domain.Post to a PostResponse.
-func toPostResponse(post *domain.Post) PostResponse {
+func (h *PostHandler) toPostResponse(c *gin.Context, post *domain.Post) PostResponse {
+	authorName := post.AuthorID // Default to username if user lookup fails
+	
+	// Try to fetch the full user details to get the username
+	if user, err := h.userRepo.GetUserByUsername(c.Request.Context(), post.AuthorID); err == nil && user != nil {
+		authorName = user.Username
+	}
+	
 	return PostResponse{
 		Slug:         post.Slug,
 		Title:        post.Title,
 		Content:      post.Content,
-		AuthorID:     post.AuthorID, // Now stores username directly
+		AuthorID:     post.AuthorID,
+		AuthorName:   authorName,
 		Category:     post.Category,
 		ThumbnailURL: post.ThumbnailURL,
+		Status:       post.Status,
 		CreatedAt:    post.CreatedAt,
 		UpdatedAt:    post.UpdatedAt,
 	}
 }
 
 // toPostListResponse converts a slice of domain.Post to a slice of PostResponse.
-func toPostListResponse(posts []*domain.Post) []PostResponse {
+func (h *PostHandler) toPostListResponse(c *gin.Context, posts []*domain.Post) []PostResponse {
 	res := make([]PostResponse, len(posts))
 	for i, p := range posts {
-		res[i] = toPostResponse(p)
+		res[i] = h.toPostResponse(c, p)
 	}
 	return res
 }
 
-func NewPostHandler(repo repository.PostRepository) *PostHandler {
-	return &PostHandler{repo: repo}
+func NewPostHandler(repo repository.PostRepository, userRepo repository.UserRepository) *PostHandler {
+	return &PostHandler{repo: repo, userRepo: userRepo}
 }
 
 type CreatePostInput struct {
@@ -59,6 +71,7 @@ type CreatePostInput struct {
 	Content      string `json:"content" binding:"required"`
 	CategorySlug string `json:"categorySlug" binding:"required"`
 	ThumbnailURL string `json:"thumbnailURL"`
+	Status       string `json:"status"` // "published" or "draft", defaults to "draft"
 }
 
 type UpdatePostInput struct {
@@ -66,6 +79,7 @@ type UpdatePostInput struct {
 	Content      string `json:"content" binding:"required"`
 	CategorySlug string `json:"categorySlug" binding:"required"`
 	ThumbnailURL string `json:"thumbnailURL"`
+	Status       string `json:"status"` // "published" or "draft"
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {
@@ -92,12 +106,19 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		return
 	}
 
+	// Set default status to "draft" if not provided or invalid
+	status := input.Status
+	if status != "published" && status != "draft" {
+		status = "draft"
+	}
+
 	post := &domain.Post{
 		Title:        input.Title,
 		Content:      input.Content,
 		AuthorID:     username, // Use username from token
 		Category:     input.CategorySlug, // Use category slug
 		ThumbnailURL: input.ThumbnailURL,
+		Status:       status,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
@@ -107,7 +128,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, toPostResponse(post))
+	c.JSON(http.StatusCreated, h.toPostResponse(c, post))
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
@@ -117,7 +138,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 		NotFound(c, "Post")
 		return
 	}
-	c.JSON(http.StatusOK, toPostResponse(post))
+	c.JSON(http.StatusOK, h.toPostResponse(c, post))
 }
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
@@ -127,7 +148,7 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 		InternalServerError(c, "Failed to retrieve posts.")
 		return
 	}
-	c.JSON(http.StatusOK, toPostListResponse(posts))
+	c.JSON(http.StatusOK, h.toPostListResponse(c, posts))
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {
@@ -168,10 +189,17 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	// Keep a copy of the old slug before updating the post
 	oldSlug := existingPost.Slug
 
+	// Set status, default to existing status if not provided or invalid
+	status := input.Status
+	if status != "published" && status != "draft" {
+		status = existingPost.Status // Keep existing status if invalid input
+	}
+
 	existingPost.Title = input.Title
 	existingPost.Content = input.Content
 	existingPost.Category = input.CategorySlug // Use category slug
 	existingPost.ThumbnailURL = input.ThumbnailURL
+	existingPost.Status = status
 	existingPost.UpdatedAt = time.Now()
 
 	if err := h.repo.UpdatePost(c.Request.Context(), oldSlug, existingPost); err != nil {
@@ -179,7 +207,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toPostResponse(existingPost))
+	c.JSON(http.StatusOK, h.toPostResponse(c, existingPost))
 }
 
 func (h *PostHandler) DeletePost(c *gin.Context) {

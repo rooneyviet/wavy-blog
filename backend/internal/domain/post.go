@@ -11,6 +11,7 @@ type Post struct {
 	AuthorID     string    `json:"authorID" dynamodbav:"AuthorID"` // This will be the username
 	Category     string    `json:"category" dynamodbav:"Category"`
 	ThumbnailURL string    `json:"thumbnailURL" dynamodbav:"ThumbnailURL"`
+	Status       string    `json:"status" dynamodbav:"Status"` // "published" or "draft"
 	CreatedAt    time.Time `json:"createdAt" dynamodbav:"CreatedAt"`
 	UpdatedAt    time.Time `json:"updatedAt" dynamodbav:"UpdatedAt"`
 	EntityType   string    `json:"-" dynamodbav:"EntityType"`

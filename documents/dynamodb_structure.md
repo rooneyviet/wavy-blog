@@ -64,7 +64,7 @@
 | AuthorID | String | Author's username | `"john_doe"` |
 | Category | String | Post category slug | `"technology"` |
 | ThumbnailURL | String | Post thumbnail image URL | `"https://example.com/thumb.jpg"` |
-| IsPublished | Boolean | Publication status | `true` |
+| Status | String | Publication status | `"published"` or `"draft"` |
 | CreatedAt | Timestamp | Creation timestamp | `"2024-01-15T10:30:00Z"` |
 | UpdatedAt | Timestamp | Last update timestamp | `"2024-01-15T10:30:00Z"` |
 
