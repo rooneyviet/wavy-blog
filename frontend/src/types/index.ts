@@ -18,8 +18,10 @@ export interface Post {
   title: string;
   content: string;
   authorID: string;
+  authorName: string; // Username resolved from authorID
   category: string;
   thumbnailURL?: string;
+  status: "published" | "draft";
   createdAt: string;
   updatedAt: string;
   // The following are from the dummy data and may not be in the final API response.

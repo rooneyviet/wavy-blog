@@ -331,14 +331,6 @@ Structure your application into logical layers to manage complexity and improve 
 
 - **Server-Side Data Loading:** Always load API data from the server render side using Next.js App Router's data fetching capabilities.
 
-- **TanStack Query (React Query):** Use TanStack Query for client-side data fetching, caching, synchronization, and updating. This provides:
-
-  - Automatic background refetching
-  - Optimistic updates
-  - Caching and cache invalidation
-  - Error handling and retry logic
-  - Loading states management
-
 - **Suspense and Skeleton Loading:** Use React Suspense to handle loading states gracefully. Provide skeleton components as fallbacks to improve perceived performance during data fetching.
 
 - **Client Component Strategy:** Avoid adding `"use client"` to large components. Only add `"use client"` to interactive components that require client-side JavaScript (buttons, inputs, forms, etc.). Keep server components as the default for better performance and SEO.

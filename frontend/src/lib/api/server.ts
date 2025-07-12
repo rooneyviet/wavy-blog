@@ -20,9 +20,12 @@ async function fetchFromServer<T>(
       // In a real app, you'd want more robust error handling
       console.error(`API Error: ${response.status} ${response.statusText}`);
       const errorBody = await response.json().catch(() => ({}));
-      throw new Error(
-        errorBody.message || "An error occurred while fetching data."
-      );
+      const error = new Error(
+        errorBody.message || `HTTP ${response.status}: ${response.statusText}`
+      ) as Error & { status: number };
+      // Add status code to error for better handling
+      error.status = response.status;
+      throw error;
     }
 
     return response.json();
@@ -34,6 +37,7 @@ async function fetchFromServer<T>(
 
 export const api = {
   getPosts: (): Promise<Post[]> => fetchFromServer("/posts"),
+  getPostBySlug: (slug: string): Promise<Post> => fetchFromServer(`/posts/${slug}`),
   login: (
     email: string,
     password: string
