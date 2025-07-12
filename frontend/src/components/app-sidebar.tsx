@@ -1,24 +1,11 @@
 "use client";
 
 import * as React from "react";
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react";
+import { GalleryVerticalEnd, Users, FileText } from "lucide-react";
 
-import Link from "next/link"; // Added Link
+import Link from "next/link";
 import { NavMain } from "@/components/nav-main";
-// import { NavProjects } from "@/components/nav-projects" // Removed
 import { NavUser } from "@/components/nav-user";
-// import { TeamSwitcher } from "@/components/team-switcher" // Removed
 import {
   Sidebar,
   SidebarContent,
@@ -26,61 +13,72 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { User } from "@/types";
 
-import { Users, FileText, UserCircle } from "lucide-react"; // Added Users and FileText, removed duplicate Settings2
-
-// This is sample data.
-const data = {
-  user: {
-    // Keeping user for NavUser, can be updated later
-    name: "Admin User",
-    email: "admin@example.com",
-    avatar: "/avatars/shadcn.jpg", // Placeholder avatar
+// All navigation items
+const allNavItems = [
+  {
+    title: "Users",
+    url: "/admin/users", // Base URL for users section
+    icon: Users,
+    isActive: true, // Example: make Users active by default or based on route
+    roles: ["admin"], // Only admin can see this
+    items: [
+      {
+        title: "List Users",
+        url: "/admin/users",
+      },
+      {
+        title: "Add User",
+        url: "/admin/users/add",
+      },
+    ],
   },
-  // teams: [ ... ], // Removed teams
-  navMain: [
-    {
-      title: "Users",
-      url: "/admin/users", // Base URL for users section
-      icon: Users,
-      isActive: true, // Example: make Users active by default or based on route
-      items: [
-        {
-          title: "List Users",
-          url: "/admin/users",
-        },
-        {
-          title: "Add User",
-          url: "/admin/users/add",
-        },
-      ],
-    },
-    {
-      title: "Posts",
-      url: "/admin/posts", // Base URL for posts section
-      icon: FileText,
-      items: [
-        {
-          title: "List Posts",
-          url: "/admin/posts",
-        },
-        {
-          title: "Add Post",
-          url: "/admin/posts/add",
-        },
-      ],
-    },
-    // Example for a settings link if needed in the future
-    // {
-    //   title: "Settings",
-    //   url: "/admin/settings",
-    //   icon: Settings2,
-    // },
-  ],
-  // projects: [ ... ], // Removed projects
-};
+  {
+    title: "Posts",
+    url: "/admin/posts", // Base URL for posts section
+    icon: FileText,
+    roles: ["admin", "author"], // Both admin and author can see this
+    items: [
+      {
+        title: "List Posts",
+        url: "/admin/posts",
+      },
+      {
+        title: "Add Post",
+        url: "/admin/posts/add",
+      },
+    ],
+  },
+  // Example for a settings link if needed in the future
+  // {
+  //   title: "Settings",
+  //   url: "/admin/settings",
+  //   icon: Settings2,
+  //   roles: ["admin"],
+  // },
+];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  userRole?: string;
+  user?: User;
+}
+
+export function AppSidebar({ userRole, user, ...props }: AppSidebarProps) {
+  // Filter navigation items based on user role
+  const filteredNavItems = allNavItems.filter(item => 
+    item.roles.includes(user?.role || "")
+  );
+
+  const data = {
+    user: {
+      name: user?.username || "User",
+      email: user?.email || "user@example.com",
+      avatar: "/avatars/shadcn.jpg", // Placeholder avatar
+    },
+    navMain: filteredNavItems,
+  };
+
   return (
     <Sidebar collapsible="icon" className="bg-white" {...props}>
       <SidebarHeader>

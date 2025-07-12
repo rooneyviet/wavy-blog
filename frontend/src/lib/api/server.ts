@@ -42,5 +42,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
+  getUserByUsername: (username: string, accessToken: string): Promise<{ userID: string; username: string; email: string; role: string; createdAt: string; updatedAt: string }> =>
+    fetchFromServer(`/users/${username}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }),
   // Add other server-side API calls here as needed
 };
