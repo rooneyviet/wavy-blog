@@ -38,6 +38,13 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface PaginatedPostsResponse {
+  posts: Post[];
+  pageSize: number;
+  pageIndex: number;
+  hasNextPage: boolean;
+}
+
 export interface ApiError {
   message: string;
 }

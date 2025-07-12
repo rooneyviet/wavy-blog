@@ -129,9 +129,9 @@ All API endpoints are prefixed with `/api`
 | **Method**           | GET                                          |
 | **URL**              | `/api/posts`                                 |
 | **Authentication**   | Not required                                 |
-| **Query Parameters** | `postName`: string (optional, for filtering) |
-| **Success Response** | 200: Array of post objects                   |
-| **Error Responses**  | 500: Server error                            |
+| **Query Parameters** | `postName`: string (optional, for filtering)<br>`pageSize`: integer (optional, 1-100, default: 10)<br>`pageIndex`: integer (optional, 0-based page number, default: 0) |
+| **Success Response** | 200: Paginated response object (see below)   |
+| **Error Responses**  | 400: Invalid pagination parameters, 500: Server error |
 
 ### Update Post
 
@@ -226,6 +226,30 @@ All API endpoints are prefixed with `/api`
 }
 ```
 
+### Paginated Posts Response
+
+```json
+{
+  "posts": [
+    {
+      "slug": "string",
+      "title": "string",
+      "content": "string",
+      "authorID": "string",
+      "authorName": "string",
+      "category": "string",
+      "thumbnailURL": "string",
+      "status": "string",
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp"
+    }
+  ],
+  "pageSize": 10,
+  "pageIndex": 0,
+  "hasNextPage": true
+}
+```
+
 ### Category Object
 
 ```json
@@ -258,6 +282,8 @@ All API endpoints are prefixed with `/api`
 | **Timestamp** | Date/time               | ISO 8601 format strings                  |
 | **UUID**      | User identifier         | String format                            |
 | **Role**      | User permission level   | "author" (default) or "admin"            |
+| **PageSize**  | Pagination limit        | Integer 1-100, defaults to 10            |
+| **PageIndex** | Current page number     | Integer ≥0, 0-based, defaults to 0       |
 
 ## Authorization Rules
 

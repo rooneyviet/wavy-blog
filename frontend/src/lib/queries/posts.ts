@@ -10,10 +10,10 @@ export const postKeys = {
 };
 
 export const postQueries = {
-  list: () =>
+  list: (pageSize?: number, pageIndex?: number) =>
     queryOptions({
-      queryKey: postKeys.lists(),
-      queryFn: () => api.getPosts(),
+      queryKey: postKeys.list(`page-${pageIndex || 0}-size-${pageSize || 10}`),
+      queryFn: () => api.getPosts(pageSize, pageIndex),
     }),
   detail: (slug: string) =>
     queryOptions({

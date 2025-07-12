@@ -92,7 +92,7 @@
 2. **Get User by Email**: Lookup via UserEmail entity, then User entity
 3. **Get All Users**: Query GSI3 where `EntityType = "USER"`
 4. **Get Post by Slug**: `PK = "POST#<slug>"`
-5. **Get All Posts**: Query GSI3 where `EntityType = "POST"`
+5. **Get All Posts (Paginated)**: Query GSI3 where `EntityType = "POST"` with pagination support
 6. **Get Posts by User**: Query GSI1 where `GSI1PK = "POSTS_BY_USER#<username>"`
 7. **Get Posts by Category**: Query GSI2 where `GSI2PK = "POSTS_BY_CAT#<categorySlug>"`
 8. **Get Category by Slug**: `PK = "CATEGORY#<categorySlug>"`
@@ -107,3 +107,27 @@
 - **Unique Constraints**: Email and slug uniqueness enforced via separate entities  
 - **Category Validation**: Posts reference categories by slug with existence validation
 - **Time-based Sorting**: Posts sorted by creation date using RFC3339 format
+- **Efficient Pagination**: Uses DynamoDB's LastEvaluatedKey for cursor-based pagination
+
+## Pagination Implementation
+
+The `GetAllPosts` query supports pagination through:
+
+- **Page Size**: Configurable limit (1-100 items, default: 10)
+- **Page Index**: 0-based page numbering for user-friendly navigation
+- **Internal Cursor Management**: DynamoDB's `LastEvaluatedKey` handled internally by backend
+- **Stateless**: No server-side state required for pagination
+
+### Pagination Flow
+
+1. **First Request**: Client calls `/api/posts?pageSize=10&pageIndex=0`
+2. **Response**: Returns posts array plus `hasNextPage` boolean
+3. **Next Request**: Client calls `/api/posts?pageSize=10&pageIndex=1`
+4. **Continue**: Repeat until `hasNextPage: false`
+
+### Implementation Notes
+
+- Backend internally manages DynamoDB pagination cursors
+- For `pageIndex > 0`, backend skips previous pages by iterating through DynamoDB results
+- This approach trades some efficiency for API simplicity
+- Consider caching or alternative strategies for very large page indices

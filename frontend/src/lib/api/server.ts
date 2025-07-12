@@ -1,4 +1,4 @@
-import { Post, User, LoginResponse } from "@/types";
+import { Post, User, LoginResponse, PaginatedPostsResponse } from "@/types";
 
 const API_BASE_URL = process.env.INTERNAL_API_URL || "http://api-backend:8080";
 
@@ -36,7 +36,14 @@ async function fetchFromServer<T>(
 }
 
 export const api = {
-  getPosts: (): Promise<Post[]> => fetchFromServer("/posts"),
+  getPosts: (pageSize?: number, pageIndex?: number): Promise<PaginatedPostsResponse> => {
+    const params = new URLSearchParams();
+    if (pageSize) params.append('pageSize', pageSize.toString());
+    if (pageIndex !== undefined) params.append('pageIndex', pageIndex.toString());
+    
+    const query = params.toString();
+    return fetchFromServer(`/posts${query ? `?${query}` : ''}`);
+  },
   getPostBySlug: (slug: string): Promise<Post> => fetchFromServer(`/posts/${slug}`),
   login: (
     email: string,

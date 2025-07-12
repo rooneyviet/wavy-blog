@@ -371,7 +371,7 @@ func (r *DynamoDBRepo) GetPostBySlug(ctx context.Context, slug string) (*domain.
 	return &post, nil
 }
 
-func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*domain.Post, error) {
+func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string, pageSize int, pageIndex int) ([]*domain.Post, bool, error) {
 	keyCondExpr := "EntityType = :type"
 	exprAttrVals := map[string]types.AttributeValue{
 		":type": &types.AttributeValueMemberS{Value: "POST"},
@@ -382,6 +382,7 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*do
 		IndexName:              aws.String(GSI3),
 		KeyConditionExpression: aws.String(keyCondExpr),
 		ExpressionAttributeValues: exprAttrVals,
+		Limit:                  aws.Int32(int32(pageSize + 1)), // Fetch one extra to check if there's a next page
 	}
 
 	if postName != nil && *postName != "" {
@@ -389,17 +390,56 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string) ([]*do
 		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
 	}
 
-	result, err := r.Client.Query(ctx, queryInput)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query all posts: %w", err)
+	// For pageIndex > 0, we need to skip previous pages
+	// This is inefficient for large pageIndex values, but works for basic pagination
+	var allPosts []*domain.Post
+	var lastEvaluatedKey map[string]types.AttributeValue
+	itemsToSkip := pageIndex * pageSize
+	itemsSkipped := 0
+
+	for {
+		if lastEvaluatedKey != nil {
+			queryInput.ExclusiveStartKey = lastEvaluatedKey
+		}
+
+		result, err := r.Client.Query(ctx, queryInput)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to query all posts: %w", err)
+		}
+
+		var currentBatch []*domain.Post
+		err = attributevalue.UnmarshalListOfMaps(result.Items, &currentBatch)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to unmarshal posts: %w", err)
+		}
+
+		// Apply filtering and skipping logic
+		for _, post := range currentBatch {
+			if itemsSkipped < itemsToSkip {
+				itemsSkipped++
+				continue
+			}
+			allPosts = append(allPosts, post)
+			if len(allPosts) >= pageSize+1 { // We fetched one extra to check hasNextPage
+				break
+			}
+		}
+
+		// If we have enough posts or no more data, break
+		if len(allPosts) >= pageSize+1 || result.LastEvaluatedKey == nil {
+			break
+		}
+
+		lastEvaluatedKey = result.LastEvaluatedKey
 	}
 
-	var posts []*domain.Post
-	err = attributevalue.UnmarshalListOfMaps(result.Items, &posts)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal posts: %w", err)
+	// Determine if there's a next page
+	hasNextPage := len(allPosts) > pageSize
+	if hasNextPage {
+		allPosts = allPosts[:pageSize] // Remove the extra item
 	}
-	return posts, nil
+
+	return allPosts, hasNextPage, nil
 }
 
 func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, username string, postName *string) ([]*domain.Post, error) {

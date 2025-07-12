@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -144,12 +145,37 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
 	postName := c.Query("postName")
-	posts, err := h.repo.GetAllPosts(c.Request.Context(), &postName)
+	
+	// Parse pagination parameters
+	pageSize := 10 // default
+	if pageSizeStr := c.Query("pageSize"); pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 && parsed <= 100 {
+			pageSize = parsed
+		}
+	}
+	
+	// Parse pageIndex parameter
+	pageIndex := 0 // default (0-based)
+	if pageIndexStr := c.Query("pageIndex"); pageIndexStr != "" {
+		if parsed, err := strconv.Atoi(pageIndexStr); err == nil && parsed >= 0 {
+			pageIndex = parsed
+		}
+	}
+	
+	posts, hasNextPage, err := h.repo.GetAllPosts(c.Request.Context(), &postName, pageSize, pageIndex)
 	if err != nil {
 		InternalServerError(c, "Failed to retrieve posts.")
 		return
 	}
-	c.JSON(http.StatusOK, h.toPostListResponse(c, posts))
+	
+	response := map[string]interface{}{
+		"posts": h.toPostListResponse(c, posts),
+		"pageSize": pageSize,
+		"pageIndex": pageIndex,
+		"hasNextPage": hasNextPage,
+	}
+	
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {

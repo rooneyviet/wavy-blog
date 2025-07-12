@@ -22,7 +22,7 @@ type PostRepository interface {
 	CreatePost(ctx context.Context, post *domain.Post) error
 	GetPostBySlug(ctx context.Context, slug string) (*domain.Post, error)
 	GetPostsByUser(ctx context.Context, username string, postName *string) ([]*domain.Post, error)
-	GetAllPosts(ctx context.Context, postName *string) ([]*domain.Post, error)
+	GetAllPosts(ctx context.Context, postName *string, pageSize int, pageIndex int) ([]*domain.Post, bool, error)
 	GetPostsByCategory(ctx context.Context, categorySlug string) ([]*domain.Post, error)
 	UpdatePost(ctx context.Context, oldSlug string, post *domain.Post) error
 	DeletePost(ctx context.Context, slug string) error
