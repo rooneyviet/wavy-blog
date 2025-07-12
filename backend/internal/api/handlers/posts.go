@@ -12,8 +12,9 @@ import (
 )
 
 type PostHandler struct {
-	repo     repository.PostRepository
-	userRepo repository.UserRepository
+	repo         repository.PostRepository
+	userRepo     repository.UserRepository
+	categoryRepo repository.CategoryRepository
 }
 
 // PostResponse defines the structure for post data returned to the client.
@@ -62,8 +63,8 @@ func (h *PostHandler) toPostListResponse(c *gin.Context, posts []*domain.Post) [
 	return res
 }
 
-func NewPostHandler(repo repository.PostRepository, userRepo repository.UserRepository) *PostHandler {
-	return &PostHandler{repo: repo, userRepo: userRepo}
+func NewPostHandler(repo repository.PostRepository, userRepo repository.UserRepository, categoryRepo repository.CategoryRepository) *PostHandler {
+	return &PostHandler{repo: repo, userRepo: userRepo, categoryRepo: categoryRepo}
 }
 
 type CreatePostInput struct {
@@ -96,7 +97,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	// Validate that the category exists
-	category, err := h.repo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
+	category, err := h.categoryRepo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
 	if err != nil {
 		InternalServerError(c, "Failed to validate category: "+err.Error())
 		return
@@ -176,7 +177,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	}
 
 	// Validate that the category exists
-	category, err := h.repo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
+	category, err := h.categoryRepo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
 	if err != nil {
 		InternalServerError(c, "Failed to validate category: "+err.Error())
 		return

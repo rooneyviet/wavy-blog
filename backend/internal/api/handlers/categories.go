@@ -11,7 +11,8 @@ import (
 )
 
 type CategoryHandler struct {
-	repo repository.Repository
+	repo     repository.Repository
+	userRepo repository.UserRepository
 }
 
 type CategoryResponse struct {
@@ -38,8 +39,40 @@ func toCategoryListResponse(categories []*domain.Category) []CategoryResponse {
 	return res
 }
 
-func NewCategoryHandler(repo repository.Repository) *CategoryHandler {
-	return &CategoryHandler{repo: repo}
+// toPostResponse converts a domain.Post to a PostResponse for CategoryHandler.
+func (h *CategoryHandler) toPostResponse(c *gin.Context, post *domain.Post) PostResponse {
+	authorName := post.AuthorID // Default to username if user lookup fails
+	
+	// Try to fetch the full user details to get the username
+	if user, err := h.userRepo.GetUserByUsername(c.Request.Context(), post.AuthorID); err == nil && user != nil {
+		authorName = user.Username
+	}
+	
+	return PostResponse{
+		Slug:         post.Slug,
+		Title:        post.Title,
+		Content:      post.Content,
+		AuthorID:     post.AuthorID,
+		AuthorName:   authorName,
+		Category:     post.Category,
+		ThumbnailURL: post.ThumbnailURL,
+		Status:       post.Status,
+		CreatedAt:    post.CreatedAt,
+		UpdatedAt:    post.UpdatedAt,
+	}
+}
+
+// toPostListResponse converts a slice of domain.Post to a slice of PostResponse for CategoryHandler.
+func (h *CategoryHandler) toPostListResponse(c *gin.Context, posts []*domain.Post) []PostResponse {
+	res := make([]PostResponse, len(posts))
+	for i, p := range posts {
+		res[i] = h.toPostResponse(c, p)
+	}
+	return res
+}
+
+func NewCategoryHandler(repo repository.Repository, userRepo repository.UserRepository) *CategoryHandler {
+	return &CategoryHandler{repo: repo, userRepo: userRepo}
 }
 
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
@@ -76,7 +109,7 @@ func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
 		InternalServerError(c, "Failed to retrieve posts for the specified category.")
 		return
 	}
-	c.JSON(http.StatusOK, toPostListResponse(posts))
+	c.JSON(http.StatusOK, h.toPostListResponse(c, posts))
 }
 
 func (h *CategoryHandler) GetCategories(c *gin.Context) {
