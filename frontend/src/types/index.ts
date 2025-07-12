@@ -30,3 +30,18 @@ export interface Post {
   readTimeMinutes?: number;
   publishDate?: string;
 }
+
+export interface LoginResponse {
+  access_token: string;
+  user: User;
+}
+
+export interface ApiError {
+  message: string;
+}
+
+export interface FormState {
+  error?: string;
+  user?: User;
+  access_token?: string;
+}

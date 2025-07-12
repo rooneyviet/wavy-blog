@@ -343,6 +343,122 @@ Structure your application into logical layers to manage complexity and improve 
 
 - **Client Component Strategy:** Avoid adding `"use client"` to large components. Only add `"use client"` to interactive components that require client-side JavaScript (buttons, inputs, forms, etc.). Keep server components as the default for better performance and SEO.
 
+### 6.1. TanStack Query Server-Side Implementation
+
+**CRITICAL:** Always request APIs from the server side during the initial render. Never fetch data from client components.
+
+#### Adding New API Endpoints
+
+For all new API requests, use the existing `@/lib/api/server.ts` file. Add new API methods to the `api` object:
+
+```typescript
+// Add to existing api object in src/lib/api/server.ts
+export const api = {
+  getPosts: (): Promise<Post[]> => fetchFromServer("/posts"),
+  getPostById: (id: string): Promise<Post> => fetchFromServer(`/posts/${id}`),
+  // Add new GET endpoints like this
+  getCategories: (): Promise<Category[]> => fetchFromServer("/categories"),
+
+  // Existing methods...
+  login: (email: string, password: string) => fetchFromServer("/users/login", { ... }),
+};
+```
+
+#### Creating Query Options
+
+For each new API endpoint, create corresponding query options:
+
+```typescript
+// src/lib/queries/posts.ts (or create new query files as needed)
+export const postQueries = {
+  list: () =>
+    queryOptions({
+      queryKey: postKeys.lists(),
+      queryFn: () => api.getPosts(),
+    }),
+  detail: (id: string) =>
+    queryOptions({
+      queryKey: postKeys.detail(id),
+      queryFn: () => api.getPostById(id),
+    }),
+  // Add new queries here
+};
+```
+
+#### Server Component Data Prefetching (GET Requests)
+
+For GET requests, use prefetching in Server Components following this pattern:
+
+```typescript
+// src/app/page.tsx (example implementation)
+export default async function Home() {
+  const queryClient = getQueryClient();
+
+  // Prefetch data on the server
+  await queryClient.prefetchQuery(postQueries.list());
+  const dehydratedState = dehydrate(queryClient);
+
+  return (
+    <main>
+      <HydrationBoundary state={dehydratedState}>
+        <Suspense fallback={<PostListSkeleton />}>
+          <PostList />
+        </Suspense>
+      </HydrationBoundary>
+    </main>
+  );
+}
+```
+
+#### POST Requests with Server Actions
+
+For POST/PUT/DELETE requests, use Next.js Server Actions following the pattern in `@/lib/actions/auth.ts`:
+
+```typescript
+// src/lib/actions/posts.ts (example)
+"use server";
+
+import { z } from "zod";
+import { api } from "@/lib/api/server";
+
+const createPostSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+  category: z.string().min(1, "Category is required"),
+});
+
+export async function createPost(prevState: any, formData: FormData) {
+  const validatedFields = createPostSchema.safeParse(
+    Object.fromEntries(formData.entries())
+  );
+
+  if (!validatedFields.success) {
+    return {
+      error: validatedFields.error.errors.map((e) => e.message).join(", "),
+    };
+  }
+
+  try {
+    const postData = validatedFields.data;
+    const result = await api.createPost(postData);
+    return { success: true, post: result };
+  } catch (error: any) {
+    return {
+      error: error.message || "An unexpected error occurred.",
+    };
+  }
+}
+```
+
+**Important Guidelines:**
+
+1. **Server-First:** All initial data loading must happen on the server using `prefetchQuery`
+2. **Use Existing API:** Always add new endpoints to the existing `@/lib/api/server.ts` file
+3. **Query Options:** Create reusable query configurations for each API endpoint
+4. **GET vs POST:** Use prefetching for GET requests, Server Actions for mutations
+5. **No Client Fetching:** Never use client-side fetch calls for initial page data
+6. **Type Safety:** Ensure all API responses and request payloads are properly typed
+
 ## 7. Performance Optimization
 
 - **Code Splitting:** Use `React.lazy()` and `Suspense` to split code by routes or features, improving initial load time.

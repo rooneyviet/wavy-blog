@@ -1,11 +1,11 @@
-import { Post } from "@/types";
+import { Post, User, LoginResponse } from "@/types";
 
 const API_BASE_URL = process.env.INTERNAL_API_URL || "http://api-backend:8080";
 
-async function fetchFromServer(
+async function fetchFromServer<T>(
   path: string,
   options: RequestInit = {}
-): Promise<any> {
+): Promise<T> {
   const url = `${API_BASE_URL}/api${path}`;
   try {
     const response = await fetch(url, {
@@ -37,12 +37,12 @@ export const api = {
   login: (
     email: string,
     password: string
-  ): Promise<{ access_token: string; user: any }> =>
+  ): Promise<LoginResponse> =>
     fetchFromServer("/users/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
-  getUserByUsername: (username: string, accessToken: string): Promise<{ userID: string; username: string; email: string; role: string; createdAt: string; updatedAt: string }> =>
+  getUserByUsername: (username: string, accessToken: string): Promise<User> =>
     fetchFromServer(`/users/${username}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
