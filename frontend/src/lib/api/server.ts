@@ -74,6 +74,10 @@ async function fetchFromServerWithCookies<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}/api${path}`;
+  console.log(`[API] Making request to: ${url}`);
+  console.log(`[API] Cookie header being sent: ${cookieHeader}`);
+  console.log(`[API] Request options:`, JSON.stringify(options, null, 2));
+  
   try {
     const response = await fetch(url, {
       ...options,
@@ -84,9 +88,13 @@ async function fetchFromServerWithCookies<T>(
       },
     });
 
+    console.log(`[API] Response status: ${response.status} ${response.statusText}`);
+    console.log(`[API] Response headers:`, Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
-      console.error(`API Error: ${response.status} ${response.statusText}`);
+      console.error(`[API] API Error: ${response.status} ${response.statusText}`);
       const errorBody = await response.json().catch(() => ({}));
+      console.error(`[API] Error body:`, errorBody);
       const error = new Error(
         errorBody.message || `HTTP ${response.status}: ${response.statusText}`
       ) as Error & { status: number };
@@ -94,9 +102,11 @@ async function fetchFromServerWithCookies<T>(
       throw error;
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`[API] Response data:`, JSON.stringify(data, null, 2));
+    return data;
   } catch (error) {
-    console.error("Failed to fetch from server:", error);
+    console.error("[API] Failed to fetch from server:", error);
     throw error;
   }
 }

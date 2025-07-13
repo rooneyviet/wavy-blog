@@ -11,11 +11,13 @@ const loginSchema = z.object({
 });
 
 export async function login(_prevState: FormState | undefined, formData: FormData): Promise<FormState> {
+  console.log("[LOGIN_ACTION] Starting login process");
   const validatedFields = loginSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
 
   if (!validatedFields.success) {
+    console.log("[LOGIN_ACTION] Validation failed:", validatedFields.error.errors);
     return {
       error: validatedFields.error.errors.map((e) => e.message).join(", "),
     };
@@ -23,19 +25,25 @@ export async function login(_prevState: FormState | undefined, formData: FormDat
 
   try {
     const { email, password } = validatedFields.data;
+    console.log("[LOGIN_ACTION] Attempting login for email:", email);
     const { data, response } = await api.loginWithResponse(email, password);
     const { access_token, user } = data;
 
+    console.log("[LOGIN_ACTION] Login successful, user:", user.username);
+
     // Forward cookies from backend to browser
     const setCookieHeaders = response.headers.getSetCookie();
+    console.log("[LOGIN_ACTION] Set-Cookie headers from backend:", setCookieHeaders);
     const cookieStore = await cookies();
     
     setCookieHeaders.forEach((cookieHeader) => {
+      console.log("[LOGIN_ACTION] Processing cookie header:", cookieHeader);
       // Parse the Set-Cookie header
       const [cookiePart, ...attributeParts] = cookieHeader.split(';');
       const [name, value] = cookiePart.split('=');
       
       if (name?.trim() === 'refresh_token') {
+        console.log("[LOGIN_ACTION] Found refresh_token cookie, value:", value);
         // Parse cookie attributes
         const attributes: {
           maxAge?: number;
@@ -62,6 +70,8 @@ export async function login(_prevState: FormState | undefined, formData: FormDat
           }
         });
 
+        console.log("[LOGIN_ACTION] Cookie attributes:", attributes);
+
         // Set the cookie in NextJS
         cookieStore.set(name.trim(), value, {
           maxAge: attributes.maxAge || 1209600, // 14 days default
@@ -70,11 +80,21 @@ export async function login(_prevState: FormState | undefined, formData: FormDat
           secure: attributes.secure || false,
           sameSite: attributes.sameSite || 'strict'
         });
+
+        console.log("[LOGIN_ACTION] Cookie set in NextJS with attributes:", {
+          maxAge: attributes.maxAge || 1209600,
+          path: attributes.path || '/',
+          httpOnly: attributes.httpOnly || true,
+          secure: attributes.secure || false,
+          sameSite: attributes.sameSite || 'strict'
+        });
       }
     });
 
+    console.log("[LOGIN_ACTION] Login process completed successfully");
     return { user, access_token };
   } catch (error: unknown) {
+    console.error("[LOGIN_ACTION] Login failed:", error);
     return {
       error: error instanceof Error ? error.message : "An unexpected error occurred during login.",
     };
