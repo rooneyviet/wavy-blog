@@ -35,6 +35,39 @@ async function fetchFromServer<T>(
   }
 }
 
+// New function that returns both data and response for cookie handling
+async function fetchFromServerWithResponse<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<{ data: T; response: Response }> {
+  const url = `${API_BASE_URL}/api${path}`;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`API Error: ${response.status} ${response.statusText}`);
+      const errorBody = await response.json().catch(() => ({}));
+      const error = new Error(
+        errorBody.message || `HTTP ${response.status}: ${response.statusText}`
+      ) as Error & { status: number };
+      error.status = response.status;
+      throw error;
+    }
+
+    const data = await response.json();
+    return { data, response };
+  } catch (error) {
+    console.error("Failed to fetch from server:", error);
+    throw error;
+  }
+}
+
 async function fetchFromServerWithCookies<T>(
   path: string,
   cookieHeader: string,
@@ -85,6 +118,11 @@ export const api = {
     fetchFromServer(`/posts/${slug}`),
   login: (email: string, password: string): Promise<LoginResponse> =>
     fetchFromServer("/users/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+  loginWithResponse: (email: string, password: string) =>
+    fetchFromServerWithResponse<LoginResponse>("/users/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
