@@ -64,7 +64,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: User;
 }
 
-export function AppSidebar({ userRole, user, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
   // Filter navigation items based on user role
   const filteredNavItems = allNavItems.filter(item => 
     item.roles.includes(user?.role || "")

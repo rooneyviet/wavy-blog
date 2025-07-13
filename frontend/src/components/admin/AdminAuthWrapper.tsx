@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import AdminLayoutClient from "./AdminLayoutClient";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface AdminAuthWrapperProps {
   children: React.ReactNode;
@@ -41,8 +42,8 @@ export default function AdminAuthWrapper({ children }: AdminAuthWrapperProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen bg-pink-50">
+        <LoadingSpinner size="lg" text="Authenticating..." />
       </div>
     );
   }
@@ -55,9 +56,5 @@ export default function AdminAuthWrapper({ children }: AdminAuthWrapperProps) {
     return null; // Will redirect
   }
 
-  return (
-    <AdminLayoutClient user={user}>
-      {children}
-    </AdminLayoutClient>
-  );
+  return <AdminLayoutClient user={user}>{children}</AdminLayoutClient>;
 }

@@ -1,4 +1,4 @@
-"use client"; // Required for Tanstack Table and client-side interactions
+"use client";
 
 import * as React from "react";
 import {
@@ -14,6 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,7 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -48,56 +48,31 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Post } from "@/types";
 
-// Define the User type for the admin section
-export interface AdminUser {
+export interface AdminPost {
   id: string;
-  name: string;
-  email: string;
-  role: "Admin" | "Author"; // Assuming these are the roles
-  avatarUrl?: string; // Optional: if you want to display avatars
+  slug: string;
+  title: string;
+  authorName: string;
+  publishDate: string;
+  status: "published" | "draft";
+  category: string;
 }
 
-// Sample Data for Users
-const sampleAdminUsers: AdminUser[] = [
-  {
-    id: "usr_1",
-    name: "Alice Wonderland",
-    email: "alice@example.com",
-    role: "Admin",
-    avatarUrl: "https://i.pravatar.cc/40?u=alice@example.com",
-  },
-  {
-    id: "usr_2",
-    name: "Bob The Builder",
-    email: "bob@example.com",
-    role: "Author",
-    avatarUrl: "https://i.pravatar.cc/40?u=bob@example.com",
-  },
-  {
-    id: "usr_3",
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    role: "Author",
-    avatarUrl: "https://i.pravatar.cc/40?u=charlie@example.com",
-  },
-  {
-    id: "usr_4",
-    name: "Diana Prince",
-    email: "diana@example.com",
-    role: "Admin",
-    avatarUrl: "https://i.pravatar.cc/40?u=diana@example.com",
-  },
-  {
-    id: "usr_5",
-    name: "Edward Scissorhands",
-    email: "edward@example.com",
-    role: "Author",
-    avatarUrl: "https://i.pravatar.cc/40?u=edward@example.com",
-  },
-];
+function transformPostToAdminPost(post: Post): AdminPost {
+  return {
+    id: post.slug, // Using slug as ID since that's what we have
+    slug: post.slug,
+    title: post.title,
+    authorName: post.authorName,
+    publishDate: post.publishDate || post.createdAt,
+    status: post.status,
+    category: post.category,
+  };
+}
 
-const columns: ColumnDef<AdminUser>[] = [
+export const columns: ColumnDef<AdminPost>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -125,59 +100,68 @@ const columns: ColumnDef<AdminUser>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "name",
+    accessorKey: "title",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
+          Title
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="font-medium">{row.getValue("title")}</div>
+    ),
+  },
+  {
+    accessorKey: "authorName",
+    header: "Author",
+    cell: ({ row }) => {
+      const authorName = row.getValue("authorName") as string;
+      return <div>{authorName}</div>;
+    },
+  },
+  {
+    accessorKey: "category",
+    header: "Category",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("category")}</div>
+    ),
+  },
+  {
+    accessorKey: "publishDate",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Publish Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
-      const user = row.original;
-      return (
-        <div className="flex items-center gap-2">
-          {user.avatarUrl && (
-            <img
-              src={user.avatarUrl}
-              alt={user.name}
-              className="h-8 w-8 rounded-full"
-            />
-          )}
-          <span>{user.name}</span>
-        </div>
-      );
+      const date = new Date(row.getValue("publishDate"));
+      const formatted = date.toLocaleDateString();
+      return <div className="text-left font-medium">{formatted}</div>;
     },
   },
   {
-    accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("role")}</div>,
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("status")}</div>
+    ),
   },
   {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const user = row.original;
+      const post = row.original;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -188,20 +172,20 @@ const columns: ColumnDef<AdminUser>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(user.id)}
-            >
-              Copy user ID
-            </DropdownMenuItem>
+            <Link href={`/blog/${post.slug}`} passHref legacyBehavior>
+              <a target="_blank" rel="noopener noreferrer">
+                <DropdownMenuItem>View Post</DropdownMenuItem>
+              </a>
+            </Link>
             <DropdownMenuSeparator />
-            <Link href={`/admin/users/edit/${user.id}`} passHref>
-              <DropdownMenuItem>Edit User</DropdownMenuItem>
+            <Link href={`/admin/posts/edit/${post.id}`} passHref>
+              <DropdownMenuItem>Edit Post</DropdownMenuItem>
             </Link>
             <DropdownMenuItem
               className="text-red-600"
-              onClick={() => alert(`Delete user: ${user.name}`)} // Replace with actual delete logic
+              onClick={() => alert(`Delete post: ${post.title}`)}
             >
-              Delete User
+              Delete Post
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -210,10 +194,17 @@ const columns: ColumnDef<AdminUser>[] = [
   },
 ];
 
-export default function ListUsersPage() {
-  const [data, setData] = React.useState<AdminUser[]>(() => [
-    ...sampleAdminUsers,
-  ]); // Make data stateful for potential modifications
+interface PostsDataTableProps {
+  posts: Post[];
+}
+
+export default function PostsDataTable({ posts }: PostsDataTableProps) {
+  const adminPosts = React.useMemo(
+    () => posts.map(transformPostToAdminPost),
+    [posts]
+  );
+
+  const [data, setData] = React.useState<AdminPost[]>(adminPosts);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -222,7 +213,11 @@ export default function ListUsersPage() {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
+  const [selectedPostIds, setSelectedPostIds] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    setData(adminPosts);
+  }, [adminPosts]);
 
   const table = useReactTable({
     data,
@@ -250,29 +245,28 @@ export default function ListUsersPage() {
     if (selectedIds.length === 0) {
       return;
     }
-    setSelectedUserIds(selectedIds);
+    setSelectedPostIds(selectedIds);
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = () => {
-    // Implement actual deletion logic here
     setData((prevData) =>
-      prevData.filter((user) => !selectedUserIds.includes(user.id))
+      prevData.filter((post) => !selectedPostIds.includes(post.id))
     );
-    table.resetRowSelection(); // Clear selection
+    table.resetRowSelection();
     setShowDeleteDialog(false);
-    setSelectedUserIds([]);
+    setSelectedPostIds([]);
   };
 
   return (
     <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full border-0 text-sm">
-      <h2 className="text-2xl font-bold mb-6">Users</h2>
+      <h2 className="text-2xl font-bold mb-6">Posts</h2>
       <div className="flex items-center justify-between py-4">
         <Input
-          placeholder="Filter by name..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          placeholder="Filter by title..."
+          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
+            table.getColumn("title")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -289,10 +283,10 @@ export default function ListUsersPage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Users</AlertDialogTitle>
+                  <AlertDialogTitle>Delete Posts</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete {selectedUserIds.length}{" "}
-                    selected user{selectedUserIds.length > 1 ? "s" : ""}? This
+                    Are you sure you want to delete {selectedPostIds.length}{" "}
+                    selected post{selectedPostIds.length > 1 ? "s" : ""}? This
                     action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -308,9 +302,9 @@ export default function ListUsersPage() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Link href="/admin/users/add" passHref>
+          <Link href="/admin/posts/add" passHref>
             <Button className="subscribe-button text-white hover:opacity-90">
-              Add User
+              Add Post
             </Button>
           </Link>
           <DropdownMenu>
