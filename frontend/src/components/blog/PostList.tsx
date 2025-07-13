@@ -19,7 +19,13 @@ export default function PostList() {
 
   if (!response) {
     // This should ideally not be reached if using Suspense, but as a fallback
-    return <div>No posts found.</div>;
+    return (
+      <div className="lg:col-span-2 space-y-12">
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">No posts found.</p>
+        </div>
+      </div>
+    );
   }
 
   const { posts, pageSize: responsePageSize, pageIndex: responsePageIndex, hasNextPage } = response;
@@ -34,18 +40,26 @@ export default function PostList() {
 
   return (
     <div className="lg:col-span-2 space-y-12">
-      {posts.map((post, index) => (
-        <BlogPostCard
-          key={post.slug}
-          post={post}
-          isFeatured={index % 2 === 0}
-        />
-      ))}
-      
-      <DataPagination<Post> 
-        data={paginationData} 
-        className="mt-8" 
-      />
+      {posts.length > 0 ? (
+        <>
+          {posts.map((post, index) => (
+            <BlogPostCard
+              key={post.slug}
+              post={post}
+              isFeatured={index % 2 === 0}
+            />
+          ))}
+          
+          <DataPagination<Post> 
+            data={paginationData} 
+            className="mt-8" 
+          />
+        </>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">No posts found.</p>
+        </div>
+      )}
     </div>
   );
 }
