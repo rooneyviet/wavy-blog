@@ -1,24 +1,46 @@
-import { Suspense } from "react";
-import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
-import getQueryClient from "@/lib/get-query-client";
+"use client";
+
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { postQueries } from "@/lib/queries/posts";
 import PostsDataTable from "@/components/admin/PostsDataTable";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { useAuthStore } from "@/stores/authStore";
 
-export default async function ListPostsPage() {
-  const queryClient = getQueryClient();
-  await queryClient.prefetchQuery(postQueries.list());
-  const dehydratedState = dehydrate(queryClient);
+export default function ListPostsPage() {
+  const { accessToken } = useAuthStore();
+  
+  const {
+    data: postsData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery(postQueries.admin(accessToken || ""));
 
-  // Get the posts data from the query client
-  const postsData = queryClient.getQueryData(postQueries.list().queryKey);
   const posts = postsData?.posts || [];
 
-  return (
-    <HydrationBoundary state={dehydratedState}>
-      <Suspense fallback={<LoadingSpinner size="lg" />}>
-        <PostsDataTable posts={posts} />
-      </Suspense>
-    </HydrationBoundary>
-  );
+  if (isLoading) {
+    return (
+      <TableSkeleton 
+        columns={["", "Title", "Author", "Category", "Publish Date", "Status", ""]} 
+        rows={5}
+        title="Posts"
+      />
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Failed to load posts</p>
+          <p className="text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : "Unknown error occurred"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <PostsDataTable posts={posts} />;
 }

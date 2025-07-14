@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { Category } from "@/types";
 import { categoryQueries } from "@/lib/queries/categories";
 
@@ -186,10 +186,8 @@ export default function CategoriesDataTable() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <Link href={`/blog/category/${category.slug}`} passHref legacyBehavior>
-                <a target="_blank" rel="noopener noreferrer">
-                  <DropdownMenuItem>View Category</DropdownMenuItem>
-                </a>
+              <Link href={`/admin/categories/${category.slug}/edit`} passHref>
+                <DropdownMenuItem>Edit Category</DropdownMenuItem>
               </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -244,9 +242,11 @@ export default function CategoriesDataTable() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" text="Loading categories..." />
-      </div>
+      <TableSkeleton 
+        columns={["", "Name", "Slug", "Created Date", ""]} 
+        rows={5}
+        title="Categories"
+      />
     );
   }
 

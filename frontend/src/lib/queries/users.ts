@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { User } from "@/types";
+import { handleUnauthorizedResponse } from "@/lib/utils/auth";
 
 export const userKeys = {
   all: ["users"] as const,
@@ -14,6 +15,11 @@ const fetchUsers = async (accessToken: string): Promise<User[]> => {
       Authorization: `Bearer ${accessToken}`,
     },
   });
+
+  // Check for 401 and automatically logout
+  if (handleUnauthorizedResponse(response)) {
+    throw new Error("Unauthorized - logged out");
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch users: ${response.status}`);

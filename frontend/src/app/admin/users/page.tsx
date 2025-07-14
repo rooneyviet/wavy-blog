@@ -39,7 +39,7 @@ import {
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { User } from "@/types";
 import { userQueries } from "@/lib/queries/users";
 import { useAuthStore } from "@/stores/authStore";
@@ -259,9 +259,11 @@ export default function ListUsersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" text="Loading users..." />
-      </div>
+      <TableSkeleton 
+        columns={["", "Name", "Email", "Role", ""]} 
+        rows={5}
+        title="Users"
+      />
     );
   }
 
