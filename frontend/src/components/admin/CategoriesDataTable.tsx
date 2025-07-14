@@ -38,17 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Category } from "@/types";
 import { categoryQueries } from "@/lib/queries/categories";
@@ -69,110 +59,7 @@ function transformCategoryToAdminCategory(category: Category): AdminCategory {
   };
 }
 
-export const columns: ColumnDef<AdminCategory>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center w-12 px-2 py-2">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center w-12 px-2 py-2">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-medium">{row.getValue("name")}</div>
-    ),
-  },
-  {
-    accessorKey: "slug",
-    header: "Slug",
-    cell: ({ row }) => {
-      const slug = row.getValue("slug") as string;
-      return <div className="text-muted-foreground">{slug}</div>;
-    },
-  },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Created Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt"));
-      const formatted = date.toLocaleDateString();
-      return <div className="text-left font-medium">{formatted}</div>;
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const category = row.original;
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link href={`/blog/category/${category.slug}`} passHref legacyBehavior>
-              <a target="_blank" rel="noopener noreferrer">
-                <DropdownMenuItem>View Category</DropdownMenuItem>
-              </a>
-            </Link>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => alert(`Delete category: ${category.name}`)}
-            >
-              Delete Category
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
+
 
 export default function CategoriesDataTable() {
   const {
@@ -196,6 +83,127 @@ export default function CategoriesDataTable() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<string[]>([]);
+  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = React.useState(false);
+  const [singleDeleteCategory, setSingleDeleteCategory] = React.useState<AdminCategory | null>(null);
+
+  const handleSingleDelete = React.useCallback((category: AdminCategory) => {
+    setSingleDeleteCategory(category);
+    setShowSingleDeleteDialog(true);
+  }, []);
+
+  const confirmSingleDelete = () => {
+    if (singleDeleteCategory) {
+      // TODO: Implement actual delete API call
+      console.log(`Delete category: ${singleDeleteCategory.name}`);
+    }
+    setShowSingleDeleteDialog(false);
+    setSingleDeleteCategory(null);
+  };
+
+  const columns: ColumnDef<AdminCategory>[] = React.useMemo(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center w-12 px-2 py-2">
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center w-12 px-2 py-2">
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("name")}</div>
+      ),
+    },
+    {
+      accessorKey: "slug",
+      header: "Slug",
+      cell: ({ row }) => {
+        const slug = row.getValue("slug") as string;
+        return <div className="text-muted-foreground">{slug}</div>;
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Created Date
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("createdAt"));
+        const formatted = date.toLocaleDateString();
+        return <div className="text-left font-medium">{formatted}</div>;
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const category = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <Link href={`/blog/category/${category.slug}`} passHref legacyBehavior>
+                <a target="_blank" rel="noopener noreferrer">
+                  <DropdownMenuItem>View Category</DropdownMenuItem>
+                </a>
+              </Link>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => handleSingleDelete(category)}
+              >
+                Delete Category
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   const table = useReactTable({
     data: adminCategories,
@@ -269,35 +277,19 @@ export default function CategoriesDataTable() {
         />
         <div className="flex gap-2">
           {Object.keys(rowSelection).length > 0 && (
-            <AlertDialog
+            <ConfirmationDialog
               open={showDeleteDialog}
               onOpenChange={setShowDeleteDialog}
+              title="Delete Categories"
+              description={`Are you sure you want to delete ${selectedCategoryIds.length} selected categor${selectedCategoryIds.length > 1 ? "ies" : "y"}? This action cannot be undone.`}
+              confirmText="Delete"
+              onConfirm={confirmDelete}
+              variant="destructive"
             >
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" onClick={handleDeleteClick}>
-                  Delete Selected ({Object.keys(rowSelection).length})
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Categories</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete {selectedCategoryIds.length}{" "}
-                    selected categor{selectedCategoryIds.length > 1 ? "ies" : "y"}? This
-                    action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={confirmDelete}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              <Button variant="destructive" onClick={handleDeleteClick}>
+                Delete Selected ({Object.keys(rowSelection).length})
+              </Button>
+            </ConfirmationDialog>
           )}
           <Link href="/admin/categories/add" passHref>
             <Button className="subscribe-button text-white hover:opacity-90">
@@ -406,6 +398,16 @@ export default function CategoriesDataTable() {
           </Button>
         </div>
       </div>
+
+      <ConfirmationDialog
+        open={showSingleDeleteDialog}
+        onOpenChange={setShowSingleDeleteDialog}
+        title="Delete Category"
+        description={`Are you sure you want to delete "${singleDeleteCategory?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={confirmSingleDelete}
+        variant="destructive"
+      />
     </Card>
   );
 }
