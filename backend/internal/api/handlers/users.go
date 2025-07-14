@@ -219,9 +219,24 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	// Keep the same refresh token (no rotation) to avoid cookie sync issues
-	// This is safer for server-side rendering where cookies can't be updated mid-request
-	log.Printf("[REFRESH] Successfully refreshed access token for user: %s, keeping same refresh token", user.Username)
+	// Optionally rotate refresh token for enhanced security
+	newRefreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		InternalServerError(c, "Could not generate new refresh token.")
+		return
+	}
+	log.Printf("[REFRESH] newRefreshToken value: %s", newRefreshToken)
+
+	// Update refresh token in database
+	refreshTokenExpiration := utils.GetRefreshTokenExpiration(h.cfg)
+	if err := h.repo.UpdateUserRefreshToken(c.Request.Context(), user.Username, newRefreshToken, refreshTokenExpiration); err != nil {
+		InternalServerError(c, "Could not update refresh token.")
+		return
+	}
+
+	// Set new refresh token as HTTP-only cookie
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("refresh_token", newRefreshToken, int(h.cfg.JWTRefreshTokenExpiration.Seconds()), "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": newAccessToken,

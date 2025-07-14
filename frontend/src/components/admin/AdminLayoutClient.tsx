@@ -14,10 +14,13 @@ interface AdminLayoutClientProps {
   user: User;
 }
 
-export default function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
+export default function AdminLayoutClient({
+  children,
+  user,
+}: AdminLayoutClientProps) {
   return (
     <SidebarProvider>
-      <AppSidebar userRole={user.role} user={user} />
+      <AppSidebar user={user} />
       <SidebarInset className="bg-white shadow-none border-none">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <SidebarTrigger className="-ml-1" />

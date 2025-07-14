@@ -60,13 +60,12 @@ const allNavItems = [
 ];
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  userRole?: string;
   user?: User;
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   // Filter navigation items based on user role
-  const filteredNavItems = allNavItems.filter(item => 
+  const filteredNavItems = allNavItems.filter((item) =>
     item.roles.includes(user?.role || "")
   );
 

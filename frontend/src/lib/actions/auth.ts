@@ -1,9 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { cookies } from "next/headers";
 import { api } from "@/lib/api/server";
 import { FormState } from "@/types";
+import { forwardCookiesFromResponse } from "@/lib/utils/cookies";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -32,64 +32,7 @@ export async function login(_prevState: FormState | undefined, formData: FormDat
     console.log("[LOGIN_ACTION] Login successful, user:", user.username);
 
     // Forward cookies from backend to browser
-    const setCookieHeaders = response.headers.getSetCookie();
-    console.log("[LOGIN_ACTION] Set-Cookie headers from backend:", setCookieHeaders);
-    const cookieStore = await cookies();
-    
-    setCookieHeaders.forEach((cookieHeader) => {
-      console.log("[LOGIN_ACTION] Processing cookie header:", cookieHeader);
-      // Parse the Set-Cookie header
-      const [cookiePart, ...attributeParts] = cookieHeader.split(';');
-      const [name, value] = cookiePart.split('=');
-      
-      if (name?.trim() === 'refresh_token') {
-        console.log("[LOGIN_ACTION] Found refresh_token cookie, value:", value);
-        // Parse cookie attributes
-        const attributes: {
-          maxAge?: number;
-          path?: string;
-          httpOnly?: boolean;
-          secure?: boolean;
-          sameSite?: 'strict' | 'lax' | 'none';
-        } = {};
-        attributeParts.forEach(attr => {
-          const [key, val] = attr.trim().split('=');
-          if (key.toLowerCase() === 'max-age') {
-            attributes.maxAge = parseInt(val);
-          } else if (key.toLowerCase() === 'path') {
-            attributes.path = val;
-          } else if (key.toLowerCase() === 'httponly') {
-            attributes.httpOnly = true;
-          } else if (key.toLowerCase() === 'secure') {
-            attributes.secure = true;
-          } else if (key.toLowerCase() === 'samesite') {
-            const sameSiteValue = val?.toLowerCase();
-            if (sameSiteValue === 'strict' || sameSiteValue === 'lax' || sameSiteValue === 'none') {
-              attributes.sameSite = sameSiteValue;
-            }
-          }
-        });
-
-        console.log("[LOGIN_ACTION] Cookie attributes:", attributes);
-
-        // Set the cookie in NextJS
-        cookieStore.set(name.trim(), value, {
-          maxAge: attributes.maxAge || 1209600, // 14 days default
-          path: attributes.path || '/',
-          httpOnly: attributes.httpOnly || true,
-          secure: attributes.secure || false,
-          sameSite: attributes.sameSite || 'strict'
-        });
-
-        console.log("[LOGIN_ACTION] Cookie set in NextJS with attributes:", {
-          maxAge: attributes.maxAge || 1209600,
-          path: attributes.path || '/',
-          httpOnly: attributes.httpOnly || true,
-          secure: attributes.secure || false,
-          sameSite: attributes.sameSite || 'strict'
-        });
-      }
-    });
+    await forwardCookiesFromResponse(response, "[LOGIN_ACTION]");
 
     console.log("[LOGIN_ACTION] Login process completed successfully");
     return { user, access_token };
