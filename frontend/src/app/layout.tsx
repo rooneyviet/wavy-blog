@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import QueryProvider from "@/providers/QueryProvider";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter", // Changed variable name
@@ -50,6 +51,7 @@ export default function RootLayout({
             <main className="flex-grow">{children}</main>
             {/* Footer will be rendered by page.tsx or individual layouts now */}
           </div>
+          <Toaster />
         </QueryProvider>
       </body>
     </html>

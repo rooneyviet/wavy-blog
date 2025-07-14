@@ -23,7 +23,7 @@
 - **Error Handling:** Explicit error handling, custom error types for Go
 - **Architecture:** Clean Architecture layers - View/UseCase/Domain/Repository/Adapter
 - **State:** Zustand for global state, local state for component-specific
-- **Data Fetching:** Server-side prefetching with TanStack Query, Server Actions for mutations. Never use client-side API fetch calls.
+- **Data Fetching:** Default to request API with server-side prefetching with TanStack Query, Server Actions for mutations. only call API from client side when being asked to.
 - **Styling:** Tailwind CSS only, no CSS modules
 - **Validation:** Zod form and input validation.
 

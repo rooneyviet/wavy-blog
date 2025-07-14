@@ -49,6 +49,13 @@ export interface ApiError {
   message: string;
 }
 
+export interface Category {
+  slug: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface FormState {
   error?: string;
   user?: User;

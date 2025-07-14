@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { GalleryVerticalEnd, Users, FileText } from "lucide-react";
+import { GalleryVerticalEnd, Users, FileText, FolderOpen } from "lucide-react";
 
 import Link from "next/link";
 import { NavMain } from "@/components/nav-main";
@@ -47,6 +47,22 @@ const allNavItems = [
       {
         title: "Add Post",
         url: "/admin/posts/add",
+      },
+    ],
+  },
+  {
+    title: "Categories",
+    url: "/admin/categories", // Base URL for categories section
+    icon: FolderOpen,
+    roles: ["admin"], // Only admin can manage categories
+    items: [
+      {
+        title: "List Categories",
+        url: "/admin/categories",
+      },
+      {
+        title: "Add Category",
+        url: "/admin/categories/add",
       },
     ],
   },
