@@ -39,7 +39,7 @@ import {
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { User } from "@/types";
 import { userQueries } from "@/lib/queries/users";
 import { useAuthStore } from "@/stores/authStore";
@@ -257,28 +257,6 @@ export default function ListUsersPage() {
     setSelectedUserIds([]);
   };
 
-  if (isLoading) {
-    return (
-      <TableSkeleton 
-        columns={["", "Name", "Email", "Role", ""]} 
-        rows={5}
-        title="Users"
-      />
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">Failed to load users</p>
-          <p className="text-sm text-muted-foreground">
-            {error instanceof Error ? error.message : "Unknown error occurred"}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full border-0 text-sm">
@@ -361,34 +339,54 @@ export default function ListUsersPage() {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
+          {isLoading ? (
+            <SkeletonRows columnCount={columns.length} rowCount={5} />
+          ) : isError ? (
+            <TableBody>
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  <div className="text-center">
+                    <p className="text-red-600 mb-2">Failed to load users</p>
+                    <p className="text-sm text-muted-foreground">
+                      {error instanceof Error ? error.message : "Unknown error occurred"}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
+            </TableBody>
+          ) : (
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">

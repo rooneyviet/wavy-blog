@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { Post } from "@/types";
 
 export interface AdminPost {
@@ -66,9 +67,12 @@ function transformPostToAdminPost(post: Post): AdminPost {
 
 interface PostsDataTableProps {
   posts: Post[];
+  isLoading?: boolean;
+  isError?: boolean;
+  error?: Error | null;
 }
 
-export default function PostsDataTable({ posts }: PostsDataTableProps) {
+export default function PostsDataTable({ posts, isLoading = false, isError = false, error }: PostsDataTableProps) {
   const adminPosts = React.useMemo(
     () => posts.map(transformPostToAdminPost),
     [posts]
@@ -340,34 +344,54 @@ export default function PostsDataTable({ posts }: PostsDataTableProps) {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
+          {isLoading ? (
+            <SkeletonRows columnCount={columns.length} rowCount={5} />
+          ) : isError ? (
+            <TableBody>
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  <div className="text-center">
+                    <p className="text-red-600 mb-2">Failed to load posts</p>
+                    <p className="text-sm text-muted-foreground">
+                      {error instanceof Error ? error.message : "Unknown error occurred"}
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
+            </TableBody>
+          ) : (
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          )}
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
