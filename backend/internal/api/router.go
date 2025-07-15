@@ -17,7 +17,7 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 		c.Next()
 	})
 
-	userHandler := handlers.NewUserHandler(repo, cfg)
+	userHandler := handlers.NewUserHandler(repo, repo, cfg)
 	postHandler := handlers.NewPostHandler(repo, repo, repo)
 	categoryHandler := handlers.NewCategoryHandler(repo, repo)
 
@@ -53,6 +53,7 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 			protected.POST("", postHandler.CreatePost)
 			protected.PUT("/:slug", postHandler.UpdatePost)
 			protected.DELETE("/:slug", postHandler.DeletePost)
+			protected.DELETE("", postHandler.DeletePosts)
 		}
 
 		categories := api.Group("/categories")
@@ -63,7 +64,11 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 			// Protected routes
 			protected := categories.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
 			protected.POST("", middleware.AdminMiddleware(), categoryHandler.CreateCategory)
+			protected.DELETE("", middleware.AdminMiddleware(), categoryHandler.DeleteCategories)
 		}
+
+		// Single category route (needs to be separate to avoid conflicts)
+		api.GET("/category/:slug", categoryHandler.GetCategory)
 	}
 
 	return r

@@ -6,7 +6,7 @@ interface SkeletonRowsProps {
   rowCount?: number;
 }
 
-export function SkeletonRows({ columnCount, rowCount = 5 }: SkeletonRowsProps) {
+export function SkeletonRows({ columnCount, rowCount = 3 }: SkeletonRowsProps) {
   return (
     <TableBody>
       {Array.from({ length: rowCount }, (_, rowIndex) => (

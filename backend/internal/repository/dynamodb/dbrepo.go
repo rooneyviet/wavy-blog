@@ -112,6 +112,78 @@ func (r *DynamoDBRepo) ensureTableExists() {
 	}
 
 	log.Printf("Table %s created.", r.TableName)
+	r.seedDefaultData()
+}
+
+func (r *DynamoDBRepo) seedDefaultData() {
+	ctx := context.TODO()
+	
+	// Check if "Uncategorized" category already exists
+	existingCategory, err := r.GetCategoryBySlug(ctx, "uncategorized")
+	if err != nil {
+		log.Printf("Error checking for existing Uncategorized category: %v", err)
+		return
+	}
+	
+	if existingCategory != nil {
+		log.Printf("Default 'Uncategorized' category already exists, skipping seeding")
+		return
+	}
+	
+	// Create default "Uncategorized" category
+	defaultCategory := &domain.Category{
+		Name:        "Uncategorized",
+		Description: "Default category for posts without a specific category",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	
+	// Use the same logic as CreateCategory but without slug uniqueness check since this is seeding
+	baseSlug := service.Slugify(defaultCategory.Name)
+	defaultCategory.Slug = baseSlug
+	defaultCategory.PK = "CATEGORY#" + defaultCategory.Slug
+	defaultCategory.SK = "METADATA#" + defaultCategory.Slug
+	defaultCategory.EntityType = "CATEGORY"
+	
+	categoryItem, err := attributevalue.MarshalMap(defaultCategory)
+	if err != nil {
+		log.Printf("Failed to marshal default category: %v", err)
+		return
+	}
+	
+	slugUniquenessItem := domain.SlugUniqueness{
+		PK: "SLUG#" + defaultCategory.Slug,
+		SK: "SLUG#" + defaultCategory.Slug,
+	}
+	slugItem, err := attributevalue.MarshalMap(slugUniquenessItem)
+	if err != nil {
+		log.Printf("Failed to marshal slug uniqueness item: %v", err)
+		return
+	}
+	
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Put: &types.Put{
+					TableName: aws.String(r.TableName),
+					Item:      categoryItem,
+				},
+			},
+			{
+				Put: &types.Put{
+					TableName: aws.String(r.TableName),
+					Item:      slugItem,
+				},
+			},
+		},
+	})
+	
+	if err != nil {
+		log.Printf("Failed to create default 'Uncategorized' category: %v", err)
+		return
+	}
+	
+	log.Printf("Default 'Uncategorized' category created successfully")
 }
 
 func (r *DynamoDBRepo) CreateUser(ctx context.Context, user *domain.User) error {
@@ -596,6 +668,128 @@ func (r *DynamoDBRepo) GetAllCategories(ctx context.Context) ([]*domain.Category
 	return categories, nil
 }
 
+func (r *DynamoDBRepo) DeleteCategory(ctx context.Context, slug string) error {
+	// Check if the category is "uncategorized" - cannot be deleted
+	if slug == "uncategorized" {
+		return fmt.Errorf("cannot delete the default 'Uncategorized' category")
+	}
+	
+	// Check if category has any posts
+	posts, err := r.GetPostsByCategory(ctx, slug)
+	if err != nil {
+		return fmt.Errorf("failed to check for posts in category: %w", err)
+	}
+	if len(posts) > 0 {
+		return fmt.Errorf("cannot delete category '%s' because it contains %d posts", slug, len(posts))
+	}
+	
+	// Delete both category and slug uniqueness entries in a transaction
+	_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+		TransactItems: []types.TransactWriteItem{
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "CATEGORY#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + slug},
+					},
+				},
+			},
+			{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+					},
+				},
+			},
+		},
+	})
+	
+	if err != nil {
+		return fmt.Errorf("failed to delete category: %w", err)
+	}
+	return nil
+}
+
+func (r *DynamoDBRepo) DeleteCategories(ctx context.Context, slugs []string) error {
+	// Validate all categories before attempting any deletions
+	for _, slug := range slugs {
+		// Check if the category is "uncategorized"
+		if slug == "uncategorized" {
+			return fmt.Errorf("cannot delete the default 'Uncategorized' category")
+		}
+		
+		// Check if category exists
+		category, err := r.GetCategoryBySlug(ctx, slug)
+		if err != nil {
+			return fmt.Errorf("failed to check category '%s': %w", slug, err)
+		}
+		if category == nil {
+			return fmt.Errorf("category '%s' not found", slug)
+		}
+		
+		// Check if category has any posts
+		posts, err := r.GetPostsByCategory(ctx, slug)
+		if err != nil {
+			return fmt.Errorf("failed to check for posts in category '%s': %w", slug, err)
+		}
+		if len(posts) > 0 {
+			return fmt.Errorf("cannot delete category '%s' because it contains %d posts", slug, len(posts))
+		}
+	}
+	
+	// If all validations pass, delete all categories
+	// DynamoDB TransactWriteItems has a limit of 25 items, so we need to batch if more than 12 categories
+	// (each category deletion requires 2 items: category + slug uniqueness)
+	maxCategoriesPerBatch := 12
+	
+	for i := 0; i < len(slugs); i += maxCategoriesPerBatch {
+		end := i + maxCategoriesPerBatch
+		if end > len(slugs) {
+			end = len(slugs)
+		}
+		
+		batchSlugs := slugs[i:end]
+		var transactItems []types.TransactWriteItem
+		
+		for _, slug := range batchSlugs {
+			// Add category deletion
+			transactItems = append(transactItems, types.TransactWriteItem{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "CATEGORY#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + slug},
+					},
+				},
+			})
+			
+			// Add slug uniqueness deletion
+			transactItems = append(transactItems, types.TransactWriteItem{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+					},
+				},
+			})
+		}
+		
+		_, err := r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+			TransactItems: transactItems,
+		})
+		
+		if err != nil {
+			return fmt.Errorf("failed to delete categories batch: %w", err)
+		}
+	}
+	
+	return nil
+}
+
 func (r *DynamoDBRepo) UpdateUser(ctx context.Context, user *domain.User) error {
 	// The user object from the handler won't have PK/SK, so we set them.
 	user.PK = "USER#" + user.Username
@@ -852,5 +1046,66 @@ func (r *DynamoDBRepo) DeletePost(ctx context.Context, slug string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete post and slug items: %w", err)
 	}
+	return nil
+}
+
+func (r *DynamoDBRepo) DeletePosts(ctx context.Context, slugs []string) error {
+	// Validate all posts exist before attempting any deletions
+	for _, slug := range slugs {
+		post, err := r.GetPostBySlug(ctx, slug)
+		if err != nil {
+			return fmt.Errorf("failed to check post '%s': %w", slug, err)
+		}
+		if post == nil {
+			return fmt.Errorf("post '%s' not found", slug)
+		}
+	}
+	
+	// DynamoDB TransactWriteItems has a limit of 25 items, so we need to batch if more than 12 posts
+	// (each post deletion requires 2 items: post + slug uniqueness)
+	maxPostsPerBatch := 12
+	
+	for i := 0; i < len(slugs); i += maxPostsPerBatch {
+		end := i + maxPostsPerBatch
+		if end > len(slugs) {
+			end = len(slugs)
+		}
+		
+		batchSlugs := slugs[i:end]
+		var transactItems []types.TransactWriteItem
+		
+		for _, slug := range batchSlugs {
+			// Add post deletion
+			transactItems = append(transactItems, types.TransactWriteItem{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "POST#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "METADATA#" + slug},
+					},
+				},
+			})
+			
+			// Add slug uniqueness deletion
+			transactItems = append(transactItems, types.TransactWriteItem{
+				Delete: &types.Delete{
+					TableName: aws.String(r.TableName),
+					Key: map[string]types.AttributeValue{
+						"PK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+						"SK": &types.AttributeValueMemberS{Value: "SLUG#" + slug},
+					},
+				},
+			})
+		}
+		
+		_, err := r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+			TransactItems: transactItems,
+		})
+		
+		if err != nil {
+			return fmt.Errorf("failed to delete posts batch: %w", err)
+		}
+	}
+	
 	return nil
 }

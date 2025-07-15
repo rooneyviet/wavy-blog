@@ -81,10 +81,11 @@ All API endpoints are prefixed with `/api`
 | **Method**           | DELETE                                                   |
 | **URL**              | `/api/users/:username`                                   |
 | **Authentication**   | Required (Bearer token)                                  |
-| **Authorization**    | User can delete own account, admin can delete any user   |
+| **Authorization**    | Admin can delete any user (except themselves)           |
 | **Path Parameters**  | `username`: string                                       |
+| **Constraints**      | Cannot delete user with posts, cannot delete own account |
 | **Success Response** | 200: `{"message": "User account deleted successfully."}` |
-| **Error Responses**  | 401: Unauthorized, 403: Forbidden, 500: Server error     |
+| **Error Responses**  | 400: User has posts or trying to delete own account, 401: Unauthorized, 403: Forbidden, 500: Server error |
 
 ### Get All Users (Admin Only)
 
@@ -158,6 +159,19 @@ All API endpoints are prefixed with `/api`
 | **Success Response** | 200: `{"message": "Post deleted successfully."}`                     |
 | **Error Responses**  | 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error |
 
+### Delete Multiple Posts
+
+| Field                | Value                                                                |
+| -------------------- | -------------------------------------------------------------------- |
+| **Method**           | DELETE                                                               |
+| **URL**              | `/api/posts`                                                         |
+| **Authentication**   | Required (Bearer token)                                              |
+| **Authorization**    | Author can delete own posts, admin can delete any posts             |
+| **Request Body**     | `{"slugs": ["string"]}`                                              |
+| **Validation**       | slugs: required array with minimum 1 item                           |
+| **Success Response** | 200: `{"message": "Posts deleted successfully"}`                     |
+| **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden for any post, 404: Any post not found, 500: Server error |
+
 ## Category Management APIs
 
 ### Create Category (Admin Only)
@@ -168,8 +182,8 @@ All API endpoints are prefixed with `/api`
 | **URL**              | `/api/categories`                                                                                |
 | **Authentication**   | Required (Bearer token)                                                                          |
 | **Authorization**    | Admin role required                                                                              |
-| **Request Body**     | `{"name": "string"}`                                                                             |
-| **Validation**       | name: required                                                                                   |
+| **Request Body**     | `{"name": "string", "description": "string?"}`                                                  |
+| **Validation**       | name: required, description: optional                                                           |
 | **Success Response** | 201: Category object with auto-generated slug                                                    |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden, 409: Category exists, 500: Server error |
 
@@ -180,8 +194,19 @@ All API endpoints are prefixed with `/api`
 | **Method**           | GET                                                        |
 | **URL**              | `/api/categories`                                          |
 | **Authentication**   | Not required                                               |
-| **Success Response** | 200: Array of category objects with slug, name, timestamps |
+| **Success Response** | 200: Array of category objects with slug, name, description, timestamps |
 | **Error Responses**  | 500: Server error                                          |
+
+### Get Category by Slug
+
+| Field                | Value                                                      |
+| -------------------- | ---------------------------------------------------------- |
+| **Method**           | GET                                                        |
+| **URL**              | `/api/category/:slug`                                      |
+| **Authentication**   | Not required                                               |
+| **Path Parameters**  | `slug`: string                                             |
+| **Success Response** | 200: Category object with slug, name, description, timestamps |
+| **Error Responses**  | 404: Category not found, 500: Server error                |
 
 ### Get Posts by Category
 
@@ -193,6 +218,20 @@ All API endpoints are prefixed with `/api`
 | **Path Parameters**  | `categorySlug`: string                               |
 | **Success Response** | 200: Array of post objects in the specified category |
 | **Error Responses**  | 500: Server error                                    |
+
+### Delete Multiple Categories (Admin Only)
+
+| Field                | Value                                                                |
+| -------------------- | -------------------------------------------------------------------- |
+| **Method**           | DELETE                                                               |
+| **URL**              | `/api/categories`                                                    |
+| **Authentication**   | Required (Bearer token)                                              |
+| **Authorization**    | Admin role required                                                  |
+| **Request Body**     | `{"slugs": ["string"]}`                                              |
+| **Validation**       | slugs: required array with minimum 1 item                           |
+| **Constraints**      | Cannot delete categories with posts, cannot delete 'Uncategorized'  |
+| **Success Response** | 200: `{"message": "Categories deleted successfully"}`                |
+| **Error Responses**  | 400: Invalid payload or constraints violated, 401: Unauthorized, 403: Forbidden, 404: Category not found, 500: Server error |
 
 ## Response Schemas
 
@@ -256,6 +295,7 @@ All API endpoints are prefixed with `/api`
 {
   "slug": "string",
   "name": "string",
+  "description": "string",
   "created_at": "timestamp",
   "updated_at": "timestamp"
 }

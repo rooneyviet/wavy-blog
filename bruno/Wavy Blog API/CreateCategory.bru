@@ -16,7 +16,8 @@ auth:bearer {
 
 body:json {
   {
-    "name": "Technology"
+    "name": "Technology",
+    "description": "Posts about technology, programming, and innovation"
   }
 }
 
@@ -34,6 +35,7 @@ tests {
     const data = res.getBody();
     expect(data.slug).to.be.a('string');
     expect(data.name).to.equal("Technology");
+    expect(data.description).to.equal("Posts about technology, programming, and innovation");
     expect(data.created_at).to.be.a('string');
     expect(data.updated_at).to.be.a('string');
   });

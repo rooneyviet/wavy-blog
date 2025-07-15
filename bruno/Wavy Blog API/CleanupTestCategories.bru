@@ -1,0 +1,36 @@
+meta {
+  name: Cleanup Test Categories
+  type: http
+  seq: 31
+}
+
+delete {
+  url: {{host}}/api/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "slugs": ["{{noDescCategorySlug}}"]
+  }
+}
+
+tests {
+  test("should clean up test categories successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.message).to.include("deleted successfully");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -17,8 +18,9 @@ import (
 )
 
 type UserHandler struct {
-	repo repository.UserRepository
-	cfg  *config.Config
+	repo     repository.UserRepository
+	postRepo repository.PostRepository
+	cfg      *config.Config
 }
 
 // UserResponse defines the structure for user data returned to the client.
@@ -53,8 +55,8 @@ func toUserListResponse(users []*domain.User) []UserResponse {
 }
 
 
-func NewUserHandler(repo repository.UserRepository, cfg *config.Config) *UserHandler {
-	return &UserHandler{repo: repo, cfg: cfg}
+func NewUserHandler(repo repository.UserRepository, postRepo repository.PostRepository, cfg *config.Config) *UserHandler {
+	return &UserHandler{repo: repo, postRepo: postRepo, cfg: cfg}
 }
 
 type RegisterUserInput struct {
@@ -154,7 +156,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	c.SetCookie("refresh_token", refreshToken, int(h.cfg.JWTRefreshTokenExpiration.Seconds()), "/", "", false, true)
 
 	log.Printf("[LOGIN] Successfully logged in user: %s, refresh token expires at: %v", user.Username, refreshTokenExpiration)
-	log.Printf("[LOGIN] Setting refresh_token cookie with value: %s (first 10 chars)", refreshToken[:10])
+	log.Printf("[LOGIN] Setting refresh_token cookie with value: %s", refreshToken)
 
 	c.JSON(http.StatusOK, gin.H{
 		"access_token": accessToken,
@@ -325,6 +327,23 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	requestingRole := c.GetString("role")
 	if requestingRole != "admin" && requestingUser != username {
 		Forbidden(c, "You are not authorized to delete this user.")
+		return
+	}
+
+	// New constraint: Users cannot delete their own account
+	if requestingUser == username {
+		BadRequest(c, "You cannot delete your own account.")
+		return
+	}
+
+	// New constraint: Cannot delete user that has posts
+	posts, err := h.postRepo.GetPostsByUser(c.Request.Context(), username, nil)
+	if err != nil {
+		InternalServerError(c, "Failed to check user's posts: "+err.Error())
+		return
+	}
+	if len(posts) > 0 {
+		BadRequest(c, fmt.Sprintf("Cannot delete user '%s' because they have %d posts. Please delete or reassign their posts first.", username, len(posts)))
 		return
 	}
 

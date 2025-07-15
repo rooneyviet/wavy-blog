@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { forwardCookiesFromResponse } from "@/lib/utils/cookies";
 
 const API_BASE_URL = process.env.INTERNAL_API_URL || "http://api-backend:8080";
 
@@ -32,10 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(
-      "[API ROUTE] Found refresh token:",
-      refreshToken.substring(0, 10) + "..."
-    );
+    console.log("[API ROUTE] Found refresh token:", refreshToken);
 
     console.log("[API ROUTE] Making request to backend with refresh token");
 
@@ -61,10 +57,15 @@ export async function POST(request: NextRequest) {
     const responseData = await backendResponse.json();
     console.log("[API ROUTE] Backend refresh successful");
 
-    // Forward cookies from backend to browser
-    await forwardCookiesFromResponse(backendResponse, "[API ROUTE]");
+    const setCookieHeaders = backendResponse.headers.getSetCookie();
+    const response = NextResponse.json(responseData);
 
-    return NextResponse.json(responseData);
+    // Set each cookie header individually
+    setCookieHeaders.forEach((cookie) => {
+      response.headers.append("Set-Cookie", cookie);
+    });
+
+    return response;
   } catch (error) {
     console.error("[API ROUTE] Error in refresh route:", error);
     return NextResponse.json(

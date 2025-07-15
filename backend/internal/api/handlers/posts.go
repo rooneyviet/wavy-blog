@@ -261,3 +261,49 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully."})
 }
+
+func (h *PostHandler) DeletePosts(c *gin.Context) {
+	var input struct {
+		Slugs []string `json:"slugs" binding:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		BadRequest(c, "Invalid request payload: "+err.Error())
+		return
+	}
+
+	username := c.GetString("username")
+	userRole := c.GetString("role")
+
+	// Validate all posts and check authorization
+	for _, slug := range input.Slugs {
+		existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
+		if err != nil {
+			NotFound(c, "Post '"+slug+"' not found")
+			return
+		}
+
+		if userRole != "admin" && existingPost.AuthorID != username {
+			Forbidden(c, "You are not authorized to delete post '"+slug+"'")
+			return
+		}
+	}
+
+	// Use single post delete for single item, batch delete for multiple
+	if len(input.Slugs) == 1 {
+		if err := h.repo.DeletePost(c.Request.Context(), input.Slugs[0]); err != nil {
+			InternalServerError(c, "Failed to delete post: "+err.Error())
+			return
+		}
+	} else {
+		if err := h.repo.DeletePosts(c.Request.Context(), input.Slugs); err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				NotFound(c, err.Error())
+				return
+			}
+			InternalServerError(c, "Failed to delete posts: "+err.Error())
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Posts deleted successfully"})
+}

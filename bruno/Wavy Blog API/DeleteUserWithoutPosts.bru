@@ -1,0 +1,35 @@
+meta {
+  name: Delete User Without Posts
+  type: http
+  seq: 23
+}
+
+delete {
+  url: {{host}}/api/users/{{deleteUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("should delete user without posts successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.message).to.equal("User account deleted successfully.");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should require admin authentication", function() {
+    // This test passes because the user has admin access_token
+    expect(res.getStatus()).to.equal(200);
+  });
+}

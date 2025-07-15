@@ -74,9 +74,9 @@
 | PK | String | Partition Key | `"CATEGORY#technology"` |
 | SK | String | Sort Key | `"METADATA#technology"` |
 | EntityType | String | Entity identifier for GSI3 | `"CATEGORY"` |
-| CategoryID | String | Unique category identifier | `"cat_345678"` |
 | Slug | String | URL-friendly category identifier | `"technology"` |
 | Name | String | Category display name | `"Technology"` |
+| Description | String | Category description (optional) | `"Posts about technology and programming"` |
 | CreatedAt | Timestamp | Creation timestamp | `"2024-01-15T10:30:00Z"` |
 | UpdatedAt | Timestamp | Last update timestamp | `"2024-01-15T10:30:00Z"` |
 
@@ -108,6 +108,28 @@
 - **Category Validation**: Posts reference categories by slug with existence validation
 - **Time-based Sorting**: Posts sorted by creation date using RFC3339 format
 - **Efficient Pagination**: Uses DynamoDB's LastEvaluatedKey for cursor-based pagination
+- **Default Data Seeding**: Automatic creation of default "Uncategorized" category
+
+## Default Seeded Data
+
+When the table is first created, the following default data is automatically seeded:
+
+### Default "Uncategorized" Category
+| Attribute | Value |
+|-----------|-------|
+| PK | `"CATEGORY#uncategorized"` |
+| SK | `"METADATA#uncategorized"` |
+| EntityType | `"CATEGORY"` |
+| Slug | `"uncategorized"` |
+| Name | `"Uncategorized"` |
+| Description | `"Default category for posts without a specific category"` |
+| CreatedAt | (Seeding timestamp) |
+| UpdatedAt | (Seeding timestamp) |
+
+**Special Properties:**
+- This category cannot be deleted through the API
+- It serves as a fallback for posts without specific categories
+- Created automatically when table is first initialized
 
 ## Pagination Implementation
 

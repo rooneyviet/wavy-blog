@@ -1,0 +1,40 @@
+meta {
+  name: Create Category For Deletion
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{host}}/api/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Test Delete Category",
+    "description": "A category created specifically for testing deletion"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("deleteCategorySlug", jsonData.slug);
+    bru.setVar("deleteCategoryName", jsonData.name);
+  }
+}
+
+tests {
+  test("should create category for deletion successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.name).to.equal("Test Delete Category");
+    expect(data.description).to.equal("A category created specifically for testing deletion");
+  });
+}

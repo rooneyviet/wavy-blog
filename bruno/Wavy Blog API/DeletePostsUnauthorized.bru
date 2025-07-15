@@ -1,0 +1,32 @@
+meta {
+  name: Delete Posts Unauthorized
+  type: http
+  seq: 20
+}
+
+delete {
+  url: {{host}}/api/posts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "slugs": ["{{postSlug}}"]
+  }
+}
+
+tests {
+  test("should require authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+    const data = res.getBody();
+    expect(data.message).to.include("Unauthorized");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}
