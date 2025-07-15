@@ -41,7 +41,7 @@ import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { User } from "@/types";
-import { userQueries } from "@/lib/queries/users";
+import { userQueries, useUserMutations } from "@/lib/queries/users";
 import { useAuthStore } from "@/stores/authStore";
 
 // Define the User type for the admin section
@@ -69,6 +69,7 @@ function transformUserToAdminUser(user: User): AdminUser {
 
 export default function ListUsersPage() {
   const { accessToken } = useAuthStore();
+  const { deleteOne } = useUserMutations();
   
   const {
     data: users = [],
@@ -99,9 +100,11 @@ export default function ListUsersPage() {
   }, []);
 
   const confirmSingleDelete = () => {
-    if (singleDeleteUser) {
-      // TODO: Implement actual delete API call
-      console.log(`Delete user: ${singleDeleteUser.name}`);
+    if (singleDeleteUser && accessToken) {
+      deleteOne.mutate({
+        username: singleDeleteUser.name, // Use username instead of id
+        accessToken,
+      });
     }
     setShowSingleDeleteDialog(false);
     setSingleDeleteUser(null);

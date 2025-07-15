@@ -41,7 +41,8 @@ import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { Category } from "@/types";
-import { categoryQueries } from "@/lib/queries/categories";
+import { categoryQueries, useCategoryMutations } from "@/lib/queries/categories";
+import { useAuthStore } from "@/stores/authStore";
 
 export interface AdminCategory {
   id: string;
@@ -62,6 +63,8 @@ function transformCategoryToAdminCategory(category: Category): AdminCategory {
 
 
 export default function CategoriesDataTable() {
+  const { accessToken } = useAuthStore();
+  const { deleteOne, deleteMany } = useCategoryMutations();
   const {
     data: categories = [],
     isLoading,
@@ -82,7 +85,7 @@ export default function CategoriesDataTable() {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<string[]>([]);
+  const [selectedCategorySlugs, setSelectedCategorySlugs] = React.useState<string[]>([]);
   const [showSingleDeleteDialog, setShowSingleDeleteDialog] = React.useState(false);
   const [singleDeleteCategory, setSingleDeleteCategory] = React.useState<AdminCategory | null>(null);
 
@@ -92,9 +95,11 @@ export default function CategoriesDataTable() {
   }, []);
 
   const confirmSingleDelete = () => {
-    if (singleDeleteCategory) {
-      // TODO: Implement actual delete API call
-      console.log(`Delete category: ${singleDeleteCategory.name}`);
+    if (singleDeleteCategory && accessToken) {
+      deleteOne.mutate({
+        slug: singleDeleteCategory.slug,
+        accessToken,
+      });
     }
     setShowSingleDeleteDialog(false);
     setSingleDeleteCategory(null);
@@ -223,21 +228,26 @@ export default function CategoriesDataTable() {
   });
 
   const handleDeleteClick = () => {
-    const selectedIds = table
+    const selectedSlugs = table
       .getFilteredSelectedRowModel()
-      .rows.map((row) => row.original.id);
-    if (selectedIds.length === 0) {
+      .rows.map((row) => row.original.slug);
+    if (selectedSlugs.length === 0) {
       return;
     }
-    setSelectedCategoryIds(selectedIds);
+    setSelectedCategorySlugs(selectedSlugs);
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = () => {
-    // TODO: Implement actual delete functionality
+    if (selectedCategorySlugs.length > 0 && accessToken) {
+      deleteMany.mutate({
+        slugs: selectedCategorySlugs,
+        accessToken,
+      });
+    }
     table.resetRowSelection();
     setShowDeleteDialog(false);
-    setSelectedCategoryIds([]);
+    setSelectedCategorySlugs([]);
   };
 
 
@@ -259,7 +269,7 @@ export default function CategoriesDataTable() {
               open={showDeleteDialog}
               onOpenChange={setShowDeleteDialog}
               title="Delete Categories"
-              description={`Are you sure you want to delete ${selectedCategoryIds.length} selected categor${selectedCategoryIds.length > 1 ? "ies" : "y"}? This action cannot be undone.`}
+              description={`Are you sure you want to delete ${selectedCategorySlugs.length} selected categor${selectedCategorySlugs.length > 1 ? "ies" : "y"}? This action cannot be undone.`}
               confirmText="Delete"
               onConfirm={confirmDelete}
               variant="destructive"

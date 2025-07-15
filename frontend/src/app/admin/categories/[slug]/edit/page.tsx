@@ -66,7 +66,9 @@ export default function EditCategoryPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update category");
+        const error = new Error(errorData.error || "Failed to update category") as Error & { details?: string };
+        error.details = errorData.details;
+        throw error;
       }
 
       return response.json();
@@ -75,10 +77,11 @@ export default function EditCategoryPage() {
       // Invalidate and refetch categories
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
       toast.success("Category updated successfully!");
-      router.push("/admin/categories");
+      // Stay on the edit page after successful update
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update category");
+    onError: (error: Error & { details?: string }) => {
+      const message = error.details ? `${error.message} ${error.details}` : error.message;
+      toast.error(message || "Failed to update category");
     },
   });
 

@@ -114,12 +114,14 @@ async function fetchFromServerWithCookies<T>(
 export const api = {
   getPosts: (
     pageSize?: number,
-    pageIndex?: number
+    pageIndex?: number,
+    status?: string
   ): Promise<PaginatedPostsResponse> => {
     const params = new URLSearchParams();
     if (pageSize) params.append("pageSize", pageSize.toString());
     if (pageIndex !== undefined)
       params.append("pageIndex", pageIndex.toString());
+    if (status) params.append("status", status);
 
     const query = params.toString();
     return fetchFromServer(`/posts${query ? `?${query}` : ""}`);

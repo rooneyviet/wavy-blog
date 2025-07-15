@@ -66,7 +66,7 @@ const popularArticlesData: Pick<
 
 export default async function Home() {
   const queryClient = getQueryClient();
-  await queryClient.prefetchQuery(postQueries.list());
+  await queryClient.prefetchQuery(postQueries.list(undefined, undefined, "published"));
   const dehydratedState = dehydrate(queryClient);
 
   return (

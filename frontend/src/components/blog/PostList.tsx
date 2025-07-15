@@ -15,7 +15,7 @@ export default function PostList() {
   const pageIndex = urlPage - 1; // Convert to 0-based for backend
   const pageSize = parseInt(searchParams.get('pageSize') || '10');
 
-  const { data: response } = useQuery(postQueries.list(pageSize, pageIndex));
+  const { data: response } = useQuery(postQueries.list(pageSize, pageIndex, "published"));
 
   if (!response) {
     // This should ideally not be reached if using Suspense, but as a fallback

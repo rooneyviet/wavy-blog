@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 interface CreateCategoryData {
   name: string;
+  description?: string;
 }
 
 export default function AddCategoryPage() {
@@ -47,19 +48,23 @@ export default function AddCategoryPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create category");
+        const error = new Error(errorData.error || "Failed to create category") as Error & { details?: string };
+        error.details = errorData.details;
+        throw error;
       }
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate and refetch categories
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
       toast.success("Category created successfully!");
-      router.push("/admin/categories");
+      // Redirect to edit page after successful creation
+      router.push(`/admin/categories/${data.slug}/edit`);
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to create category");
+    onError: (error: Error & { details?: string }) => {
+      const message = error.details ? `${error.message} ${error.details}` : error.message;
+      toast.error(message || "Failed to create category");
     },
   });
 
@@ -73,6 +78,7 @@ export default function AddCategoryPage() {
 
     createCategoryMutation.mutate({
       name: name.trim(),
+      description: description.trim() || undefined,
     });
   };
 
@@ -115,7 +121,7 @@ export default function AddCategoryPage() {
                 disabled={createCategoryMutation.isPending}
               />
               <p className="text-sm text-muted-foreground">
-                Note: The description is for your reference only and is not currently used in the API.
+                Provide a brief description of what this category is for.
               </p>
             </div>
           </CardContent>

@@ -16,7 +16,7 @@
 
 ## Code Style Guidelines
 
-- **TypeScript:** Use strict typing, avoid `any`, prefer `unknown`
+- **TypeScript:** Use strict typing, avoid `any`
 - **Components:** PascalCase files/exports, functional components with hooks. Use shadcn, or create custom components.
 - **Variables/Functions:** camelCase, constants UPPER_SNAKE_CASE
 - **Imports:** Absolute paths with `@/` prefix, group by external/internal

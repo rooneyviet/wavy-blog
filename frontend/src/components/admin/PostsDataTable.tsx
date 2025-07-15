@@ -40,6 +40,8 @@ import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
 import { Post } from "@/types";
+import { usePostMutations } from "@/lib/queries/posts";
+import { useAuthStore } from "@/stores/authStore";
 
 export interface AdminPost {
   id: string;
@@ -73,6 +75,8 @@ interface PostsDataTableProps {
 }
 
 export default function PostsDataTable({ posts, isLoading = false, isError = false, error }: PostsDataTableProps) {
+  const { accessToken } = useAuthStore();
+  const { deleteOne, deleteMany } = usePostMutations();
   const adminPosts = React.useMemo(
     () => posts.map(transformPostToAdminPost),
     [posts]
@@ -86,7 +90,7 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [selectedPostIds, setSelectedPostIds] = React.useState<string[]>([]);
+  const [selectedPostSlugs, setSelectedPostSlugs] = React.useState<string[]>([]);
   const [showSingleDeleteDialog, setShowSingleDeleteDialog] = React.useState(false);
   const [singleDeletePost, setSingleDeletePost] = React.useState<AdminPost | null>(null);
 
@@ -96,9 +100,11 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
   }, []);
 
   const confirmSingleDelete = () => {
-    if (singleDeletePost) {
-      // TODO: Implement actual delete API call
-      console.log(`Delete post: ${singleDeletePost.title}`);
+    if (singleDeletePost && accessToken) {
+      deleteOne.mutate({
+        slug: singleDeletePost.slug,
+        accessToken,
+      });
     }
     setShowSingleDeleteDialog(false);
     setSingleDeletePost(null);
@@ -210,7 +216,7 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
                 </a>
               </Link>
               <DropdownMenuSeparator />
-              <Link href={`/admin/posts/edit/${post.id}`} passHref>
+              <Link href={`/admin/posts/${post.slug}/edit`} passHref>
                 <DropdownMenuItem>Edit Post</DropdownMenuItem>
               </Link>
               <DropdownMenuItem
@@ -246,21 +252,26 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
   });
 
   const handleDeleteClick = () => {
-    const selectedIds = table
+    const selectedSlugs = table
       .getFilteredSelectedRowModel()
-      .rows.map((row) => row.original.id);
-    if (selectedIds.length === 0) {
+      .rows.map((row) => row.original.slug);
+    if (selectedSlugs.length === 0) {
       return;
     }
-    setSelectedPostIds(selectedIds);
+    setSelectedPostSlugs(selectedSlugs);
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = () => {
-    // TODO: Implement actual delete API call for bulk delete
+    if (selectedPostSlugs.length > 0 && accessToken) {
+      deleteMany.mutate({
+        slugs: selectedPostSlugs,
+        accessToken,
+      });
+    }
     table.resetRowSelection();
     setShowDeleteDialog(false);
-    setSelectedPostIds([]);
+    setSelectedPostSlugs([]);
   };
 
   return (
@@ -281,7 +292,7 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
               open={showDeleteDialog}
               onOpenChange={setShowDeleteDialog}
               title="Delete Posts"
-              description={`Are you sure you want to delete ${selectedPostIds.length} selected post${selectedPostIds.length > 1 ? "s" : ""}? This action cannot be undone.`}
+              description={`Are you sure you want to delete ${selectedPostSlugs.length} selected post${selectedPostSlugs.length > 1 ? "s" : ""}? This action cannot be undone.`}
               confirmText="Delete"
               onConfirm={confirmDelete}
               variant="destructive"

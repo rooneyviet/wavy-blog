@@ -74,6 +74,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Printf("[ERROR] Failed to hash password for user '%s': %v", input.Username, err)
 		InternalServerError(c, "Failed to secure password.")
 		return
 	}
@@ -90,9 +91,11 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 	if err := h.repo.CreateUser(c.Request.Context(), user); err != nil {
 		if strings.Contains(err.Error(), "username or email already exists") {
+			log.Printf("[ERROR] User creation failed - username or email already exists: %s, %s", input.Username, input.Email)
 			Conflict(c, "A user with this username or email already exists.")
 			return
 		}
+		log.Printf("[ERROR] Failed to create user '%s': %v", input.Username, err)
 		InternalServerError(c, "Failed to create user account: "+err.Error())
 		return
 	}
@@ -264,6 +267,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	username := c.Param("username")
 	user, err := h.repo.GetUserByUsername(c.Request.Context(), username)
 	if err != nil || user == nil {
+		log.Printf("[ERROR] Failed to get user by username '%s': %v", username, err)
 		NotFound(c, "User")
 		return
 	}
@@ -273,6 +277,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 func (h *UserHandler) GetUsers(c *gin.Context) {
 	users, err := h.repo.GetAllUsers(c.Request.Context())
 	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve all users: %v", err)
 		InternalServerError(c, "Failed to retrieve users.")
 		return
 	}
@@ -298,6 +303,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	user, err := h.repo.GetUserByUsername(c.Request.Context(), username)
 	if err != nil || user == nil {
+		log.Printf("[ERROR] Failed to get user by username '%s' for update: %v", username, err)
 		NotFound(c, "User")
 		return
 	}
@@ -312,6 +318,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	user.UpdatedAt = time.Now()
 
 	if err := h.repo.UpdateUser(c.Request.Context(), user); err != nil {
+		log.Printf("[ERROR] Failed to update user '%s': %v", username, err)
 		InternalServerError(c, "Failed to update user account.")
 		return
 	}
@@ -339,6 +346,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	// New constraint: Cannot delete user that has posts
 	posts, err := h.postRepo.GetPostsByUser(c.Request.Context(), username, nil)
 	if err != nil {
+		log.Printf("[ERROR] Failed to check posts for user '%s': %v", username, err)
 		InternalServerError(c, "Failed to check user's posts: "+err.Error())
 		return
 	}
@@ -348,6 +356,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	if err := h.repo.DeleteUser(c.Request.Context(), username); err != nil {
+		log.Printf("[ERROR] Failed to delete user '%s': %v", username, err)
 		InternalServerError(c, "Failed to delete user account: "+err.Error())
 		return
 	}

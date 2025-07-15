@@ -1,5 +1,6 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Category } from "@/types";
+import { toast } from "sonner";
 
 export const categoryKeys = {
   all: ["categories"] as const,
@@ -38,6 +39,41 @@ const fetchCategoryBySlug = async (slug: string): Promise<Category> => {
   return response.json();
 };
 
+const deleteCategory = async (slug: string, accessToken: string): Promise<void> => {
+  const response = await fetch(`/api/categories/${slug}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const error = new Error(errorData.message || "Failed to delete category") as Error & { details?: string };
+    error.details = errorData.details;
+    throw error;
+  }
+};
+
+const deleteCategoryBatch = async (slugs: string[], accessToken: string): Promise<void> => {
+  const response = await fetch("/api/categories", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ slugs }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const error = new Error(errorData.message || "Failed to delete categories") as Error & { details?: string };
+    error.details = errorData.details;
+    throw error;
+  }
+};
+
 export const categoryQueries = {
   list: () =>
     queryOptions({
@@ -59,4 +95,43 @@ export const categoryQueries = {
       },
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
+};
+
+export const useCategoryMutations = () => {
+  const queryClient = useQueryClient();
+
+  const deleteOneMutation = useMutation({
+    mutationFn: ({ slug, accessToken }: { slug: string; accessToken: string }) =>
+      deleteCategory(slug, accessToken),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
+      toast.success("Category deleted successfully");
+    },
+    onError: (error: Error & { details?: string }) => {
+      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      toast.error("Failed to delete category", {
+        description,
+      });
+    },
+  });
+
+  const deleteManyMutation = useMutation({
+    mutationFn: ({ slugs, accessToken }: { slugs: string[]; accessToken: string }) =>
+      deleteCategoryBatch(slugs, accessToken),
+    onSuccess: (_, { slugs }) => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
+      toast.success(`${slugs.length} categories deleted successfully`);
+    },
+    onError: (error: Error & { details?: string }) => {
+      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      toast.error("Failed to delete categories", {
+        description,
+      });
+    },
+  });
+
+  return {
+    deleteOne: deleteOneMutation,
+    deleteMany: deleteManyMutation,
+  };
 };

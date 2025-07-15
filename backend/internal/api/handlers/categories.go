@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -96,9 +97,11 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 
 	if err := h.repo.CreateCategory(c.Request.Context(), category); err != nil {
 		if strings.Contains(err.Error(), "category with this slug already exists") {
+			log.Printf("[ERROR] Category creation failed - category with slug already exists: %s", category.Slug)
 			Conflict(c, "A category with this name already exists.")
 			return
 		}
+		log.Printf("[ERROR] Failed to create category '%s': %v", category.Name, err)
 		InternalServerError(c, "Failed to create the new category: "+err.Error())
 		return
 	}
@@ -110,6 +113,7 @@ func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
 	categorySlug := c.Param("categorySlug")
 	posts, err := h.repo.GetPostsByCategory(c.Request.Context(), categorySlug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve posts for category '%s': %v", categorySlug, err)
 		InternalServerError(c, "Failed to retrieve posts for the specified category.")
 		return
 	}
@@ -119,6 +123,7 @@ func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
 func (h *CategoryHandler) GetCategories(c *gin.Context) {
 	categories, err := h.repo.GetAllCategories(c.Request.Context())
 	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve all categories: %v", err)
 		InternalServerError(c, "Failed to retrieve categories.")
 		return
 	}
@@ -129,6 +134,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 	slug := c.Param("slug")
 	category, err := h.repo.GetCategoryBySlug(c.Request.Context(), slug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve category by slug '%s': %v", slug, err)
 		InternalServerError(c, "Failed to retrieve category.")
 		return
 	}
@@ -151,6 +157,7 @@ func (h *CategoryHandler) DeleteCategories(c *gin.Context) {
 	// Use single category delete for single item, batch delete for multiple
 	if len(input.Slugs) == 1 {
 		if err := h.repo.DeleteCategory(c.Request.Context(), input.Slugs[0]); err != nil {
+			log.Printf("[ERROR] Failed to delete single category '%s': %v", input.Slugs[0], err)
 			if strings.Contains(err.Error(), "cannot delete") {
 				BadRequest(c, err.Error())
 				return
@@ -164,6 +171,7 @@ func (h *CategoryHandler) DeleteCategories(c *gin.Context) {
 		}
 	} else {
 		if err := h.repo.DeleteCategories(c.Request.Context(), input.Slugs); err != nil {
+			log.Printf("[ERROR] Failed to delete categories %v: %v", input.Slugs, err)
 			if strings.Contains(err.Error(), "cannot delete") || strings.Contains(err.Error(), "not found") {
 				BadRequest(c, err.Error())
 				return

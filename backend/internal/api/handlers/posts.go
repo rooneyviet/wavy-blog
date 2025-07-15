@@ -100,6 +100,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	// Validate that the category exists
 	category, err := h.categoryRepo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to validate category '%s' for create: %v", input.CategorySlug, err)
 		InternalServerError(c, "Failed to validate category: "+err.Error())
 		return
 	}
@@ -126,6 +127,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	if err := h.repo.CreatePost(c.Request.Context(), post); err != nil {
+		log.Printf("[ERROR] Failed to create post '%s': %v", post.Title, err)
 		InternalServerError(c, "Failed to create the new post: "+err.Error())
 		return
 	}
@@ -137,6 +139,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 	slug := strings.TrimSpace(c.Param("slug"))
 	post, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to get post by slug '%s': %v", slug, err)
 		NotFound(c, "Post")
 		return
 	}
@@ -164,6 +167,7 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 	
 	posts, hasNextPage, err := h.repo.GetAllPosts(c.Request.Context(), &postName, pageSize, pageIndex)
 	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve posts: %v", err)
 		InternalServerError(c, "Failed to retrieve posts.")
 		return
 	}
@@ -187,6 +191,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 
 	existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to get post by slug '%s' for update: %v", slug, err)
 		NotFound(c, "Post")
 		return
 	}
@@ -205,6 +210,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	// Validate that the category exists
 	category, err := h.categoryRepo.GetCategoryBySlug(c.Request.Context(), input.CategorySlug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to validate category '%s' for update: %v", input.CategorySlug, err)
 		InternalServerError(c, "Failed to validate category: "+err.Error())
 		return
 	}
@@ -230,6 +236,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	existingPost.UpdatedAt = time.Now()
 
 	if err := h.repo.UpdatePost(c.Request.Context(), oldSlug, existingPost); err != nil {
+		log.Printf("[ERROR] Failed to update post '%s': %v", existingPost.Title, err)
 		InternalServerError(c, "Failed to update the post: "+err.Error())
 		return
 	}
@@ -245,6 +252,7 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 
 	existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
+		log.Printf("[ERROR] Failed to get post by slug '%s' for delete: %v", slug, err)
 		NotFound(c, "Post")
 		return
 	}
@@ -255,6 +263,7 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 	}
 
 	if err := h.repo.DeletePost(c.Request.Context(), slug); err != nil {
+		log.Printf("[ERROR] Failed to delete post '%s': %v", slug, err)
 		InternalServerError(c, "Failed to delete the post.")
 		return
 	}
@@ -278,6 +287,7 @@ func (h *PostHandler) DeletePosts(c *gin.Context) {
 	for _, slug := range input.Slugs {
 		existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 		if err != nil {
+			log.Printf("[ERROR] Failed to get post by slug '%s' for batch delete: %v", slug, err)
 			NotFound(c, "Post '"+slug+"' not found")
 			return
 		}
@@ -291,11 +301,13 @@ func (h *PostHandler) DeletePosts(c *gin.Context) {
 	// Use single post delete for single item, batch delete for multiple
 	if len(input.Slugs) == 1 {
 		if err := h.repo.DeletePost(c.Request.Context(), input.Slugs[0]); err != nil {
+			log.Printf("[ERROR] Failed to delete single post '%s': %v", input.Slugs[0], err)
 			InternalServerError(c, "Failed to delete post: "+err.Error())
 			return
 		}
 	} else {
 		if err := h.repo.DeletePosts(c.Request.Context(), input.Slugs); err != nil {
+			log.Printf("[ERROR] Failed to delete posts %v: %v", input.Slugs, err)
 			if strings.Contains(err.Error(), "not found") {
 				NotFound(c, err.Error())
 				return
