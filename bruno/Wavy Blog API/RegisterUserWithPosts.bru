@@ -1,0 +1,34 @@
+meta {
+  name: Register User With Posts
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{host}}/api/users/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "userwithposts",
+    "email": "userwithposts@example.com",
+    "password": "password123"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("userWithPostsUsername", "userwithposts");
+  }
+}
+
+tests {
+  test("should register user with posts successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.message).to.include("created successfully");
+  });
+}

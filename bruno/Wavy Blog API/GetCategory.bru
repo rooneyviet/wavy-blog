@@ -1,0 +1,40 @@
+meta {
+  name: Get Category
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{host}}/api/category/{{categorySlug}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("should get category successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.name).to.be.a('string');
+    expect(data.description).to.be.a('string');
+    expect(data.created_at).to.be.a('string');
+    expect(data.updated_at).to.be.a('string');
+    
+    // Should match the category created in CreateCategory test
+    expect(data.slug).to.be.a('string');
+    expect(data.name).to.equal("Technology");
+    expect(data.description).to.equal("Posts about technology, programming, and innovation");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should be public endpoint", function() {
+    // This test passes because auth is set to none
+    expect(res.getStatus()).to.equal(200);
+  });
+}

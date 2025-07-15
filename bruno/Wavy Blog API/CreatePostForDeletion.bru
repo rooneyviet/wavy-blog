@@ -1,0 +1,42 @@
+meta {
+  name: Create Post For Deletion
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{host}}/api/posts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "title": "Test Delete Post",
+    "content": "This post is created specifically for testing batch deletion functionality.",
+    "categorySlug": "{{categorySlug}}",
+    "status": "draft"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("deletePostSlug", jsonData.slug);
+  }
+}
+
+tests {
+  test("should create post for deletion successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.title).to.equal("Test Delete Post");
+    expect(data.content).to.include("testing batch deletion");
+    expect(data.status).to.equal("draft");
+  });
+}

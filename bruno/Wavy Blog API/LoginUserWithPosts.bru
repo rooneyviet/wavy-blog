@@ -1,0 +1,34 @@
+meta {
+  name: Login User With Posts
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{host}}/api/users/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "userwithposts@example.com",
+    "password": "password123"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 200) {
+    bru.setVar("userWithPostsToken", jsonData.access_token);
+  }
+}
+
+tests {
+  test("should login user with posts successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.access_token).to.be.a('string');
+    expect(data.user.username).to.equal("userwithposts");
+  });
+}

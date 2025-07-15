@@ -17,9 +17,9 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 		c.Next()
 	})
 
-	userHandler := handlers.NewUserHandler(repo, cfg)
-	postHandler := handlers.NewPostHandler(repo)
-	categoryHandler := handlers.NewCategoryHandler(repo)
+	userHandler := handlers.NewUserHandler(repo, repo, cfg)
+	postHandler := handlers.NewPostHandler(repo, repo, repo)
+	categoryHandler := handlers.NewCategoryHandler(repo, repo)
 
 	api := r.Group("/api")
 	{
@@ -53,17 +53,22 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 			protected.POST("", postHandler.CreatePost)
 			protected.PUT("/:slug", postHandler.UpdatePost)
 			protected.DELETE("/:slug", postHandler.DeletePost)
+			protected.DELETE("", postHandler.DeletePosts)
 		}
 
 		categories := api.Group("/categories")
 		{
 			categories.GET("", categoryHandler.GetCategories)
-			categories.GET("/:categoryName/posts", categoryHandler.GetPostsByCategory)
+			categories.GET("/:categorySlug/posts", categoryHandler.GetPostsByCategory)
 
 			// Protected routes
 			protected := categories.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
 			protected.POST("", middleware.AdminMiddleware(), categoryHandler.CreateCategory)
+			protected.DELETE("", middleware.AdminMiddleware(), categoryHandler.DeleteCategories)
 		}
+
+		// Single category route (needs to be separate to avoid conflicts)
+		api.GET("/category/:slug", categoryHandler.GetCategory)
 	}
 
 	return r

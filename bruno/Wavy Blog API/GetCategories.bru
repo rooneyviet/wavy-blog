@@ -20,6 +20,7 @@ tests {
       const category = data[0];
       expect(category.slug).to.be.a('string');
       expect(category.name).to.be.a('string');
+      expect(category.description).to.be.a('string');
       expect(category.created_at).to.be.a('string');
       expect(category.updated_at).to.be.a('string');
     }

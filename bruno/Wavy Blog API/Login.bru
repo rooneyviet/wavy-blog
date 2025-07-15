@@ -45,4 +45,12 @@ tests {
       expect(contentType).to.include("application/json");
     }
   });
+
+  test("should set refresh token cookie", function() {
+    const cookies = res.getHeaders()["set-cookie"];
+    expect(cookies).to.be.an('array');
+    const refreshCookie = cookies.find(cookie => cookie.includes("refresh_token="));
+    expect(refreshCookie).to.exist;
+    expect(refreshCookie).to.include("HttpOnly");
+  });
 }

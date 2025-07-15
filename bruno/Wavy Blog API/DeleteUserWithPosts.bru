@@ -1,0 +1,36 @@
+meta {
+  name: Delete User With Posts
+  type: http
+  seq: 28
+}
+
+delete {
+  url: {{host}}/api/users/{{userWithPostsUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+tests {
+  test("should not allow deleting user with posts", function() {
+    expect(res.getStatus()).to.equal(400);
+    const data = res.getBody();
+    expect(data.details).to.include("because they have");
+    expect(data.details).to.include("posts");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should specify number of posts", function() {
+    const data = res.getBody();
+    expect(data.details).to.include("1 posts");
+  });
+}

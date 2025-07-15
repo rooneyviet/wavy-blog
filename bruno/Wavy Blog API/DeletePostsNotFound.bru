@@ -1,0 +1,36 @@
+meta {
+  name: Delete Posts Not Found
+  type: http
+  seq: 21
+}
+
+delete {
+  url: {{host}}/api/posts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "slugs": ["non-existent-post"]
+  }
+}
+
+tests {
+  test("should return 404 for non-existent posts", function() {
+    expect(res.getStatus()).to.equal(404);
+    const data = res.getBody();
+    expect(data.message).to.include("not found");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}

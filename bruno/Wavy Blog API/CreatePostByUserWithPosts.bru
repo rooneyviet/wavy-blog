@@ -1,0 +1,41 @@
+meta {
+  name: Create Post By User With Posts
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{host}}/api/posts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userWithPostsToken}}
+}
+
+body:json {
+  {
+    "title": "Post by User With Posts",
+    "content": "This post is created by a user that will be tested for deletion constraints.",
+    "categorySlug": "{{categorySlug}}",
+    "status": "published"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("userWithPostsPostSlug", jsonData.slug);
+  }
+}
+
+tests {
+  test("should create post by user with posts successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.title).to.equal("Post by User With Posts");
+    expect(data.authorID).to.equal("userwithposts");
+  });
+}

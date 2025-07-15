@@ -1,0 +1,26 @@
+meta {
+  name: Get Category Not Found
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{host}}/api/category/non-existent-category
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return 404 for non-existent category", function() {
+    expect(res.getStatus()).to.equal(404);
+    const data = res.getBody();
+    expect(data.message).to.include("not found");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}
