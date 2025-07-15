@@ -76,15 +76,15 @@ All API endpoints are prefixed with `/api`
 
 ### Delete User
 
-| Field                | Value                                                    |
-| -------------------- | -------------------------------------------------------- |
-| **Method**           | DELETE                                                   |
-| **URL**              | `/api/users/:username`                                   |
-| **Authentication**   | Required (Bearer token)                                  |
-| **Authorization**    | Admin can delete any user (except themselves)           |
-| **Path Parameters**  | `username`: string                                       |
-| **Constraints**      | Cannot delete user with posts, cannot delete own account |
-| **Success Response** | 200: `{"message": "User account deleted successfully."}` |
+| Field                | Value                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Method**           | DELETE                                                                                                    |
+| **URL**              | `/api/users/:username`                                                                                    |
+| **Authentication**   | Required (Bearer token)                                                                                   |
+| **Authorization**    | Admin can delete any user (except themselves)                                                             |
+| **Path Parameters**  | `username`: string                                                                                        |
+| **Constraints**      | Cannot delete user with posts, cannot delete own account                                                  |
+| **Success Response** | 200: `{"message": "User account deleted successfully."}`                                                  |
 | **Error Responses**  | 400: User has posts or trying to delete own account, 401: Unauthorized, 403: Forbidden, 500: Server error |
 
 ### Get All Users (Admin Only)
@@ -102,50 +102,50 @@ All API endpoints are prefixed with `/api`
 
 ### Create Post
 
-| Field                | Value                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| **Method**           | POST                                                                                              |
-| **URL**              | `/api/posts`                                                                                      |
-| **Authentication**   | Required (Bearer token)                                                                           |
-| **Request Body**     | `{"title": "string", "content": "string", "categorySlug": "string", "thumbnailURL": "string?", "status": "string?"}` |
+| Field                | Value                                                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | POST                                                                                                                          |
+| **URL**              | `/api/posts`                                                                                                                  |
+| **Authentication**   | Required (Bearer token)                                                                                                       |
+| **Request Body**     | `{"title": "string", "content": "string", "categorySlug": "string", "thumbnailURL": "string?", "status": "string?"}`          |
 | **Validation**       | title: required, content: required, categorySlug: required + must exist, status: "published" or "draft" (defaults to "draft") |
-| **Success Response** | 201: Post object with auto-generated slug                                                         |
-| **Error Responses**  | 400: Invalid payload/category not found, 401: Unauthorized, 500: Server error                     |
+| **Success Response** | 201: Post object with auto-generated slug                                                                                     |
+| **Error Responses**  | 400: Invalid payload/category not found, 401: Unauthorized, 500: Server error                                                 |
 
 ### Get Post by Slug
 
-| Field                | Value                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| **Method**           | GET                                                                                      |
-| **URL**              | `/api/posts/:slug`                                                                       |
-| **Authentication**   | Not required                                                                             |
-| **Path Parameters**  | `slug`: string                                                                           |
+| Field                | Value                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Method**           | GET                                                                                                          |
+| **URL**              | `/api/posts/:slug`                                                                                           |
+| **Authentication**   | Not required                                                                                                 |
+| **Path Parameters**  | `slug`: string                                                                                               |
 | **Success Response** | 200: Post object with slug, title, content, authorID, authorName, category, thumbnailURL, status, timestamps |
-| **Error Responses**  | 404: Post not found                                                                      |
+| **Error Responses**  | 404: Post not found                                                                                          |
 
 ### Get All Posts
 
-| Field                | Value                                        |
-| -------------------- | -------------------------------------------- |
-| **Method**           | GET                                          |
-| **URL**              | `/api/posts`                                 |
-| **Authentication**   | Not required                                 |
+| Field                | Value                                                                                                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                                                                                                    |
+| **URL**              | `/api/posts`                                                                                                                                                           |
+| **Authentication**   | Not required                                                                                                                                                           |
 | **Query Parameters** | `postName`: string (optional, for filtering)<br>`pageSize`: integer (optional, 1-100, default: 10)<br>`pageIndex`: integer (optional, 0-based page number, default: 0) |
-| **Success Response** | 200: Paginated response object (see below)   |
-| **Error Responses**  | 400: Invalid pagination parameters, 500: Server error |
+| **Success Response** | 200: Paginated response object (see below)                                                                                                                             |
+| **Error Responses**  | 400: Invalid pagination parameters, 500: Server error                                                                                                                  |
 
 ### Update Post
 
-| Field                | Value                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| **Method**           | PUT                                                                                               |
-| **URL**              | `/api/posts/:slug`                                                                                |
-| **Authentication**   | Required (Bearer token)                                                                           |
-| **Authorization**    | Author can update own posts, admin can update any post                                            |
-| **Path Parameters**  | `slug`: string                                                                                    |
+| Field                | Value                                                                                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | PUT                                                                                                                  |
+| **URL**              | `/api/posts/:slug`                                                                                                   |
+| **Authentication**   | Required (Bearer token)                                                                                              |
+| **Authorization**    | Author can update own posts, admin can update any post                                                               |
+| **Path Parameters**  | `slug`: string                                                                                                       |
 | **Request Body**     | `{"title": "string", "content": "string", "categorySlug": "string", "thumbnailURL": "string?", "status": "string?"}` |
-| **Success Response** | 200: Updated post object (slug may change if title changed)                                       |
-| **Error Responses**  | 400: Invalid payload/category not found, 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error |
+| **Success Response** | 200: Updated post object (slug may change if title changed)                                                          |
+| **Error Responses**  | 400: Invalid payload/category not found, 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error        |
 
 ### Delete Post
 
@@ -161,15 +161,15 @@ All API endpoints are prefixed with `/api`
 
 ### Delete Multiple Posts
 
-| Field                | Value                                                                |
-| -------------------- | -------------------------------------------------------------------- |
-| **Method**           | DELETE                                                               |
-| **URL**              | `/api/posts`                                                         |
-| **Authentication**   | Required (Bearer token)                                              |
-| **Authorization**    | Author can delete own posts, admin can delete any posts             |
-| **Request Body**     | `{"slugs": ["string"]}`                                              |
-| **Validation**       | slugs: required array with minimum 1 item                           |
-| **Success Response** | 200: `{"message": "Posts deleted successfully"}`                     |
+| Field                | Value                                                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Method**           | DELETE                                                                                                           |
+| **URL**              | `/api/posts`                                                                                                     |
+| **Authentication**   | Required (Bearer token)                                                                                          |
+| **Authorization**    | Author can delete own posts, admin can delete any posts                                                          |
+| **Request Body**     | `{"slugs": ["string"]}`                                                                                          |
+| **Validation**       | slugs: required array with minimum 1 item                                                                        |
+| **Success Response** | 200: `{"message": "Posts deleted successfully"}`                                                                 |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden for any post, 404: Any post not found, 500: Server error |
 
 ## Category Management APIs
@@ -182,38 +182,51 @@ All API endpoints are prefixed with `/api`
 | **URL**              | `/api/categories`                                                                                |
 | **Authentication**   | Required (Bearer token)                                                                          |
 | **Authorization**    | Admin role required                                                                              |
-| **Request Body**     | `{"name": "string", "description": "string?"}`                                                  |
-| **Validation**       | name: required, description: optional                                                           |
+| **Request Body**     | `{"name": "string", "description": "string?"}`                                                   |
+| **Validation**       | name: required, description: optional                                                            |
 | **Success Response** | 201: Category object with auto-generated slug                                                    |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden, 409: Category exists, 500: Server error |
 
 ### Get All Categories
 
-| Field                | Value                                                      |
-| -------------------- | ---------------------------------------------------------- |
-| **Method**           | GET                                                        |
-| **URL**              | `/api/categories`                                          |
-| **Authentication**   | Not required                                               |
+| Field                | Value                                                                   |
+| -------------------- | ----------------------------------------------------------------------- |
+| **Method**           | GET                                                                     |
+| **URL**              | `/api/categories`                                                       |
+| **Authentication**   | Not required                                                            |
 | **Success Response** | 200: Array of category objects with slug, name, description, timestamps |
-| **Error Responses**  | 500: Server error                                          |
+| **Error Responses**  | 500: Server error                                                       |
 
 ### Get Category by Slug
 
-| Field                | Value                                                      |
-| -------------------- | ---------------------------------------------------------- |
-| **Method**           | GET                                                        |
-| **URL**              | `/api/category/:slug`                                      |
-| **Authentication**   | Not required                                               |
-| **Path Parameters**  | `slug`: string                                             |
+| Field                | Value                                                         |
+| -------------------- | ------------------------------------------------------------- |
+| **Method**           | GET                                                           |
+| **URL**              | `/api/categories/:slug`                                       |
+| **Authentication**   | Not required                                                  |
+| **Path Parameters**  | `slug`: string                                                |
 | **Success Response** | 200: Category object with slug, name, description, timestamps |
-| **Error Responses**  | 404: Category not found, 500: Server error                |
+| **Error Responses**  | 404: Category not found, 500: Server error                    |
+
+### Update Category (Admin Only)
+
+| Field                | Value                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Method**           | PUT                                                                                                       |
+| **URL**              | `/api/categories/:slug`                                                                                   |
+| **Authentication**   | Required (Bearer token)                                                                                   |
+| **Authorization**    | Admin role required                                                                                       |
+| **Path Parameters**  | `slug`: string                                                                                            |
+| **Request Body**     | `{"name": "string", "description": "string?"}`                                                            |
+| **Success Response** | 200: Updated category object                                                                              |
+| **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden, 404: Not found, 409: Conflict, 500: Server error |
 
 ### Get Posts by Category
 
 | Field                | Value                                                |
 | -------------------- | ---------------------------------------------------- |
 | **Method**           | GET                                                  |
-| **URL**              | `/api/categories/:categorySlug/posts`                |
+| **URL**              | `/api/posts/category/:categorySlug`                  |
 | **Authentication**   | Not required                                         |
 | **Path Parameters**  | `categorySlug`: string                               |
 | **Success Response** | 200: Array of post objects in the specified category |
@@ -221,16 +234,16 @@ All API endpoints are prefixed with `/api`
 
 ### Delete Multiple Categories (Admin Only)
 
-| Field                | Value                                                                |
-| -------------------- | -------------------------------------------------------------------- |
-| **Method**           | DELETE                                                               |
-| **URL**              | `/api/categories`                                                    |
-| **Authentication**   | Required (Bearer token)                                              |
-| **Authorization**    | Admin role required                                                  |
-| **Request Body**     | `{"slugs": ["string"]}`                                              |
-| **Validation**       | slugs: required array with minimum 1 item                           |
-| **Constraints**      | Cannot delete categories with posts, cannot delete 'Uncategorized'  |
-| **Success Response** | 200: `{"message": "Categories deleted successfully"}`                |
+| Field                | Value                                                                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | DELETE                                                                                                                      |
+| **URL**              | `/api/categories`                                                                                                           |
+| **Authentication**   | Required (Bearer token)                                                                                                     |
+| **Authorization**    | Admin role required                                                                                                         |
+| **Request Body**     | `{"slugs": ["string"]}`                                                                                                     |
+| **Validation**       | slugs: required array with minimum 1 item                                                                                   |
+| **Constraints**      | Cannot delete categories with posts, cannot delete 'Uncategorized'                                                          |
+| **Success Response** | 200: `{"message": "Categories deleted successfully"}`                                                                       |
 | **Error Responses**  | 400: Invalid payload or constraints violated, 401: Unauthorized, 403: Forbidden, 404: Category not found, 500: Server error |
 
 ## Response Schemas

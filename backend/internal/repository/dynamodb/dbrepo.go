@@ -432,7 +432,7 @@ func (r *DynamoDBRepo) GetPostBySlug(ctx context.Context, slug string) (*domain.
 		return nil, fmt.Errorf("failed to get post: %w", err)
 	}
 	if result.Item == nil {
-		return nil, fmt.Errorf("post not found")
+		return nil, nil // Post not found is not an error, just means it doesn't exist
 	}
 
 	var post domain.Post
@@ -666,6 +666,93 @@ func (r *DynamoDBRepo) GetAllCategories(ctx context.Context) ([]*domain.Category
 		return nil, fmt.Errorf("failed to unmarshal categories: %w", err)
 	}
 	return categories, nil
+}
+func (r *DynamoDBRepo) UpdateCategory(ctx context.Context, category *domain.Category) error {
+	// If the name has changed, the slug might need to change.
+	// We need to check if the new slug already exists.
+	newSlug := service.Slugify(category.Name)
+	if newSlug != category.Slug {
+		exists, err := r.SlugExists(ctx, newSlug)
+		if err != nil {
+			return fmt.Errorf("failed to check for existing slug during update: %w", err)
+		}
+		if exists {
+			return fmt.Errorf("category with this slug already exists")
+		}
+	}
+
+	// To "update" a category with a new slug, we must delete the old one and create a new one
+	// within a transaction to ensure atomicity.
+	if newSlug != category.Slug {
+		// Delete old items
+		deleteOldCategory := types.TransactWriteItem{
+			Delete: &types.Delete{
+				TableName: aws.String(r.TableName),
+				Key: map[string]types.AttributeValue{
+					"PK": &types.AttributeValueMemberS{Value: "CATEGORY#" + category.Slug},
+					"SK": &types.AttributeValueMemberS{Value: "METADATA#" + category.Slug},
+				},
+			},
+		}
+		deleteOldSlug := types.TransactWriteItem{
+			Delete: &types.Delete{
+				TableName: aws.String(r.TableName),
+				Key: map[string]types.AttributeValue{
+					"PK": &types.AttributeValueMemberS{Value: "SLUG#" + category.Slug},
+					"SK": &types.AttributeValueMemberS{Value: "SLUG#" + category.Slug},
+				},
+			},
+		}
+
+		// Create new items
+		category.Slug = newSlug
+		category.PK = "CATEGORY#" + newSlug
+		category.SK = "METADATA#" + newSlug
+		newItem, err := attributevalue.MarshalMap(category)
+		if err != nil {
+			return fmt.Errorf("failed to marshal updated category: %w", err)
+		}
+		newSlugUniqueness := domain.SlugUniqueness{PK: "SLUG#" + newSlug, SK: "SLUG#" + newSlug}
+		newSlugItem, err := attributevalue.MarshalMap(newSlugUniqueness)
+		if err != nil {
+			return fmt.Errorf("failed to marshal new slug uniqueness item: %w", err)
+		}
+
+		createNewCategory := types.TransactWriteItem{
+			Put: &types.Put{
+				TableName: aws.String(r.TableName),
+				Item:      newItem,
+			},
+		}
+		createNewSlug := types.TransactWriteItem{
+			Put: &types.Put{
+				TableName: aws.String(r.TableName),
+				Item:      newSlugItem,
+			},
+		}
+
+		_, err = r.Client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+			TransactItems: []types.TransactWriteItem{deleteOldCategory, deleteOldSlug, createNewCategory, createNewSlug},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to transact category update: %w", err)
+		}
+	} else {
+		// If the slug hasn't changed, we can just do a simple PutItem.
+		item, err := attributevalue.MarshalMap(category)
+		if err != nil {
+			return fmt.Errorf("failed to marshal category for update: %w", err)
+		}
+		_, err = r.Client.PutItem(ctx, &dynamodb.PutItemInput{
+			TableName: aws.String(r.TableName),
+			Item:      item,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to update category item: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (r *DynamoDBRepo) DeleteCategory(ctx context.Context, slug string) error {

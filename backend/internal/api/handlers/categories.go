@@ -108,6 +108,42 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, toCategoryResponse(category))
 }
+func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+	slug := c.Param("slug")
+	var input struct {
+		Name        string `json:"name" binding:"required"`
+		Description string `json:"description"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		BadRequest(c, "Invalid request payload: "+err.Error())
+		return
+	}
+
+	category, err := h.repo.GetCategoryBySlug(c.Request.Context(), slug)
+	if err != nil {
+		InternalServerError(c, "Failed to retrieve category for update: "+err.Error())
+		return
+	}
+	if category == nil {
+		NotFound(c, "Category not found.")
+		return
+	}
+
+	category.Name = input.Name
+	category.Description = input.Description
+	category.UpdatedAt = time.Now()
+
+	if err := h.repo.UpdateCategory(c.Request.Context(), category); err != nil {
+		if strings.Contains(err.Error(), "category with this slug already exists") {
+			Conflict(c, "A category with this name already exists.")
+			return
+		}
+		InternalServerError(c, "Failed to update category: "+err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, toCategoryResponse(category))
+}
 
 func (h *CategoryHandler) GetPostsByCategory(c *gin.Context) {
 	categorySlug := c.Param("categorySlug")

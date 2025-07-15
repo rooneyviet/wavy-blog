@@ -1,0 +1,39 @@
+meta {
+  name: Create Category For Update
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{host}}/api/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Test Category For Update",
+    "description": "A category created specifically for testing updates"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("updateCategorySlug", jsonData.slug);
+  }
+}
+
+tests {
+  test("should create category for update successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.name).to.equal("Test Category For Update");
+    expect(data.description).to.equal("A category created specifically for testing updates");
+  });
+}

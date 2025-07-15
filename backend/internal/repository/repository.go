@@ -33,6 +33,7 @@ type CategoryRepository interface {
 	CreateCategory(ctx context.Context, category *domain.Category) error
 	GetCategoryBySlug(ctx context.Context, slug string) (*domain.Category, error)
 	GetAllCategories(ctx context.Context) ([]*domain.Category, error)
+	UpdateCategory(ctx context.Context, category *domain.Category) error
 	DeleteCategory(ctx context.Context, slug string) error
 	DeleteCategories(ctx context.Context, slugs []string) error
 }

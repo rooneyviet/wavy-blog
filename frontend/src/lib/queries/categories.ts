@@ -1,4 +1,8 @@
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Category } from "@/types";
 import { toast } from "sonner";
 
@@ -39,24 +43,10 @@ const fetchCategoryBySlug = async (slug: string): Promise<Category> => {
   return response.json();
 };
 
-const deleteCategory = async (slug: string, accessToken: string): Promise<void> => {
-  const response = await fetch(`/api/categories/${slug}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || "Failed to delete category") as Error & { details?: string };
-    error.details = errorData.details;
-    throw error;
-  }
-};
-
-const deleteCategoryBatch = async (slugs: string[], accessToken: string): Promise<void> => {
+const deleteCategoryBatch = async (
+  slugs: string[],
+  accessToken: string
+): Promise<void> => {
   const response = await fetch("/api/categories", {
     method: "DELETE",
     headers: {
@@ -68,7 +58,9 @@ const deleteCategoryBatch = async (slugs: string[], accessToken: string): Promis
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || "Failed to delete categories") as Error & { details?: string };
+    const error = new Error(
+      errorData.message || "Failed to delete categories"
+    ) as Error & { details?: string };
     error.details = errorData.details;
     throw error;
   }
@@ -87,7 +79,10 @@ export const categoryQueries = {
       retry: (failureCount, error: unknown) => {
         // Don't retry on 404 errors
         const errorWithStatus = error as Error & { status?: number };
-        if (errorWithStatus?.message?.includes('404') || errorWithStatus?.status === 404) {
+        if (
+          errorWithStatus?.message?.includes("404") ||
+          errorWithStatus?.status === 404
+        ) {
           return false;
         }
         // Retry other errors up to 2 times
@@ -100,30 +95,22 @@ export const categoryQueries = {
 export const useCategoryMutations = () => {
   const queryClient = useQueryClient();
 
-  const deleteOneMutation = useMutation({
-    mutationFn: ({ slug, accessToken }: { slug: string; accessToken: string }) =>
-      deleteCategory(slug, accessToken),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
-      toast.success("Category deleted successfully");
-    },
-    onError: (error: Error & { details?: string }) => {
-      const description = error.details ? `${error.message} ${error.details}` : error.message;
-      toast.error("Failed to delete category", {
-        description,
-      });
-    },
-  });
-
   const deleteManyMutation = useMutation({
-    mutationFn: ({ slugs, accessToken }: { slugs: string[]; accessToken: string }) =>
-      deleteCategoryBatch(slugs, accessToken),
+    mutationFn: ({
+      slugs,
+      accessToken,
+    }: {
+      slugs: string[];
+      accessToken: string;
+    }) => deleteCategoryBatch(slugs, accessToken),
     onSuccess: (_, { slugs }) => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
       toast.success(`${slugs.length} categories deleted successfully`);
     },
     onError: (error: Error & { details?: string }) => {
-      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      const description = error.details
+        ? `${error.message} ${error.details}`
+        : error.message;
       toast.error("Failed to delete categories", {
         description,
       });
@@ -131,7 +118,6 @@ export const useCategoryMutations = () => {
   });
 
   return {
-    deleteOne: deleteOneMutation,
     deleteMany: deleteManyMutation,
   };
 };

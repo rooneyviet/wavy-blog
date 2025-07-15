@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 interface UpdateCategoryData {
   name: string;
+  description?: string;
 }
 
 export default function EditCategoryPage() {
@@ -45,7 +46,7 @@ export default function EditCategoryPage() {
   useEffect(() => {
     if (category) {
       setName(category.name || "");
-      setDescription(""); // API doesn't support description yet
+      setDescription(category.description || "");
     }
   }, [category]);
 
@@ -66,7 +67,9 @@ export default function EditCategoryPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        const error = new Error(errorData.error || "Failed to update category") as Error & { details?: string };
+        const error = new Error(
+          errorData.error || "Failed to update category"
+        ) as Error & { details?: string };
         error.details = errorData.details;
         throw error;
       }
@@ -80,14 +83,16 @@ export default function EditCategoryPage() {
       // Stay on the edit page after successful update
     },
     onError: (error: Error & { details?: string }) => {
-      const message = error.details ? `${error.message} ${error.details}` : error.message;
+      const message = error.details
+        ? `${error.message} ${error.details}`
+        : error.message;
       toast.error(message || "Failed to update category");
     },
   });
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!name.trim()) {
       toast.error("Category name is required");
       return;
@@ -95,13 +100,14 @@ export default function EditCategoryPage() {
 
     updateCategoryMutation.mutate({
       name: name.trim(),
+      description: description.trim(),
     });
   };
 
   const handleReset = () => {
     if (category) {
       setName(category.name || "");
-      setDescription("");
+      setDescription(category.description || "");
     }
   };
 
@@ -121,8 +127,8 @@ export default function EditCategoryPage() {
           <p className="text-sm text-muted-foreground">
             {error instanceof Error ? error.message : "Unknown error occurred"}
           </p>
-          <Button 
-            onClick={() => router.push("/admin/categories")} 
+          <Button
+            onClick={() => router.push("/admin/categories")}
             className="mt-4"
             variant="outline"
           >
@@ -140,7 +146,7 @@ export default function EditCategoryPage() {
           <CardHeader>
             <CardTitle>Edit Category</CardTitle>
             <CardDescription>
-              Update the category information for "{category?.name}".
+              Update the category information for {category?.name}.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -167,7 +173,7 @@ export default function EditCategoryPage() {
                 disabled={updateCategoryMutation.isPending}
               />
               <p className="text-sm text-muted-foreground">
-                Note: The description is for your reference only and is not currently used in the API.
+                Provide a brief description of what this category is for.
               </p>
             </div>
             <div className="space-y-2">
@@ -190,7 +196,9 @@ export default function EditCategoryPage() {
               className="flex-1 subscribe-button text-white hover:opacity-90"
               disabled={updateCategoryMutation.isPending}
             >
-              {updateCategoryMutation.isPending ? "Updating..." : "Update Category"}
+              {updateCategoryMutation.isPending
+                ? "Updating..."
+                : "Update Category"}
             </Button>
             <Button
               type="button"
