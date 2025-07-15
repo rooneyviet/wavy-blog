@@ -343,6 +343,14 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
+	// Check if user exists before checking for posts
+	user, err := h.repo.GetUserByUsername(c.Request.Context(), username)
+	if err != nil || user == nil {
+		log.Printf("[ERROR] Failed to get user by username '%s' for delete: %v", username, err)
+		NotFound(c, "User")
+		return
+	}
+
 	// New constraint: Cannot delete user that has posts
 	posts, err := h.postRepo.GetPostsByUser(c.Request.Context(), username, nil)
 	if err != nil {

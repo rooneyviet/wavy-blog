@@ -143,6 +143,10 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 		NotFound(c, "Post")
 		return
 	}
+	if post == nil {
+		NotFound(c, "Post")
+		return
+	}
 	c.JSON(http.StatusOK, h.toPostResponse(c, post))
 }
 
@@ -192,6 +196,10 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 	if err != nil {
 		log.Printf("[ERROR] Failed to get post by slug '%s' for update: %v", slug, err)
+		NotFound(c, "Post")
+		return
+	}
+	if existingPost == nil {
 		NotFound(c, "Post")
 		return
 	}
@@ -256,6 +264,10 @@ func (h *PostHandler) DeletePost(c *gin.Context) {
 		NotFound(c, "Post")
 		return
 	}
+	if existingPost == nil {
+		NotFound(c, "Post")
+		return
+	}
 
 	if userRole != "admin" && existingPost.AuthorID != username {
 		Forbidden(c, "You are not authorized to delete this post.")
@@ -288,6 +300,10 @@ func (h *PostHandler) DeletePosts(c *gin.Context) {
 		existingPost, err := h.repo.GetPostBySlug(c.Request.Context(), slug)
 		if err != nil {
 			log.Printf("[ERROR] Failed to get post by slug '%s' for batch delete: %v", slug, err)
+			NotFound(c, "Post '"+slug+"' not found")
+			return
+		}
+		if existingPost == nil {
 			NotFound(c, "Post '"+slug+"' not found")
 			return
 		}
