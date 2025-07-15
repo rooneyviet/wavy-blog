@@ -1,4 +1,8 @@
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "@/lib/api/server";
 import { Post } from "@/types";
 import { handleUnauthorizedResponse } from "@/lib/utils/auth";
@@ -13,7 +17,9 @@ export const postKeys = {
   admin: () => [...postKeys.all, "admin"] as const,
 };
 
-const fetchPostsAdmin = async (accessToken: string): Promise<{ posts: Post[] }> => {
+const fetchPostsAdmin = async (
+  accessToken: string
+): Promise<{ posts: Post[] }> => {
   const response = await fetch("/api/posts", {
     method: "GET",
     headers: {
@@ -42,7 +48,10 @@ interface CreatePostData {
   status?: "published" | "draft";
 }
 
-const createPost = async (postData: CreatePostData, accessToken: string): Promise<Post> => {
+const createPost = async (
+  postData: CreatePostData,
+  accessToken: string
+): Promise<Post> => {
   const response = await fetch("/api/posts", {
     method: "POST",
     headers: {
@@ -54,7 +63,9 @@ const createPost = async (postData: CreatePostData, accessToken: string): Promis
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || "Failed to create post") as Error & { details?: string };
+    const error = new Error(
+      errorData.message || "Failed to create post"
+    ) as Error & { details?: string };
     error.details = errorData.details;
     throw error;
   }
@@ -70,7 +81,28 @@ interface UpdatePostData {
   status?: "published" | "draft";
 }
 
-const updatePost = async (slug: string, postData: UpdatePostData, accessToken: string): Promise<Post> => {
+const getPost = async (slug: string): Promise<Post> => {
+  const response = await fetch(`/api/posts/${slug}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const error = new Error(
+      errorData.message || "Failed to fetch post"
+    ) as Error & {
+      status?: number;
+      details?: string;
+    };
+    error.status = response.status;
+    error.details = errorData.details;
+    throw error;
+  }
+  return response.json();
+};
+
+const updatePost = async (
+  slug: string,
+  postData: UpdatePostData,
+  accessToken: string
+): Promise<Post> => {
   const response = await fetch(`/api/posts/${slug}`, {
     method: "PUT",
     headers: {
@@ -82,7 +114,9 @@ const updatePost = async (slug: string, postData: UpdatePostData, accessToken: s
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || "Failed to update post") as Error & { details?: string };
+    const error = new Error(
+      errorData.message || "Failed to update post"
+    ) as Error & { details?: string };
     error.details = errorData.details;
     throw error;
   }
@@ -93,17 +127,22 @@ const updatePost = async (slug: string, postData: UpdatePostData, accessToken: s
 export const postQueries = {
   list: (pageSize?: number, pageIndex?: number, status?: string) =>
     queryOptions({
-      queryKey: postKeys.list(`page-${pageIndex || 0}-size-${pageSize || 10}-status-${status || 'all'}`),
+      queryKey: postKeys.list(
+        `page-${pageIndex || 0}-size-${pageSize || 10}-status-${status || "all"}`
+      ),
       queryFn: () => api.getPosts(pageSize, pageIndex, status),
     }),
   detail: (slug: string) =>
     queryOptions({
       queryKey: postKeys.detail(slug),
-      queryFn: () => api.getPostBySlug(slug),
+      queryFn: () => getPost(slug),
       retry: (failureCount, error: unknown) => {
         // Don't retry on 404 errors
         const errorWithStatus = error as Error & { status?: number };
-        if (errorWithStatus?.message?.includes('404') || errorWithStatus?.status === 404) {
+        if (
+          errorWithStatus?.message?.includes("404") ||
+          errorWithStatus?.status === 404
+        ) {
           return false;
         }
         // Retry other errors up to 2 times
@@ -130,13 +169,18 @@ const deletePost = async (slug: string, accessToken: string): Promise<void> => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || "Failed to delete post") as Error & { details?: string };
+    const error = new Error(
+      errorData.message || "Failed to delete post"
+    ) as Error & { details?: string };
     error.details = errorData.details;
     throw error;
   }
 };
 
-const deletePostBatch = async (slugs: string[], accessToken: string): Promise<void> => {
+const deletePostBatch = async (
+  slugs: string[],
+  accessToken: string
+): Promise<void> => {
   const response = await fetch("/api/posts", {
     method: "DELETE",
     headers: {
@@ -148,7 +192,9 @@ const deletePostBatch = async (slugs: string[], accessToken: string): Promise<vo
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || "Failed to delete posts") as Error & { details?: string };
+    const error = new Error(
+      errorData.message || "Failed to delete posts"
+    ) as Error & { details?: string };
     error.details = errorData.details;
     throw error;
   }
@@ -158,8 +204,13 @@ export const usePostMutations = () => {
   const queryClient = useQueryClient();
 
   const createPostMutation = useMutation({
-    mutationFn: ({ postData, accessToken }: { postData: CreatePostData; accessToken: string }) =>
-      createPost(postData, accessToken),
+    mutationFn: ({
+      postData,
+      accessToken,
+    }: {
+      postData: CreatePostData;
+      accessToken: string;
+    }) => createPost(postData, accessToken),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       queryClient.invalidateQueries({ queryKey: postKeys.admin() });
@@ -167,7 +218,9 @@ export const usePostMutations = () => {
       return data;
     },
     onError: (error: Error & { details?: string }) => {
-      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      const description = error.details
+        ? `${error.message} ${error.details}`
+        : error.message;
       toast.error("Failed to create post", {
         description,
       });
@@ -175,15 +228,22 @@ export const usePostMutations = () => {
   });
 
   const deleteOneMutation = useMutation({
-    mutationFn: ({ slug, accessToken }: { slug: string; accessToken: string }) =>
-      deletePost(slug, accessToken),
+    mutationFn: ({
+      slug,
+      accessToken,
+    }: {
+      slug: string;
+      accessToken: string;
+    }) => deletePost(slug, accessToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       queryClient.invalidateQueries({ queryKey: postKeys.admin() });
       toast.success("Post deleted successfully");
     },
     onError: (error: Error & { details?: string }) => {
-      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      const description = error.details
+        ? `${error.message} ${error.details}`
+        : error.message;
       toast.error("Failed to delete post", {
         description,
       });
@@ -191,15 +251,22 @@ export const usePostMutations = () => {
   });
 
   const deleteManyMutation = useMutation({
-    mutationFn: ({ slugs, accessToken }: { slugs: string[]; accessToken: string }) =>
-      deletePostBatch(slugs, accessToken),
+    mutationFn: ({
+      slugs,
+      accessToken,
+    }: {
+      slugs: string[];
+      accessToken: string;
+    }) => deletePostBatch(slugs, accessToken),
     onSuccess: (_, { slugs }) => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       queryClient.invalidateQueries({ queryKey: postKeys.admin() });
       toast.success(`${slugs.length} posts deleted successfully`);
     },
     onError: (error: Error & { details?: string }) => {
-      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      const description = error.details
+        ? `${error.message} ${error.details}`
+        : error.message;
       toast.error("Failed to delete posts", {
         description,
       });
@@ -207,8 +274,15 @@ export const usePostMutations = () => {
   });
 
   const updatePostMutation = useMutation({
-    mutationFn: ({ slug, postData, accessToken }: { slug: string; postData: UpdatePostData; accessToken: string }) =>
-      updatePost(slug, postData, accessToken),
+    mutationFn: ({
+      slug,
+      postData,
+      accessToken,
+    }: {
+      slug: string;
+      postData: UpdatePostData;
+      accessToken: string;
+    }) => updatePost(slug, postData, accessToken),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       queryClient.invalidateQueries({ queryKey: postKeys.admin() });
@@ -217,7 +291,9 @@ export const usePostMutations = () => {
       return data;
     },
     onError: (error: Error & { details?: string }) => {
-      const description = error.details ? `${error.message} ${error.details}` : error.message;
+      const description = error.details
+        ? `${error.message} ${error.details}`
+        : error.message;
       toast.error("Failed to update post", {
         description,
       });

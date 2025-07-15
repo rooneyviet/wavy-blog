@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,8 +26,8 @@ import StatusSelector from "@/components/admin/posts/add/StatusSelector";
 
 export default function EditPostPage() {
   const router = useRouter();
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
+  const params = useParams();
+  const slug = (params.slug as string) || "";
   const {
     title,
     content,
@@ -36,7 +36,7 @@ export default function EditPostPage() {
     setTitle,
     setContent,
     setStatus,
-    selectCategorySlug
+    selectCategorySlug,
   } = useAddPostStore();
   const { accessToken } = useAuthStore();
   const { updatePost } = usePostMutations();
@@ -44,7 +44,6 @@ export default function EditPostPage() {
   // Fixed thumbnail URL as requested
   const FIXED_THUMBNAIL_URL =
     "https://lh3.googleusercontent.com/aida-public/AB6AXuDxktR3n6qAajniI0otFjnBDBjvK2zxiRH6ZinsEHE-csDY9ZzIzAauAhVOUsuxUsByzDOM7g5NfZcLemDWH3WCHkvnxOHPFIyQ9cNIN3bTGozriQYjhTXzuMwN0mRTlLTj5h6zOn5C41yG2a0mm8nPedftFaNLwsvYc1RZj4FY36qgsGEu_rQxQOqX58joQKtyFi2hP_305ScPGhTM2uiOuWvPYHsuQwGHxi3lZ9dnyHOFZVA_zcLEhCJZaHxXVr6WDUXGdsfbHWV8";
-
 
   const {
     data: post,
@@ -97,7 +96,11 @@ export default function EditPostPage() {
     };
 
     try {
-      const result = await updatePost.mutateAsync({ slug, postData, accessToken });
+      const result = await updatePost.mutateAsync({
+        slug,
+        postData,
+        accessToken,
+      });
       // Navigate to the new slug if it changed
       if (result.slug !== slug) {
         router.push(`/admin/posts/${result.slug}/edit`);

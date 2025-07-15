@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,7 @@ interface UpdateCategoryData {
 
 export default function EditCategoryPage() {
   const params = useParams();
-  const slug = params.slug as string;
+  const slug = (params.slug as string) || "";
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const router = useRouter();
