@@ -18,10 +18,8 @@ const StatusSelector: React.FC = () => {
     <div className="space-y-2">
       <Label>Status</Label>
       <Select key={status} value={status} onValueChange={setStatus}>
-        <SelectTrigger>
-          <SelectValue placeholder="Select status">
-            {status === "published" ? "Published" : status === "draft" ? "Draft" : "Select status"}
-          </SelectValue>
+        <SelectTrigger className="w-[130px]">
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="published">Published</SelectItem>
