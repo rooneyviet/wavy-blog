@@ -61,7 +61,6 @@ export default function EditPostPage() {
       setTitle(post.title);
       setContent(post.content);
       setStatus(post.status);
-      console.log("DEBUG: After setStatus, sss:", status);
       selectCategorySlug(post.category);
     }
   }, [post]);
