@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useEffect } from "react";
@@ -59,10 +60,11 @@ export default function EditPostPage() {
     if (post) {
       setTitle(post.title);
       setContent(post.content);
-      setStatus(post.status || "published");
-      selectCategorySlug(post.category); // Set the category
+      setStatus(post.status);
+      console.log("DEBUG: After setStatus, sss:", status);
+      selectCategorySlug(post.category);
     }
-  }, [post, setTitle, setContent, setStatus, selectCategorySlug]);
+  }, [post]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

@@ -2,7 +2,13 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAddPostStore } from "@/stores/addPostStore";
 
 const StatusSelector: React.FC = () => {
@@ -11,9 +17,11 @@ const StatusSelector: React.FC = () => {
   return (
     <div className="space-y-2">
       <Label>Status</Label>
-      <Select value={status} onValueChange={setStatus}>
+      <Select key={status} value={status} onValueChange={setStatus}>
         <SelectTrigger>
-          <SelectValue placeholder="Select status" />
+          <SelectValue placeholder="Select status">
+            {status === "published" ? "Published" : status === "draft" ? "Draft" : "Select status"}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="published">Published</SelectItem>
