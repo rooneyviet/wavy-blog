@@ -1,0 +1,292 @@
+/* Enhanced Wavy Admin Theme - Maintaining Pink-50 Brand Identity */
+
+:root {
+  /* Core Brand Colors - Pink Theme */
+  --background: oklch(0.9850 0.0150 326.1100); /* Pink-50 background */
+  --foreground: oklch(0.1950 0.0100 285.8850);
+  --card: oklch(1.0000 0 0); /* Pure white cards */
+  --card-foreground: oklch(0.1950 0.0100 285.8850);
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0.1950 0.0100 285.8850);
+  
+  /* Pink Primary Colors */
+  --primary: oklch(0.6489 0.2370 326.1100); /* Pink-500 */
+  --primary-foreground: oklch(1.0000 0 0);
+  --primary-light: oklch(0.7323 0.1850 326.1100); /* Pink-400 */
+  --primary-lighter: oklch(0.8500 0.1200 326.1100); /* Pink-300 */
+  
+  /* Secondary Colors */
+  --secondary: oklch(0.9680 0.0200 326.1100); /* Pink-100 */
+  --secondary-foreground: oklch(0.2950 0.0150 285.8850);
+  --muted: oklch(0.9551 0.0100 285.8850);
+  --muted-foreground: oklch(0.4500 0.0050 285.8850);
+  
+  /* Accent Colors */
+  --accent: oklch(0.9400 0.0300 326.1100); /* Pink-200 */
+  --accent-foreground: oklch(0.2050 0.0100 285.8850);
+  
+  /* Status Colors */
+  --success: oklch(0.6500 0.1800 142.4953); /* Green */
+  --success-foreground: oklch(1.0000 0 0);
+  --warning: oklch(0.7500 0.2000 85.8734); /* Orange */
+  --warning-foreground: oklch(0.1500 0.0050 285.8850);
+  --destructive: oklch(0.5770 0.2450 27.3250); /* Red */
+  --destructive-foreground: oklch(1.0000 0 0);
+  
+  /* Border & Input */
+  --border: oklch(0.9220 0.0150 326.1100);
+  --input: oklch(0.9220 0.0150 326.1100);
+  --ring: oklch(0.6489 0.2370 326.1100);
+  
+  /* Enhanced Sidebar Colors */
+  --sidebar: oklch(1.0000 0 0); /* White sidebar */
+  --sidebar-foreground: oklch(0.2950 0.0150 285.8850);
+  --sidebar-primary: oklch(0.6489 0.2370 326.1100);
+  --sidebar-primary-foreground: oklch(1.0000 0 0);
+  --sidebar-accent: oklch(0.9680 0.0200 326.1100);
+  --sidebar-accent-foreground: oklch(0.2050 0.0100 285.8850);
+  --sidebar-border: oklch(0.9220 0.0150 326.1100);
+  --sidebar-ring: oklch(0.6489 0.2370 326.1100);
+  
+  /* Typography */
+  --font-sans: 'Poppins', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+  
+  /* Spacing & Layout */
+  --radius: 0.75rem; /* Slightly more rounded */
+  --spacing: 0.25rem;
+  
+  /* Enhanced Shadows */
+  --shadow-sm: 0 2px 4px 0px hsl(326 65% 50% / 0.08), 0 1px 2px -1px hsl(326 65% 50% / 0.06);
+  --shadow: 0 4px 6px -1px hsl(326 65% 50% / 0.10), 0 2px 4px -1px hsl(326 65% 50% / 0.06);
+  --shadow-md: 0 6px 12px -2px hsl(326 65% 50% / 0.15), 0 4px 6px -2px hsl(326 65% 50% / 0.08);
+  --shadow-lg: 0 10px 15px -3px hsl(326 65% 50% / 0.20), 0 4px 6px -2px hsl(326 65% 50% / 0.10);
+  --shadow-xl: 0 20px 25px -5px hsl(326 65% 50% / 0.25), 0 10px 10px -5px hsl(326 65% 50% / 0.15);
+  
+  /* Dashboard Card Gradients */
+  --gradient-pink: linear-gradient(135deg, oklch(0.6489 0.2370 326.1100) 0%, oklch(0.7323 0.1850 326.1100) 100%);
+  --gradient-purple: linear-gradient(135deg, oklch(0.5635 0.2408 260.8178) 0%, oklch(0.6489 0.2370 326.1100) 100%);
+  --gradient-blue: linear-gradient(135deg, oklch(0.5500 0.2200 263.0000) 0%, oklch(0.5635 0.2408 260.8178) 100%);
+  --gradient-green: linear-gradient(135deg, oklch(0.6500 0.1800 142.4953) 0%, oklch(0.7000 0.1600 150.0000) 100%);
+  
+  /* Interactive States */
+  --hover-overlay: oklch(0.6489 0.2370 326.1100 / 0.08);
+  --active-overlay: oklch(0.6489 0.2370 326.1100 / 0.12);
+  --focus-ring: 0 0 0 3px oklch(0.6489 0.2370 326.1100 / 0.20);
+  
+  /* Data Table Enhancements */
+  --table-header-bg: oklch(0.9850 0.0150 326.1100);
+  --table-row-hover: oklch(0.9680 0.0200 326.1100 / 0.50);
+  --table-selected: oklch(0.9400 0.0300 326.1100);
+  
+  /* Status Badge Colors */
+  --status-published: oklch(0.6500 0.1800 142.4953);
+  --status-draft: oklch(0.7500 0.2000 85.8734);
+  --status-pending: oklch(0.5500 0.2200 263.0000);
+  --status-archived: oklch(0.4500 0.0050 285.8850);
+}
+
+/* Enhanced Component Styles */
+
+/* Dashboard Cards */
+.dashboard-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.dashboard-card-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.gradient-pink { background: var(--gradient-pink); }
+.gradient-purple { background: var(--gradient-purple); }
+.gradient-blue { background: var(--gradient-blue); }
+.gradient-green { background: var(--gradient-green); }
+
+/* Enhanced Table Styles */
+.admin-table {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.admin-table thead {
+  background: var(--table-header-bg);
+  border-bottom: 2px solid var(--border);
+}
+
+.admin-table tbody tr:hover {
+  background: var(--table-row-hover);
+}
+
+.admin-table tbody tr.selected {
+  background: var(--table-selected);
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-published {
+  background: oklch(0.6500 0.1800 142.4953 / 0.15);
+  color: var(--status-published);
+}
+
+.status-draft {
+  background: oklch(0.7500 0.2000 85.8734 / 0.15);
+  color: var(--status-draft);
+}
+
+.status-pending {
+  background: oklch(0.5500 0.2200 263.0000 / 0.15);
+  color: var(--status-pending);
+}
+
+/* Enhanced Buttons */
+.btn-primary {
+  background: var(--gradient-pink);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  filter: brightness(1.05);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Enhanced Sidebar */
+.admin-sidebar {
+  background: var(--sidebar);
+  border-right: 1px solid var(--sidebar-border);
+  box-shadow: var(--shadow);
+}
+
+.sidebar-nav-item {
+  border-radius: calc(var(--radius) - 2px);
+  margin: 0.125rem 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar-nav-item:hover {
+  background: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
+}
+
+.sidebar-nav-item.active {
+  background: var(--sidebar-primary);
+  color: var(--sidebar-primary-foreground);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Form Enhancements */
+.form-input {
+  border: 2px solid var(--input);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+  background: var(--card);
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* Header Enhancements */
+.admin-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.breadcrumb {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.breadcrumb-separator {
+  margin: 0 0.5rem;
+  color: var(--muted-foreground);
+}
+
+.breadcrumb-current {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Loading States */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--accent) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .admin-table {
+    font-size: 0.875rem;
+  }
+  
+  .sidebar-nav-item {
+    margin: 0.25rem;
+  }
+}
+
+/* Dark Mode Compatibility */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.1500 0.0100 285.8850);
+    --foreground: oklch(0.9850 0.0150 326.1100);
+    --card: oklch(0.2000 0.0150 285.8850);
+    /* Additional dark mode variables would be defined here */
+  }
+}

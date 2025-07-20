@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Search, Filter, Download, Trash2, Eye, Edit, Plus, FileText } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -191,9 +188,18 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("status")}</div>
-      ),
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        return (
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${
+            status === 'published' 
+              ? 'bg-green-100 text-green-800 border border-green-200' 
+              : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+          }`}>
+            {status}
+          </span>
+        );
+      },
     },
     {
       id: "actions",
@@ -201,36 +207,30 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
       cell: ({ row }) => {
         const post = row.original;
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Link href={`/blog/${post.slug}`} target="_blank">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600">
+                <Eye className="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <Link href={`/blog/${post.slug}`} passHref legacyBehavior>
-                <a target="_blank" rel="noopener noreferrer">
-                  <DropdownMenuItem>View Post</DropdownMenuItem>
-                </a>
-              </Link>
-              <DropdownMenuSeparator />
-              <Link href={`/admin/posts/${post.slug}/edit`} passHref>
-                <DropdownMenuItem>Edit Post</DropdownMenuItem>
-              </Link>
-              <DropdownMenuItem
-                className="text-red-600"
-                onClick={() => handleSingleDelete(post)}
-              >
-                Delete Post
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Link>
+            <Link href={`/admin/posts/${post.slug}/edit`}>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600">
+                <Edit className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+              onClick={() => handleSingleDelete(post)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         );
       },
     },
-  ], []);
+  ], [handleSingleDelete]);
 
   const table = useReactTable({
     data: adminPosts,
@@ -275,74 +275,107 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
   };
 
   return (
-    <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full border-0 text-sm">
-      <h2 className="text-2xl font-bold mb-6">Posts</h2>
-      <div className="flex items-center justify-between py-4">
-        <Input
-          placeholder="Filter by title..."
-          value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("title")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <div className="flex gap-2">
-          {Object.keys(rowSelection).length > 0 && (
-            <ConfirmationDialog
-              open={showDeleteDialog}
-              onOpenChange={setShowDeleteDialog}
-              title="Delete Posts"
-              description={`Are you sure you want to delete ${selectedPostSlugs.length} selected post${selectedPostSlugs.length > 1 ? "s" : ""}? This action cannot be undone.`}
-              confirmText="Delete"
-              onConfirm={confirmDelete}
-              variant="destructive"
-            >
-              <Button variant="destructive" onClick={handleDeleteClick}>
-                Delete Selected ({Object.keys(rowSelection).length})
-              </Button>
-            </ConfirmationDialog>
-          )}
-          <Link href="/admin/posts/add" passHref>
-            <Button className="subscribe-button text-white hover:opacity-90">
-              Add Post
+    <Card className="bg-white rounded-xl shadow-lg w-full border-0 overflow-hidden">
+      {/* Enhanced Header */}
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <FileText className="w-6 h-6 text-pink-600" />
+          Posts Management
+        </h2>
+        
+        {/* Enhanced Filters Section */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-1 gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search posts..."
+                value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn("title")?.setFilterValue(event.target.value)
+                }
+                className="pl-10 pr-4 py-3 border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+              />
+            </div>
+            <select className="px-4 py-3 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-pink-500 bg-white">
+              <option>All Status</option>
+              <option>Published</option>
+              <option>Draft</option>
+            </select>
+            <select className="px-4 py-3 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-pink-500 bg-white">
+              <option>All Categories</option>
+              <option>Technology</option>
+              <option>Design</option>
+              <option>Business</option>
+            </select>
+          </div>
+          
+          <div className="flex gap-3">
+            {Object.keys(rowSelection).length > 0 && (
+              <ConfirmationDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                title="Delete Posts"
+                description={`Are you sure you want to delete ${selectedPostSlugs.length} selected post${selectedPostSlugs.length > 1 ? "s" : ""}? This action cannot be undone.`}
+                confirmText="Delete"
+                onConfirm={confirmDelete}
+                variant="destructive"
+              >
+                <Button variant="destructive" onClick={handleDeleteClick} className="flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  Delete Selected ({Object.keys(rowSelection).length})
+                </Button>
+              </ConfirmationDialog>
+            )}
+            <Button variant="outline" className="flex items-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50">
+              <Download className="w-4 h-4" />
+              Export
             </Button>
-          </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+            <Link href="/admin/posts/add" passHref>
+              <Button className="subscribe-button text-white hover:opacity-90 flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add Post
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2 border-gray-300">
+                  <Filter className="w-4 h-4" />
+                  Columns <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+      {/* Enhanced Table */}
+      <div className="overflow-x-auto">
+        <Table className="w-full">
+          <TableHeader className="bg-pink-50 border-b-2 border-gray-200">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="border-none">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="font-semibold text-gray-700 uppercase tracking-wider py-4">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -380,6 +413,7 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className="border-b border-gray-100 hover:bg-pink-50/50 transition-colors duration-200 group"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -405,28 +439,51 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
           )}
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+      {/* Enhanced Pagination */}
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <span>Showing</span>
+            <select className="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
+              <option>10</option>
+              <option>25</option>
+              <option>50</option>
+            </select>
+            <span>of {table.getFilteredRowModel().rows.length} posts</span>
+            {table.getFilteredSelectedRowModel().rows.length > 0 && (
+              <span className="ml-4 text-pink-600 font-medium">
+                {table.getFilteredSelectedRowModel().rows.length} selected
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-gray-300 text-gray-600 hover:bg-gray-100"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" className="bg-pink-500 text-white hover:bg-pink-600">1</Button>
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">2</Button>
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">3</Button>
+              <span className="px-2 text-gray-500">...</span>
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">12</Button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-gray-300 text-gray-600 hover:bg-gray-100"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
 

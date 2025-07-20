@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Search, Filter, Download, Trash2, Edit, Plus, FolderOpen } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -194,32 +191,26 @@ export default function CategoriesDataTable() {
         cell: ({ row }) => {
           const category = row.original;
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <Link href={`/admin/categories/${category.slug}/edit`}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600">
+                  <Edit className="h-4 w-4" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <Link href={`/admin/categories/${category.slug}/edit`} passHref>
-                  <DropdownMenuItem>Edit Category</DropdownMenuItem>
-                </Link>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => handleSingleDelete(category)}
-                >
-                  Delete Category
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                onClick={() => handleSingleDelete(category)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           );
         },
       },
     ],
-    []
+    [handleSingleDelete]
   );
 
   const table = useReactTable({
@@ -265,74 +256,96 @@ export default function CategoriesDataTable() {
   };
 
   return (
-    <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full border-0 text-sm">
-      <h2 className="text-2xl font-bold mb-6">Categories</h2>
-      <div className="flex items-center justify-between py-4">
-        <Input
-          placeholder="Filter by name..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <div className="flex gap-2">
-          {Object.keys(rowSelection).length > 0 && (
-            <ConfirmationDialog
-              open={showDeleteDialog}
-              onOpenChange={setShowDeleteDialog}
-              title="Delete Categories"
-              description={`Are you sure you want to delete ${selectedCategorySlugs.length} selected categor${selectedCategorySlugs.length > 1 ? "ies" : "y"}? This action cannot be undone.`}
-              confirmText="Delete"
-              onConfirm={confirmDelete}
-              variant="destructive"
-            >
-              <Button variant="destructive" onClick={handleDeleteClick}>
-                Delete Selected ({Object.keys(rowSelection).length})
-              </Button>
-            </ConfirmationDialog>
-          )}
-          <Link href="/admin/categories/add" passHref>
-            <Button className="subscribe-button text-white hover:opacity-90">
-              Add Category
+    <Card className="bg-white rounded-xl shadow-lg w-full border-0 overflow-hidden">
+      {/* Enhanced Header */}
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <FolderOpen className="w-6 h-6 text-pink-600" />
+          Categories Management
+        </h2>
+        
+        {/* Enhanced Filters Section */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-1 gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search categories..."
+                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn("name")?.setFilterValue(event.target.value)
+                }
+                className="pl-10 pr-4 py-3 border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+              />
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            {Object.keys(rowSelection).length > 0 && (
+              <ConfirmationDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                title="Delete Categories"
+                description={`Are you sure you want to delete ${selectedCategorySlugs.length} selected categor${selectedCategorySlugs.length > 1 ? "ies" : "y"}? This action cannot be undone.`}
+                confirmText="Delete"
+                onConfirm={confirmDelete}
+                variant="destructive"
+              >
+                <Button variant="destructive" onClick={handleDeleteClick} className="flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  Delete Selected ({Object.keys(rowSelection).length})
+                </Button>
+              </ConfirmationDialog>
+            )}
+            <Button variant="outline" className="flex items-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50">
+              <Download className="w-4 h-4" />
+              Export
             </Button>
-          </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+            <Link href="/admin/categories/add" passHref>
+              <Button className="subscribe-button text-white hover:opacity-90 flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add Category
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2 border-gray-300">
+                  <Filter className="w-4 h-4" />
+                  Columns <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+      {/* Enhanced Table */}
+      <div className="overflow-x-auto">
+        <Table className="w-full">
+          <TableHeader className="bg-pink-50 border-b-2 border-gray-200">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="border-none">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="font-semibold text-gray-700 uppercase tracking-wider py-4">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -374,6 +387,7 @@ export default function CategoriesDataTable() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className="border-b border-gray-100 hover:bg-pink-50/50 transition-colors duration-200 group"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -399,28 +413,48 @@ export default function CategoriesDataTable() {
           )}
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+      {/* Enhanced Pagination */}
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <span>Showing</span>
+            <select className="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
+              <option>10</option>
+              <option>25</option>
+              <option>50</option>
+            </select>
+            <span>of {table.getFilteredRowModel().rows.length} categories</span>
+            {table.getFilteredSelectedRowModel().rows.length > 0 && (
+              <span className="ml-4 text-pink-600 font-medium">
+                {table.getFilteredSelectedRowModel().rows.length} selected
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="border-gray-300 text-gray-600 hover:bg-gray-100"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" className="bg-pink-500 text-white hover:bg-pink-600">1</Button>
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">2</Button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="border-gray-300 text-gray-600 hover:bg-gray-100"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
 
