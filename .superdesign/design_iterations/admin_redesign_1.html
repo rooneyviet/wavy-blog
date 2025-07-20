@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wavy Admin - Enhanced Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="admin_theme.css">
+    
+    <style>
+        /* Custom animations and enhancements */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+        
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.25);
+        }
+        
+        .gradient-pink { background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); }
+        .gradient-purple { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); }
+        .gradient-blue { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); }
+        .gradient-green { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+        
+        .sidebar-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .table-row:hover {
+            background-color: rgba(236, 72, 153, 0.05);
+            transform: scale(1.002);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        
+        .status-published {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #059669;
+        }
+        
+        .status-draft {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #d97706;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px -2px rgba(236, 72, 153, 0.3);
+        }
+        
+        .search-input:focus {
+            border-color: #ec4899;
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-pink-50 font-sans antialiased">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Enhanced Sidebar -->
+        <div class="w-64 bg-white shadow-lg sidebar-transition flex-shrink-0">
+            <!-- Sidebar Header -->
+            <div class="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <span class="material-icons text-pink-500 text-2xl">waves</span>
+                    <span class="text-xl font-bold text-gray-800">Wavy Admin</span>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="mt-8 px-4">
+                <div class="space-y-2">
+                    <!-- Dashboard -->
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-pink-600 bg-pink-100 rounded-lg font-medium">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <!-- Users Section -->
+                    <div class="mt-6">
+                        <div class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg cursor-pointer transition-colors">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                            <span class="font-medium">Users</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 ml-auto"></i>
+                        </div>
+                        <div class="ml-8 mt-2 space-y-1">
+                            <a href="#" class="block px-3 py-1 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors">List Users</a>
+                            <a href="#" class="block px-3 py-1 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors">Add User</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Posts Section -->
+                    <div class="mt-4">
+                        <div class="flex items-center gap-3 px-3 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                            <span>Posts</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 ml-auto"></i>
+                        </div>
+                        <div class="ml-8 mt-2 space-y-1">
+                            <a href="#" class="block px-3 py-1 text-sm text-pink-600 bg-pink-50 rounded font-medium">List Posts</a>
+                            <a href="#" class="block px-3 py-1 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors">Add Post</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Categories Section -->
+                    <div class="mt-4">
+                        <div class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded-lg cursor-pointer transition-colors">
+                            <i data-lucide="folder-open" class="w-5 h-5"></i>
+                            <span class="font-medium">Categories</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 ml-auto"></i>
+                        </div>
+                        <div class="ml-8 mt-2 space-y-1">
+                            <a href="#" class="block px-3 py-1 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors">List Categories</a>
+                            <a href="#" class="block px-3 py-1 text-sm text-gray-600 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors">Add Category</a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- User Profile -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-semibold">JD</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate">John Doe</p>
+                        <p class="text-xs text-gray-500 truncate">admin@wavy.com</p>
+                    </div>
+                    <button class="p-1 text-gray-400 hover:text-gray-600">
+                        <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Enhanced Header -->
+            <header class="bg-white border-b border-gray-200 shadow-sm">
+                <div class="flex items-center justify-between h-16 px-6">
+                    <div class="flex items-center gap-4">
+                        <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
+                        </button>
+                        
+                        <!-- Breadcrumbs -->
+                        <nav class="flex items-center gap-2 text-sm">
+                            <a href="#" class="text-gray-500 hover:text-pink-600">Admin</a>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            <a href="#" class="text-gray-500 hover:text-pink-600">Posts</a>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            <span class="text-pink-600 font-medium">List Posts</span>
+                        </nav>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button class="btn-primary text-white px-4 py-2 rounded-lg font-medium hover-lift transition-all">
+                            <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                            Add Post
+                        </button>
+                        <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-auto bg-pink-50 p-6">
+                <!-- Dashboard Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 fade-in">
+                    <!-- Users Card -->
+                    <div class="bg-white rounded-xl shadow-lg hover-lift transition-all duration-300 overflow-hidden stagger-1">
+                        <div class="h-1 gradient-pink"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Total Users</p>
+                                    <p class="text-3xl font-bold text-gray-900">42</p>
+                                    <p class="text-sm text-green-600 font-medium">+2 this week</p>
+                                </div>
+                                <div class="p-3 bg-pink-100 rounded-lg">
+                                    <i data-lucide="users" class="w-6 h-6 text-pink-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Posts Card -->
+                    <div class="bg-white rounded-xl shadow-lg hover-lift transition-all duration-300 overflow-hidden stagger-2">
+                        <div class="h-1 gradient-purple"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Total Posts</p>
+                                    <p class="text-3xl font-bold text-gray-900">128</p>
+                                    <p class="text-sm text-green-600 font-medium">+5 today</p>
+                                </div>
+                                <div class="p-3 bg-purple-100 rounded-lg">
+                                    <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Categories Card -->
+                    <div class="bg-white rounded-xl shadow-lg hover-lift transition-all duration-300 overflow-hidden stagger-3">
+                        <div class="h-1 gradient-blue"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Categories</p>
+                                    <p class="text-3xl font-bold text-gray-900">8</p>
+                                    <p class="text-sm text-blue-600 font-medium">+1 this month</p>
+                                </div>
+                                <div class="p-3 bg-blue-100 rounded-lg">
+                                    <i data-lucide="folder-open" class="w-6 h-6 text-blue-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Views Card -->
+                    <div class="bg-white rounded-xl shadow-lg hover-lift transition-all duration-300 overflow-hidden stagger-4">
+                        <div class="h-1 gradient-green"></div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Total Views</p>
+                                    <p class="text-3xl font-bold text-gray-900">15.2K</p>
+                                    <p class="text-sm text-green-600 font-medium">+8% this week</p>
+                                </div>
+                                <div class="p-3 bg-green-100 rounded-lg">
+                                    <i data-lucide="eye" class="w-6 h-6 text-green-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Enhanced Data Table -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden slide-up">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Posts Management</h2>
+                        
+                        <!-- Enhanced Filters -->
+                        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                            <div class="flex flex-1 gap-4 w-full md:w-auto">
+                                <div class="relative flex-1 md:max-w-sm">
+                                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" placeholder="Search posts..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg search-input focus:outline-none transition-all">
+                                </div>
+                                <select class="px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500 transition-colors">
+                                    <option>All Status</option>
+                                    <option>Published</option>
+                                    <option>Draft</option>
+                                </select>
+                                <select class="px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-pink-500 transition-colors">
+                                    <option>All Categories</option>
+                                    <option>Technology</option>
+                                    <option>Design</option>
+                                    <option>Business</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex gap-3">
+                                <button class="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
+                                    <i data-lucide="trash-2" class="w-4 h-4 inline mr-2"></i>
+                                    Delete Selected
+                                </button>
+                                <button class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                                    Export
+                                </button>
+                                <button class="btn-primary text-white px-4 py-2 rounded-lg font-medium hover-lift transition-all">
+                                    <i data-lucide="plus" class="w-4 h-4 inline mr-2"></i>
+                                    Add Post
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-pink-50 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-6 py-4 text-left">
+                                        <input type="checkbox" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500">
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                                        <div class="flex items-center gap-2 cursor-pointer hover:text-pink-600">
+                                            Title
+                                            <i data-lucide="arrow-up-down" class="w-4 h-4"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Author</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                                        <div class="flex items-center gap-2 cursor-pointer hover:text-pink-600">
+                                            Date
+                                            <i data-lucide="arrow-up-down" class="w-4 h-4"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Sample Row 1 -->
+                                <tr class="table-row transition-all duration-200">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500">
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="font-medium text-gray-900">Getting Started with React Hooks</div>
+                                        <div class="text-sm text-gray-500">A comprehensive guide to React hooks...</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">John Doe</td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Technology</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">Today</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge status-published">Published</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                            </button>
+                                            <button class="p-1 text-gray-400 hover:text-green-600 transition-colors">
+                                                <i data-lucide="edit" class="w-4 h-4"></i>
+                                            </button>
+                                            <button class="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Sample Row 2 -->
+                                <tr class="table-row transition-all duration-200">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500">
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="font-medium text-gray-900">Modern CSS Grid Layouts</div>
+                                        <div class="text-sm text-gray-500">Learn to create responsive layouts...</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">Jane Smith</td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">Design</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">Yesterday</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge status-draft">Draft</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                            </button>
+                                            <button class="p-1 text-gray-400 hover:text-green-600 transition-colors">
+                                                <i data-lucide="edit" class="w-4 h-4"></i>
+                                            </button>
+                                            <button class="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Sample Row 3 -->
+                                <tr class="table-row transition-all duration-200">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox" class="rounded border-gray-300 text-pink-600 focus:ring-pink-500">
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="font-medium text-gray-900">Building Scalable Applications</div>
+                                        <div class="text-sm text-gray-500">Best practices for enterprise development...</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">Bob Johnson</td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Business</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-700">2 days ago</td>
+                                    <td class="px-6 py-4">
+                                        <span class="status-badge status-published">Published</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <button class="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                            </button>
+                                            <button class="p-1 text-gray-400 hover:text-green-600 transition-colors">
+                                                <i data-lucide="edit" class="w-4 h-4"></i>
+                                            </button>
+                                            <button class="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-sm text-gray-700">
+                                <span>Showing</span>
+                                <select class="border border-gray-300 rounded px-2 py-1 text-sm">
+                                    <option>10</option>
+                                    <option>25</option>
+                                    <option>50</option>
+                                </select>
+                                <span>of 128 posts</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button class="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                                    <i data-lucide="chevron-left" class="w-4 h-4 inline mr-1"></i>
+                                    Previous
+                                </button>
+                                <button class="px-3 py-2 text-sm bg-pink-500 text-white rounded-lg">1</button>
+                                <button class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">2</button>
+                                <button class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">3</button>
+                                <span class="px-2 text-gray-500">...</span>
+                                <button class="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">12</button>
+                                <button class="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                                    Next
+                                    <i data-lucide="chevron-right" class="w-4 h-4 inline ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Add some basic interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Table row hover effects
+            const tableRows = document.querySelectorAll('.table-row');
+            tableRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.002)';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+            
+            // Dashboard card hover effects
+            const dashboardCards = document.querySelectorAll('.hover-lift');
+            dashboardCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

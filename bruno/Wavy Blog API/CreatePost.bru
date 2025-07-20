@@ -18,8 +18,8 @@ body:json {
   {
     "title": "My First Post",
     "content": "This is the content of my first post.",
-    "category": "Technology",
-    "thumbnailURL": "http://example.com/thumbnail.jpg"
+    "categorySlug": "{{categorySlug}}",
+    "thumbnailURL": "https://lh3.googleusercontent.com/aida-public/AB6AXuDgJEb0ceOInL65KT5afmFQkeFUGWLrJPu31CtEQWu484OS1N5KaPX3Fdm4IxiMnaGa2mwnvzEa8sR7zTLqciiG12oZH78ZtY08upwEZkpYD5ATSlY6Mba0sVLihDmSQY5PiMiZWQwOrFYgoFk9sfsJtd2DaGBhx7hQgQYDt8tPxFZmVdPxHnYNvX4UeznZzZSYYpI1E-iUn_nFBd4aRVaE-TZ0wtYT3ctRUPNgmdJZzk4dwo9HRrAHGWVSXL3IMsSYKaxxQs_aDgrq"
   }
 }
 
@@ -38,7 +38,7 @@ tests {
     expect(data.slug).to.be.a('string');
     expect(data.title).to.equal("My First Post");
     expect(data.content).to.equal("This is the content of my first post.");
-    expect(data.category).to.equal("Technology");
+    expect(data.category).to.equal(bru.getVar("categorySlug"));
     expect(data.authorID).to.be.a('string');
     expect(data.createdAt).to.be.a('string');
     expect(data.updatedAt).to.be.a('string');

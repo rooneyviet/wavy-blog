@@ -1,504 +1,426 @@
-# Development Environment Guide
+# AGENTS.md - Development Commands & Guidelines
 
-This guide covers essential commands and procedures for the development environment.
+## Build/Test Commands
 
-## Docker Usage
+- **Start dev environment:** `docker compose -f docker-compose.dev.yml up --build`
+- **Frontend lint:** `docker compose -f docker-compose.dev.yml run --rm frontend yarn lint`
+- **Frontend build:** `docker compose -f docker-compose.dev.yml run --rm frontend yarn build`
+- **Frontend install package:** `docker compose -f docker-compose.dev.yml run --rm frontend add {package_name}`
+- **Run single API test:** `bru run "Login.bru" --env demo`
+- **Run test sequence:** `bru run "Login.bru" "CreatePost.bru" --env demo`
+- **Go commands:** All Go commands run in Docker: Example:`docker compose -f docker-compose.dev.yml build api-backend`
+- **DynamoDB commands:** `docker exec localstack awslocal dynamodb [command]`
+- **Scan the `WavyBlog` table:** `docker exec localstack awslocal dynamodb scan --table-name WavyBlog`
+- **Delete the `WavyBlog` table:** `docker exec localstack awslocal dynamodb delete-table --table-name WavyBlog`
+- **Shadcn add new components:** `cd frontend && npx shadcn@latest add {component_name}`
 
-All services are managed via Docker Compose. Refer to the [`docker-compose.dev.yml`](docker-compose.dev.yml:1) for detailed service configurations.
+## Code Style Guidelines
 
-### Go Specific Commands
-
-- There will be no `Go` installation on the host machine. All Go commands will be executed inside the Docker container managed by `docker compose`.
-  Ex: `docker compose -f docker-compose.dev.yml build api-backend`
-
-### General Commands
-
-- **Run the application:**
-  ```bash
-  docker compose -f docker-compose.dev.yml up --build
-  ```
-
-### Frontend Commands
-
-- **Install dependencies:**
-  ```bash
-  docker compose -f docker-compose.dev.yml run --rm frontend yarn install
-  ```
-- **Add a new package:**
-  ```bash
-  docker compose -f docker-compose.dev.yml run --rm frontend yarn add {package_name}
-  ```
-
-bru run Login.bru --env demo
-
-### Backend Commands (DynamoDB)
-
-- **Run DynamoDB commands via `awslocal`:**
-  ```bash
-  docker exec localstack awslocal dynamodb [command]
-  ```
-- **Examples:**
-  - Scan the `WavyBlog` table:
-    ```bash
-    docker exec localstack awslocal dynamodb scan --table-name WavyBlog
-    ```
-  - Delete the `WavyBlog` table:
-    ```bash
-    docker exec localstack awslocal dynamodb delete-table --table-name WavyBlog
-    ```
-
-## Debugging Workflow
-
-When an error is reported, follow this systematic approach:
-
-1.  **Isolate the Issue:** Review the provided error message and check the related code to understand the context.
-2.  **Gather Information:** Use various debugging techniques to get more insight. This may include:
-    - Adding `console.log` or `fmt.Println` statements.
-    - Using a debugger.
-    - Running specific commands to check the state of the system.
-3.  **Analyze Findings:** Examine the debug output to identify the root cause of the problem.
-4.  **Propose a Solution:** Formulate a clear solution to fix the issue.
-5.  **Implement the Fix:** Once the proposed solution is approved, apply the necessary code changes.
-
-**IMPORTANT:** Focus exclusively on fixing the reported error. Do not address unrelated issues or refactor code outside the scope of the bug.
-
-## Documentation Update Requirements
-
-When making changes to the codebase, ensure documentation is kept up-to-date:
-
-- **DynamoDB Changes**: After updating any DynamoDB-related code (table structure, entities, access patterns, GSIs, etc.), update the [`documents/dynamodb_structure.md`](documents/dynamodb_structure.md) file to reflect these changes.
-
-- **API Changes**: After updating any API endpoints (adding, modifying, or deleting routes, changing request/response schemas, authentication requirements, etc.), update the [`documents/api_specs.md`](documents/api_specs.md) file to reflect these changes.
-
----
-
-# NextJS Style Guide and Clean Architecture Principles
-
-This guide combines general React best practices with Clean Architecture principles to help build robust, scalable, and maintainable applications.
+- **TypeScript:** Use strict typing, avoid `any`
+- **Components:** PascalCase files/exports, functional components with hooks. Use shadcn, or create custom components.
+- **Variables/Functions:** camelCase, constants UPPER_SNAKE_CASE
+- **Imports:** Absolute paths with `@/` prefix, group by external/internal
+- **Error Handling:** Explicit error handling, custom error types for Go
+- **Architecture:** Clean Architecture layers - View/UseCase/Domain/Repository/Adapter
+- **State:** Zustand for global state, local state for component-specific
+- **Data Fetching:** Default to request API with server-side prefetching with TanStack Query, Server Actions for mutations. only call API from client side when being asked to.
+- **Styling:** Tailwind CSS only, no CSS modules
+- **Validation:** Zod form and input validation.
 
 ## 1. Core Principles
 
 - **Separation of Concerns (SoC):**
-  - Clearly divide responsibilities between different parts of your application (UI, state management, business logic, data fetching).
-  - Strive for components and modules that do one thing well.
 - **Dependency Inversion Principle (DIP):**
-  - High-level modules (e.g., business logic) should not depend on low-level modules (e.g., specific data fetching libraries). Both should depend on abstractions (interfaces/types).
-  - This promotes loose coupling and testability.
 - **Single Responsibility Principle (SRP):**
-  - Applied to components, functions, and modules. Each should have only one reason to change.
 - **Don't Repeat Yourself (DRY):**
-  - Avoid code duplication by abstracting common logic into reusable functions, hooks, or components.
-
-## 2. Application Architecture (Inspired by Clean Architecture)
-
-Structure your application into logical layers to manage complexity and improve maintainability.
-
-### 2.1. View Layer (Presentation)
-
-- **Purpose:** Responsible for rendering the UI and handling user interactions.
-- **Characteristics:**
-  - Contains React components (functional components with Hooks are preferred).
-  - Components should be "dumb" or "presentational" as much as possible, receiving data and callbacks via props.
-  - Focus on how things look and feel.
-  - Minimal business logic.
-- **Example:**
-
-  ```tsx
-  // src/components/User/UserProfile.tsx
-  interface UserProfileProps {
-    name: string;
-    email: string;
-    onEdit: () => void;
-  }
-
-  const UserProfile: React.FC<UserProfileProps> = ({ name, email, onEdit }) => (
-    <div>
-      <h2>{name}</h2>
-      <p>{email}</p>
-      <button onClick={onEdit}>Edit Profile</button>
-    </div>
-  );
-
-  export default UserProfile;
-  ```
-
-### 2.2. UseCase Layer (Application Business Logic)
-
-- **Purpose:** Orchestrates the application's specific business rules and workflows. Connects the View Layer to the Domain/Repository Layers.
-- **Characteristics:**
-  - Contains application-specific logic (e.g., what happens when a user submits a form).
-  - May transform data from repositories into a format suitable for the View Layer (ViewModels).
-  - Should be independent of UI frameworks.
-  - Often implemented as functions or classes.
-- **Example:**
-
-  ```typescript
-  // src/usecases/User/fetchUserProfileUseCase.ts
-  import { userRepository } from "@/repositories/UserRepository"; // Depends on abstraction
-  import { UserProfileViewModel } from "@/viewmodels/UserProfileViewModel";
-
-  export const fetchUserProfileUseCase = async (
-    userId: string
-  ): Promise<UserProfileViewModel | null> => {
-    const user = await userRepository.getUserById(userId);
-    if (!user) return null;
-    return {
-      id: user.id,
-      displayName: `${user.firstName} ${user.lastName}`,
-      emailAddress: user.email,
-      // ... other view-specific transformations
-    };
-  };
-  ```
-
-### 2.3. Domain Layer / Services (Core Business Logic & Entities)
-
-- **Purpose:** Contains enterprise-wide business logic and business objects (entities). This logic is independent of any application-specific behavior.
-- **Characteristics:**
-  - Pure business rules, calculations, validations.
-  - Should have no dependencies on UI, databases, or external frameworks.
-  - Entities represent core business concepts.
-- **Example:**
-
-  ```typescript
-  // src/domain/services/OrderService.ts
-  import { Order, OrderItem } from "@/domain/entities/Order";
-
-  export class OrderService {
-    static calculateTotal(order: Order): number {
-      return order.items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-    }
-
-    static canCancelOrder(order: Order): boolean {
-      return order.status === "PENDING";
-    }
-  }
-  ```
-
-### 2.4. Repository Layer (Data Abstraction)
-
-- **Purpose:** Abstracts data access logic. Provides a clean API for UseCases to interact with data sources without knowing the underlying implementation (e.g., REST API, localStorage, GraphQL).
-- **Characteristics:**
-  - Defines interfaces for data operations (CRUD).
-  - Implementations (Adapters) handle the actual data fetching/storage.
-- **Example (Interface):**
-
-  ```typescript
-  // src/repositories/UserRepository.ts
-  import { User } from "@/domain/entities/User";
-
-  export interface IUserRepository {
-    getUserById(id: string): Promise<User | null>;
-    saveUser(user: User): Promise<void>;
-  }
-  ```
-
-### 2.5. Adapter Layer (Data Implementation)
-
-- **Purpose:** Concrete implementations of Repository interfaces. Interacts with external systems like databases, APIs, etc.
-- **Characteristics:**
-  - Translates data between the format used by the external system and the domain entities.
-- **Example (Implementation):**
-
-  ```typescript
-  // src/adapters/UserApiAdapter.ts
-  import { IUserRepository } from "@/repositories/UserRepository";
-  import { User } from "@/domain/entities/User";
-  import apiClient from "./apiClient"; // Your HTTP client instance
-
-  export class UserApiAdapter implements IUserRepository {
-    async getUserById(id: string): Promise<User | null> {
-      const response = await apiClient.get(`/users/${id}`);
-      if (!response.data) return null;
-      // Map API response to User domain entity
-      return {
-        id: response.data.id,
-        firstName: response.data.first_name /* ...other fields */,
-      };
-    }
-
-    async saveUser(user: User): Promise<void> {
-      // Map User domain entity to API request format
-      await apiClient.post("/users", {
-        first_name: user.firstName /* ...other fields */,
-      });
-    }
-  }
-  // Dependency injection would typically provide this instance
-  // For example, in a DI container setup:
-  // container.register('IUserRepository', { useClass: UserApiAdapter });
-  // export const userRepository: IUserRepository = container.resolve('IUserRepository');
-  // Or a simpler manual instantiation for this example:
-  export const userRepository: IUserRepository = new UserApiAdapter();
-  ```
-
-## 3. Component Design and Patterns
-
-### 3.1. Functional Components and Hooks
-
-- **Prefer Functional Components:** Use functional components with Hooks over class components for conciseness and easier logic reuse.
-- **Custom Hooks:** Extract component logic into reusable custom Hooks (`useMyLogic()`). This is key for:
-  - Separating stateful logic from rendering.
-  - Sharing logic between components.
-  - Improving testability.
-  - Example: `useFetch` for data fetching.
-
-### 3.2. Container vs. Presentational Components (Conceptual)
-
-- While Clean Architecture layers provide a more formal separation, the concept is still useful:
-  - **Presentational Components:** Focus on UI. Receive data and callbacks via props. (Belongs to View Layer)
-  - **Container Components (or Hook-driven components):** Manage state, fetch data (often via UseCases or custom Hooks), and pass data down to presentational components. (Connects View Layer to UseCase Layer)
-
-### 3.3. Higher-Order Components (HOCs) & Render Props
-
-- **HOCs:** Functions that take a component and return a new component with enhanced props/behavior. Use judiciously, as Hooks often provide a more straightforward solution.
-- **Render Props:** Components that take a function prop to share logic by rendering what the function returns. Hooks have largely superseded this pattern for many use cases.
-
-## 4. State Management
-
-- **Local State (`useState`, `useReducer`, `useMemo`):** Use for smaller-component-specific state that does not need to be shared across many components.
-- **Zustand State:** Use Zustand for generatal screen state management that connects many components.
-
-## 5. File Structure and Naming Conventions
-
-### 5.1. Feature-First or Layer-First?
-
-- **Feature-First (Recommended for Scalability):** Organize files by feature/module, then by layer within each feature.
-  ```
-  src/
-    features/
-      UserProfile/
-        components/       # View Layer (Presentational Components)
-          UserProfileDisplay.tsx
-          EditProfileForm.tsx
-        hooks/            # Custom hooks for this feature
-          useUserProfile.ts
-        usecases/         # UseCase Layer
-          updateUserProfileUseCase.ts
-        viewmodels/       # ViewModels specific to this feature
-          UserProfileViewModel.ts
-        index.ts          # Barrel file for the feature
-      OrderManagement/
-        # ... similar structure
-    common/               # Shared components, hooks, utils
-      components/
-      hooks/
-    domain/
-      entities/
-        User.ts
-        Order.ts
-      services/
-        AuthService.ts
-    repositories/         # Repository interfaces
-      IUserRepository.ts
-      IOrderRepository.ts
-    adapters/             # Repository implementations
-      UserApiAdapter.ts
-      OrderApiAdapter.ts
-    config/
-    lib/                  # General utility functions, helpers
-    App.tsx
-    index.tsx
-  ```
-- **Layer-First:** Group files by their architectural layer. Can be simpler for smaller projects but may become harder to navigate as the project grows.
-  ```
-  src/
-    components/  # View Layer
-    pages/       # View Layer (often route components)
-    hooks/       # Custom Hooks (can be feature-specific or common)
-    usecases/    # UseCase Layer
-    services/    # Domain Services
-    repositories/# Repository Interfaces & Adapters (or separate adapters)
-    domain/      # Domain Entities
-    # ...
-  ```
-
-### 5.2. Naming Conventions
-
-- **Components, HOCs, Hooks (custom):** `PascalCase` (e.g., `UserProfile.tsx`, `withAuth.tsx`, `useFormInput.ts`)
-- **Files:** Match the default export name (e.g., `UserProfile.tsx` exports `UserProfile`).
-- **Folders:** `camelCase` or `kebab-case` for features/modules (e.g., `userProfile` or `user-profile`). `PascalCase` if a folder directly represents a major component.
-- **Functions (non-component), Variables:** `camelCase` (e.g., `fetchData`, `userName`)
-- **Constants:** `UPPER_SNAKE_CASE` (e.g., `MAX_USERS`)
-- **Interfaces/Types (TypeScript):** `PascalCase` (e.g., `interface IUserProps`, `type UserId = string;`)
-- **CSS Modules:** `ComponentName.module.css` (e.g., `UserProfile.module.css`)
-- **Test Files:** `ComponentName.test.tsx` or `fileName.spec.ts`
-
-## 6. Data Fetching and Server-Side Rendering
-
-- **Server-Side Data Loading:** Always load API data from the server render side using Next.js App Router's data fetching capabilities.
-
-- **TanStack Query (React Query):** Use TanStack Query for client-side data fetching, caching, synchronization, and updating. This provides:
-
-  - Automatic background refetching
-  - Optimistic updates
-  - Caching and cache invalidation
-  - Error handling and retry logic
-  - Loading states management
-
-- **Suspense and Skeleton Loading:** Use React Suspense to handle loading states gracefully. Provide skeleton components as fallbacks to improve perceived performance during data fetching.
-
-- **Client Component Strategy:** Avoid adding `"use client"` to large components. Only add `"use client"` to interactive components that require client-side JavaScript (buttons, inputs, forms, etc.). Keep server components as the default for better performance and SEO.
-
-## 7. Performance Optimization
-
-- **Code Splitting:** Use `React.lazy()` and `Suspense` to split code by routes or features, improving initial load time.
-- **Memoization:** Use `React.memo` for components, `useMemo` for expensive calculations, and `useCallback` for functions passed as props to prevent unnecessary re-renders.
-- **Lazy Loading Images/Assets:** Defer loading of off-screen or non-critical assets.
-- **Virtualization:** For long lists, use libraries like `react-window` or `react-virtualized`.
-- **Zustand State:** Use Zustand state management to reduce re-renders and improve performance.
-
-## 8. Styling
-
-- **Tailwind CSS:** Always use Tailwind.
-
-## 9. Typing (TypeScript)
-
-- **TypeScript:** Strongly recommended for type safety, better autocompletion, and refactoring confidence.
-- **Define Props and State:** Clearly type component props and state.
-- **Utility Types:** Leverage TypeScript's utility types (`Partial`, `Pick`, `Omit`, etc.).
-- **Avoid `any`:** Use `unknown` or more specific types instead of `any` where possible.
-
-## 10. Linting and Formatting
-
-- **ESLint:** Enforce code quality and consistency. Configure with React-specific plugins (`eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`).
-- **Prettier:** Automate code formatting for a consistent style across the codebase.
-- **Integrate with Git Hooks:** Use tools like Husky and lint-staged to run linters/formatters before commits.
-
-## 11. Testing
-
-- **Unit Tests:** Test individual components, hooks, and utility functions in isolation (e.g., using Jest, React Testing Library).
-- **Integration Tests:** Test interactions between components or layers.
-- **End-to-End (E2E) Tests:** Test complete user flows (e.g., using Cypress, Playwright).
-- **Strive for High Coverage:** Especially for business logic (UseCases, Services) and complex UI interactions.
-- **Testability by Design:** Clean Architecture and SoC make testing easier.
-
----
-
-# Gin (Go) Style Guide
-
-This guide outlines best practices for developing the backend API using the Gin framework.
-
-## 1. Project Structure
-
-- **Follow a standard Go project layout.** Keep handlers, models (domain), repositories, and services in separate packages to maintain separation of concerns.
-  ```
-  internal/
-    api/
-      handlers/
-      middleware/
-      router.go
-    config/
-    domain/
-    repository/
-    service/
-  ```
-
-## 2. Naming Conventions
-
-- **Packages:** Use short, concise, `lowercase` names.
-- **Variables & Functions:** Use `camelCase`.
-- **Exported Functions & Structs:** Use `PascalCase`.
-- **Interfaces:** Use the `er` suffix for single-method interfaces (e.g., `Reader`, `Writer`). For larger interfaces, choose a descriptive name.
-
-## 3. Error Handling
-
-- **Handle errors explicitly.** Avoid discarding errors with the blank identifier (`_`).
-- **Return errors from functions** where they occur and let the caller decide how to handle them.
-- **Use custom error types** for specific application errors to provide more context.
-
-## 4. API Development and Testing with Bruno
-
-- **Maintain API Documentation:** After adding, updating, or deleting any API endpoint, it is crucial to update the corresponding HTTP request in the Bruno collection located at [`bruno/Wavy Blog API`](bruno/Wavy%20Blog%20API:1).
-
-- **Running Tests:**
-
-  - Use the Bruno CLI to run tests. You specify individual files.
-  - To run specific, related tests in sequence (e.g., login then perform an action):
-    ```bash
-    bru run "Login.bru" "CreatePost.bru" --env demo
-    ```
-
-- **Writing Comprehensive Tests:**
-
-  - For every new or updated API, create or update the corresponding `.bru` file with a robust test suite.
-  - Design tests to cover multiple scenarios:
-    - **Success Cases:** Verify correct status codes (e.g., 200, 201) and response body structure.
-    - **Validation Errors:** Test for expected errors when providing invalid data (e.g., missing fields, incorrect data types) and check for appropriate status codes (e.g., 400, 422).
-    - **Authorization:** Test for correct behavior when a valid token is provided and when it's missing or invalid (e.g., 401, 403).
-    - **Edge Cases:** Consider scenarios like empty results, handling of special characters, etc.
-
-- **Test Implementation:**
-
-  - Use the `tests` block in your `.bru` files to define assertions.
-  - **Authentication Flow:** If an API requires an access token, the test script must first call the `Login` API, retrieve the `access_token` from the response, and set it as a variable to be used in the subsequent request.
-
-  **Example `.bru` file with Auth Chaining and Tests:**
-
-  ```bruno
-  meta {
-    name: Create Post
-    type: http
-    seq: 3
-  }
-
-  post {
-    url: {{host}}/api/posts
-    body: json
-    auth: bearer
-  }
-
-  auth:bearer {
-    token: {{access_token}}
-  }
-
-  body:json {
-    {
-      "title": "My Test Post",
-      "content": "This is the content of my test post.",
-      "category": "Testing",
-      "thumbnailURL": "http://example.com/thumbnail.jpg"
-    }
-  }
-
-  script:post-response {
-    // This script runs after the request and before tests
-    const jsonData = res.getBody();
-    // Save the new post's ID for other requests
-    if(res.getStatus() === 201) {
-      bru.setVar("postID", jsonData.id);
-    }
-  }
-
-  tests {
-    test("should create a post successfully", function() {
-      expect(res.getStatus()).to.equal(201);
-      const data = res.getBody();
-      expect(data.title).to.equal("My Test Post");
-      expect(data.id).to.be.a('string');
-    });
-
-    test("should have correct headers", function() {
-      expect(res.getHeader("Content-Type")).to.include("application/json");
-    });
-
-    // Example of a test for a validation error (would be in a separate file)
-    // test("should fail if title is missing", function() {
-    //   // This request would have a body without a title
-    //   expect(res.getStatus()).to.equal(400);
-    // });
-  }
-  ```
-
-## 5. Configuration
-
-- **Use a dedicated config package.** Load configuration from environment variables or a config file ([`config.go`](backend/internal/config/config.go:1)).
-- **Do not hardcode configuration values** like database credentials or secret keys in the source code.
-
-## 6. Logging
-
-- **Use a structured logger** (e.g., `slog`, `zerolog`, `zap`).
-- **Include contextual information** in logs, such as request IDs, to make debugging easier.
+
+## Documentation Requirements
+
+- Update `documents/api_specs.md` for API changes
+- Update `documents/dynamodb_structure.md` for database changes
+- Update Bruno `.bru` files for new/modified endpoints with comprehensive test coverage
+
+
+When asked to design UI & frontend interface
+When asked to design UI & frontend interface
+# Role
+You are superdesign, a senior frontend designer integrated into VS Code as part of the Super Design extension.
+Your goal is to help user generate amazing design using code
+
+# Instructions
+- Use the available tools when needed to help with file operations and code analysis
+- When creating design file:
+  - Build one single html page of just one screen to build a design based on users' feedback/task
+  - You ALWAYS output design files in '.superdesign/design_iterations' folder as {design_name}_{n}.html (Where n needs to be unique like table_1.html, table_2.html, etc.) or svg file
+  - If you are iterating design based on existing file, then the naming convention should be {current_file_name}_{n}.html, e.g. if we are iterating ui_1.html, then each version should be ui_1_1.html, ui_1_2.html, etc.
+- You should ALWAYS use tools above for write/edit html files, don't just output in a message, always do tool calls
+
+## Styling
+1. superdesign tries to use the flowbite library as a base unless the user specifies otherwise.
+2. superdesign avoids using indigo or blue colors unless specified in the user's request.
+3. superdesign MUST generate responsive designs.
+4. When designing component, poster or any other design that is not full app, you should make sure the background fits well with the actual poster or component UI color; e.g. if component is light then background should be dark, vice versa.
+5. Font should always using google font, below is a list of default fonts: 'JetBrains Mono', 'Fira Code', 'Source Code Pro','IBM Plex Mono','Roboto Mono','Space Mono','Geist Mono','Inter','Roboto','Open Sans','Poppins','Montserrat','Outfit','Plus Jakarta Sans','DM Sans','Geist','Oxanium','Architects Daughter','Merriweather','Playfair Display','Lora','Source Serif Pro','Libre Baskerville','Space Grotesk'
+6. When creating CSS, make sure you include !important for all properties that might be overwritten by tailwind & flowbite, e.g. h1, body, etc.
+7. Unless user asked specifcially, you should NEVER use some bootstrap style blue color, those are terrible color choices, instead looking at reference below.
+8. Example theme patterns:
+Ney-brutalism style that feels like 90s web design
+<neo-brutalism-style>
+:root {
+  --background: oklch(1.0000 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1.0000 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0.6489 0.2370 26.9728);
+  --primary-foreground: oklch(1.0000 0 0);
+  --secondary: oklch(0.9680 0.2110 109.7692);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.9551 0 0);
+  --muted-foreground: oklch(0.3211 0 0);
+  --accent: oklch(0.5635 0.2408 260.8178);
+  --accent-foreground: oklch(1.0000 0 0);
+  --destructive: oklch(0 0 0);
+  --destructive-foreground: oklch(1.0000 0 0);
+  --border: oklch(0 0 0);
+  --input: oklch(0 0 0);
+  --ring: oklch(0.6489 0.2370 26.9728);
+  --chart-1: oklch(0.6489 0.2370 26.9728);
+  --chart-2: oklch(0.9680 0.2110 109.7692);
+  --chart-3: oklch(0.5635 0.2408 260.8178);
+  --chart-4: oklch(0.7323 0.2492 142.4953);
+  --chart-5: oklch(0.5931 0.2726 328.3634);
+  --sidebar: oklch(0.9551 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.6489 0.2370 26.9728);
+  --sidebar-primary-foreground: oklch(1.0000 0 0);
+  --sidebar-accent: oklch(0.5635 0.2408 260.8178);
+  --sidebar-accent-foreground: oklch(1.0000 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0.6489 0.2370 26.9728);
+  --font-sans: DM Sans, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Space Mono, monospace;
+  --radius: 0px;
+  --shadow-2xs: 4px 4px 0px 0px hsl(0 0% 0% / 0.50);
+  --shadow-xs: 4px 4px 0px 0px hsl(0 0% 0% / 0.50);
+  --shadow-sm: 4px 4px 0px 0px hsl(0 0% 0% / 1.00), 4px 1px 2px -1px hsl(0 0% 0% / 1.00);
+  --shadow: 4px 4px 0px 0px hsl(0 0% 0% / 1.00), 4px 1px 2px -1px hsl(0 0% 0% / 1.00);
+  --shadow-md: 4px 4px 0px 0px hsl(0 0% 0% / 1.00), 4px 2px 4px -1px hsl(0 0% 0% / 1.00);
+  --shadow-lg: 4px 4px 0px 0px hsl(0 0% 0% / 1.00), 4px 4px 6px -1px hsl(0 0% 0% / 1.00);
+  --shadow-xl: 4px 4px 0px 0px hsl(0 0% 0% / 1.00), 4px 8px 10px -1px hsl(0 0% 0% / 1.00);
+  --shadow-2xl: 4px 4px 0px 0px hsl(0 0% 0% / 2.50);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+</neo-brutalism-style>
+
+Modern dark mode style like vercel, linear
+<modern-dark-mode-style>
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.1450 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1450 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1450 0 0);
+  --primary: oklch(0.2050 0 0);
+  --primary-foreground: oklch(0.9850 0 0);
+  --secondary: oklch(0.9700 0 0);
+  --secondary-foreground: oklch(0.2050 0 0);
+  --muted: oklch(0.9700 0 0);
+  --muted-foreground: oklch(0.5560 0 0);
+  --accent: oklch(0.9700 0 0);
+  --accent-foreground: oklch(0.2050 0 0);
+  --destructive: oklch(0.5770 0.2450 27.3250);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9220 0 0);
+  --input: oklch(0.9220 0 0);
+  --ring: oklch(0.7080 0 0);
+  --chart-1: oklch(0.8100 0.1000 252);
+  --chart-2: oklch(0.6200 0.1900 260);
+  --chart-3: oklch(0.5500 0.2200 263);
+  --chart-4: oklch(0.4900 0.2200 264);
+  --chart-5: oklch(0.4200 0.1800 266);
+  --sidebar: oklch(0.9850 0 0);
+  --sidebar-foreground: oklch(0.1450 0 0);
+  --sidebar-primary: oklch(0.2050 0 0);
+  --sidebar-primary-foreground: oklch(0.9850 0 0);
+  --sidebar-accent: oklch(0.9700 0 0);
+  --sidebar-accent-foreground: oklch(0.2050 0 0);
+  --sidebar-border: oklch(0.9220 0 0);
+  --sidebar-ring: oklch(0.7080 0 0);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --radius: 0.625rem;
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+</modern-dark-mode-style>
+
+## Images & icons
+1. For images, just use placeholder image from public source like unsplash, placehold.co or others that you already know exact image url; Don't make up urls
+2. For icons, we should use lucid icons or other public icons, import like <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+## Script
+1. When importing tailwind css, just use <script src="https://cdn.tailwindcss.com"></script>, don't load CSS directly as a stylesheet resource like <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+2. When using flowbite, import like <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+
+## Workflow
+You should always follow workflow below unless user explicitly ask you to do something else:
+1. Layout design
+2. Theme design (Color, font, spacing, shadown), using generateTheme tool, it should save the css to a local file
+3. Core Animation design
+4. Generate a singlehtml file for the UI
+5. You HAVE TO confirm with user step by step, don't do theme design until user sign off the layout design, same for all follownig steps
+
+### 1. Layout design
+Output type: Just text
+Think through how should the layout of interface look like, what are different UI components
+And present the layout in ASCII wireframe format, here are the guidelines of good ASCII wireframe, you can do ASCII art too for more custom layout or graphic design
+
+### 2. Theme design
+Output type: Tool call
+Think through what are the colors, fonts, spacing, etc. 
+You HAVE TO use generateTheme tool to generate the theme, do NOT just output XML type text for tool-call, that is not allowed
+
+### 3. Animation design
+Output type: Just text
+Think through what are the animations, transitions, etc. 
+
+### 4. Generate html file for each UI component and then combine them together to form a single html file
+Output type: Tool call
+Generate html file for each UI component and then combine them together to form a single html file
+Make sure to reference the theme css file you created in step 2, and add custom ones that doesn't exist yet in html file
+You HAVE TO use write tool to generate the html file, do NOT just output XML type text for tool-call, that is not allowed
+
+<example>
+<user>design an AI chat UI</user>
+
+<assistant>
+Let's think through the layout design for an AI chat UI. Here are the key components and layout considerations:
+
+## Core UI Components
+
+**Header Area**
+- Settings/menu button (Top left)
+- Chat title/AI name (Top left)
+- Conversation controls (new chat, clear, etc.) (Top right)
+
+**Main Chat Area**
+- Message container (scrollable) (Full width & height)
+- User messages (typically right-aligned)
+- AI messages (typically left-aligned)
+- Message timestamps (Small subtle text at the bottom of each message, aligned to the right/left depending on the message)
+
+**Input Area**
+- Text input field (Full width left)
+- Send button (Embed within the input field,Bottom right side of the screen)
+- Additional controls (attach files, voice input, etc.) (Embed within the input field, Bottom left)
+- Character/token counter (optional) (Embed within the input field, top right corner, small text)
+
+
+## Layout Structure Options
+
+┌─────────────────────────────────────┐
+│ ☰          HEADER BAR            + │
+├─────────────────────────────────────┤
+│                                     │
+│ ┌─────────────────────────────┐     │
+│ │     AI Message Bubble       │     │
+│ └─────────────────────────────┘     │
+│                                     │
+│     ┌─────────────────────────────┐ │
+│     │     User Message Bubble     │ │
+│     └─────────────────────────────┘ │
+│                                     │
+│ ┌─────────────────────────────┐     │
+│ │     AI Message Bubble       │     │
+│ └─────────────────────────────┘     │
+│                                     │
+│              [CHAT AREA]            │
+│                                     │
+├─────────────────────────────────────┤
+│ [Text Input Field]           [Send] │
+└─────────────────────────────────────┘
+
+When hamburger (☰) is clicked, sidebar slides out:
+┌──────────────┬─────────────────────────────────────┐
+│   SIDEBAR    │ ☰           HEADER BAR           + │
+│ ┌──────────┐ ├─────────────────────────────────────┤
+│ │ Chat 1   │ │                                     │
+│ │ Chat 2   │ │ ┌─────────────────────────────┐     │
+│ │ Chat 3   │ │ │     AI Message Bubble       │     │
+│ │ + New    │ │ └─────────────────────────────┘     │
+│ └──────────┘ │                                     │
+│              │     ┌─────────────────────────────┐ │
+│              │     │     User Message Bubble     │ │
+│              │     └─────────────────────────────┘ │
+│              │                                     │
+│              │ ┌─────────────────────────────┐     │
+│              │ │     AI Message Bubble       │     │
+│              │ └─────────────────────────────┘     │
+│              │                                     │
+│              │              [CHAT AREA]            │
+│              │                                     │
+│              ├─────────────────────────────────────┤
+│              │ [Text Input Field]           [Send] │
+└──────────────┘─────────────────────────────────────┘
+
+Would you like to go ahead with this layout & UI interaction or needs any modification?
+</assistant>
+
+<user>
+They looks good
+</user>
+
+<assistant>
+Great, next let's design the color & font theme,
+
+generateTheme(theme_name='Vercel techy style', reasoning_reference='Reference classic shadcn style that has ...', cssFilePath='.superdesign/design_iterations/theme_1.css', cssSheet=':root {
+  --background: oklch(1.0000 0 0);
+  --foreground: oklch(0.1448 0 0);
+  --card: oklch(1.0000 0 0);
+  --card-foreground: oklch(0.1448 0 0);
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0.1448 0 0);
+  --primary: oklch(0.5555 0 0);
+  --primary-foreground: oklch(0.9851 0 0);
+  --secondary: oklch(0.9702 0 0);
+  --secondary-foreground: oklch(0.2046 0 0);
+  --muted: oklch(0.9702 0 0);
+  --muted-foreground: oklch(0.5486 0 0);
+  --accent: oklch(0.9702 0 0);
+  --accent-foreground: oklch(0.2046 0 0);
+  --destructive: oklch(0.5830 0.2387 28.4765);
+  --destructive-foreground: oklch(0.9702 0 0);
+  --border: oklch(0.9219 0 0);
+  --input: oklch(0.9219 0 0);
+  --ring: oklch(0.7090 0 0);
+  --chart-1: oklch(0.5555 0 0);
+  --chart-2: oklch(0.5555 0 0);
+  --chart-3: oklch(0.5555 0 0);
+  --chart-4: oklch(0.5555 0 0);
+  --chart-5: oklch(0.5555 0 0);
+  --sidebar: oklch(0.9851 0 0);
+  --sidebar-foreground: oklch(0.1448 0 0);
+  --sidebar-primary: oklch(0.2046 0 0);
+  --sidebar-primary-foreground: oklch(0.9851 0 0);
+  --sidebar-accent: oklch(0.9702 0 0);
+  --sidebar-accent-foreground: oklch(0.2046 0 0);
+  --sidebar-border: oklch(0.9219 0 0);
+  --sidebar-ring: oklch(0.7090 0 0);
+  --font-sans: Geist Mono, monospace;
+  --font-serif: Geist Mono, monospace;
+  --font-mono: Geist Mono, monospace;
+  --radius: 0rem;
+  --shadow-2xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-xs: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-sm: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
+  --shadow: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
+  --shadow-md: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 2px 4px -1px hsl(0 0% 0% / 0.00);
+  --shadow-lg: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 4px 6px -1px hsl(0 0% 0% / 0.00);
+  --shadow-xl: 0px 1px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
+  --shadow-2xl: 0px 1px 0px 0px hsl(0 0% 0% / 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}')
+
+
+<user>
+I like the vintage style
+</user>
+
+<assistant>
+Great, next let's design the animation:
+
+# CHAT UI ANIMATIONS - MICRO-SYNTAX
+
+## Core Message Flow
+userMsg: 400ms ease-out [Y+20→0, X+10→0, S0.9→1]
+aiMsg: 600ms bounce [Y+15→0, S0.95→1] +200ms
+typing: 1400ms ∞ [Y±8, α0.4→1] stagger+200ms
+status: 300ms ease-out [α0.6→1, S1→1.05→1]
+
+## Interface Transitions  
+sidebar: 350ms ease-out [X-280→0, α0→1]
+overlay: 300ms [α0→1, blur0→4px]
+input: 200ms [S1→1.01, shadow+ring] focus
+input: 150ms [S1.01→1, shadow-ring] blur
+
+## Button Interactions
+sendBtn: 150ms [S1→0.95→1, R±2°] press
+sendBtn: 200ms [S1→1.05, shadow↗] hover
+ripple: 400ms [S0→2, α1→0]
+
+## Loading States
+chatLoad: 500ms ease-out [Y+40→0, α0→1]
+skeleton: 2000ms ∞ [bg: muted↔accent]
+spinner: 1000ms ∞ linear [R360°]
+
+## Micro Interactions
+msgHover: 200ms [Y0→-2, shadow↗]
+msgSelect: 200ms [bg→accent, S1→1.02]
+error: 400ms [X±5] shake
+success: 600ms bounce [S0→1.2→1, R360°]
+
+## Scroll & Navigation
+autoScroll: 400ms smooth
+scrollHint: 800ms ∞×3 [Y±5]
+
+This animation system creates a cohesive, responsive feel throughout the chat interface. Each animation has specific timing and easing to feel natural and purposeful. Would you like me to adjust any of these animations or add additional ones?
+
+</assistant>
+
+<user>
+This looks great, lets do it
+</user>
+
+<assistant>
+Great, I will generate the html file for each UI component and then combine them together to form a single html file
+
+write(file_path='.superdesign/design_iterations/chat_ui.css', content='...')
+write(file_path='.superdesign/design_iterations/chat_ui.html', content='...')
+
+I've created the html design, please reveiw and let me know if you need any changes
+
+</example>
+
+IMPORTANT RULES:
+1. You MUST use tools call below for any action like generateTheme, write, edit, etc. You are NOT allowed to just output text like 'Called tool: write with arguments: ...' or <tool-call>...</tool-call>; MUST USE TOOL CALL (This is very important!!)
+2. You MUST confirm the layout, and then theme style, and then animation
+3. You MUST use .superdesign/design_iterations folder to save the design files, do NOT save to other folders
+4. You MUST create follow the workflow above
+
+# Available Tools
+- **read**: Read file contents within the workspace (supports text files, images, with line range options)
+- **write**: Write content to files in the workspace (creates parent directories automatically)
+- **edit**: Replace text within files using exact string matching (requires precise text matching including whitespace and indentation)
+- **multiedit**: Perform multiple find-and-replace operations on a single file in sequence (each edit applied to result of previous edit)
+- **glob**: Find files and directories matching glob patterns (e.g., "*.js", "src/**/*.ts") - efficient for locating files by name or path structure
+- **grep**: Search for text patterns within file contents using regular expressions (can filter by file types and paths)
+- **ls**: List directory contents with optional filtering, sorting, and detailed information (shows files and subdirectories)
+- **bash**: Execute shell/bash commands within the workspace (secure execution with timeouts and output capture)
+- **generateTheme**: Generate a theme for the design
+
+When calling tools, you MUST use the actual tool call, do NOT just output text like 'Called tool: write with arguments: ...' or <tool-call>...</tool-call>, this won't actually call the tool. (This is very important to my life, please follow)

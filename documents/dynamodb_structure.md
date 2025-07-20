@@ -62,9 +62,9 @@
 | Title | String | Post title | `"My First Post"` |
 | Content | String | Post content (markdown) | `"# Hello World\nThis is my first post..."` |
 | AuthorID | String | Author's username | `"john_doe"` |
-| Category | String | Post category | `"technology"` |
+| Category | String | Post category slug | `"technology"` |
 | ThumbnailURL | String | Post thumbnail image URL | `"https://example.com/thumb.jpg"` |
-| IsPublished | Boolean | Publication status | `true` |
+| Status | String | Publication status | `"published"` or `"draft"` |
 | CreatedAt | Timestamp | Creation timestamp | `"2024-01-15T10:30:00Z"` |
 | UpdatedAt | Timestamp | Last update timestamp | `"2024-01-15T10:30:00Z"` |
 
@@ -74,9 +74,9 @@
 | PK | String | Partition Key | `"CATEGORY#technology"` |
 | SK | String | Sort Key | `"METADATA#technology"` |
 | EntityType | String | Entity identifier for GSI3 | `"CATEGORY"` |
-| CategoryID | String | Unique category identifier | `"cat_345678"` |
 | Slug | String | URL-friendly category identifier | `"technology"` |
 | Name | String | Category display name | `"Technology"` |
+| Description | String | Category description (optional) | `"Posts about technology and programming"` |
 | CreatedAt | Timestamp | Creation timestamp | `"2024-01-15T10:30:00Z"` |
 | UpdatedAt | Timestamp | Last update timestamp | `"2024-01-15T10:30:00Z"` |
 
@@ -92,16 +92,64 @@
 2. **Get User by Email**: Lookup via UserEmail entity, then User entity
 3. **Get All Users**: Query GSI3 where `EntityType = "USER"`
 4. **Get Post by Slug**: `PK = "POST#<slug>"`
-5. **Get All Posts**: Query GSI3 where `EntityType = "POST"`
+5. **Get All Posts (Paginated)**: Query GSI3 where `EntityType = "POST"` with pagination support
 6. **Get Posts by User**: Query GSI1 where `GSI1PK = "POSTS_BY_USER#<username>"`
-7. **Get Posts by Category**: Query GSI2 where `GSI2PK = "POSTS_BY_CAT#<category>"`
-8. **Get All Categories**: Query GSI3 where `EntityType = "CATEGORY"`
-9. **Check Slug Uniqueness**: `PK = "SLUG#<slug>"`
+7. **Get Posts by Category**: Query GSI2 where `GSI2PK = "POSTS_BY_CAT#<categorySlug>"`
+8. **Get Category by Slug**: `PK = "CATEGORY#<categorySlug>"`
+9. **Get All Categories**: Query GSI3 where `EntityType = "CATEGORY"`
+10. **Check Slug Uniqueness**: `PK = "SLUG#<slug>"`
 
 ## Design Principles
 
 - **Single Table Design**: All entities in one table with proper prefixing
 - **No Scan Operations**: GSI3 eliminates expensive scans
 - **Transactional Integrity**: Critical operations use DynamoDB transactions
-- **Unique Constraints**: Email and slug uniqueness enforced via separate entities
+- **Unique Constraints**: Email and slug uniqueness enforced via separate entities  
+- **Category Validation**: Posts reference categories by slug with existence validation
 - **Time-based Sorting**: Posts sorted by creation date using RFC3339 format
+- **Efficient Pagination**: Uses DynamoDB's LastEvaluatedKey for cursor-based pagination
+- **Default Data Seeding**: Automatic creation of default "Uncategorized" category
+
+## Default Seeded Data
+
+When the table is first created, the following default data is automatically seeded:
+
+### Default "Uncategorized" Category
+| Attribute | Value |
+|-----------|-------|
+| PK | `"CATEGORY#uncategorized"` |
+| SK | `"METADATA#uncategorized"` |
+| EntityType | `"CATEGORY"` |
+| Slug | `"uncategorized"` |
+| Name | `"Uncategorized"` |
+| Description | `"Default category for posts without a specific category"` |
+| CreatedAt | (Seeding timestamp) |
+| UpdatedAt | (Seeding timestamp) |
+
+**Special Properties:**
+- This category cannot be deleted through the API
+- It serves as a fallback for posts without specific categories
+- Created automatically when table is first initialized
+
+## Pagination Implementation
+
+The `GetAllPosts` query supports pagination through:
+
+- **Page Size**: Configurable limit (1-100 items, default: 10)
+- **Page Index**: 0-based page numbering for user-friendly navigation
+- **Internal Cursor Management**: DynamoDB's `LastEvaluatedKey` handled internally by backend
+- **Stateless**: No server-side state required for pagination
+
+### Pagination Flow
+
+1. **First Request**: Client calls `/api/posts?pageSize=10&pageIndex=0`
+2. **Response**: Returns posts array plus `hasNextPage` boolean
+3. **Next Request**: Client calls `/api/posts?pageSize=10&pageIndex=1`
+4. **Continue**: Repeat until `hasNextPage: false`
+
+### Implementation Notes
+
+- Backend internally manages DynamoDB pagination cursors
+- For `pageIndex > 0`, backend skips previous pages by iterating through DynamoDB results
+- This approach trades some efficiency for API simplicity
+- Consider caching or alternative strategies for very large page indices

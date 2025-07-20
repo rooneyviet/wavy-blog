@@ -10,12 +10,15 @@ interface BlogPostCardProps {
 }
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, isFeatured }) => {
+  const displayExcerpt = post.excerpt || post.content.substring(0, 150) + "...";
+  const displayDate = post.publishDate || post.createdAt;
+
   return (
     <article className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
-      {post.imageUrl && (
+      {post.thumbnailURL && (
         <div className="md:w-2/5 relative h-64 md:h-auto">
           <Image
-            src={post.imageUrl}
+            src={post.thumbnailURL}
             alt={post.title || "Blog post image"}
             layout="fill"
             objectFit="cover"
@@ -30,34 +33,38 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post, isFeatured }) => {
           </Link>
         </h2>
         <div className="flex items-center text-sm text-gray-500 mb-4">
-          {post.author.imageUrl && (
-            <Image
-              src={post.author.imageUrl}
-              alt={post.author.name}
-              width={32} // Corresponds to w-8
-              height={32} // Corresponds to h-8
-              className="rounded-full mr-3"
-            />
+          {post.author && (
+            <>
+              {post.author.imageUrl && (
+                <Image
+                  src={post.author.imageUrl}
+                  alt={post.author.name}
+                  width={32}
+                  height={32}
+                  className="rounded-full mr-3"
+                />
+              )}
+              <span>
+                By{" "}
+                <Link
+                  href={`/author/${post.author.slug}`}
+                  className="text-pink-500 font-medium hover:underline"
+                >
+                  {post.author.name}
+                </Link>
+              </span>
+              <span className="mx-2">—</span>
+            </>
           )}
           <span>
-            By{" "}
-            <Link
-              href={`/author/${post.author.slug}`}
-              className="text-pink-500 font-medium hover:underline"
-            >
-              {post.author.name}
-            </Link>
-          </span>
-          <span className="mx-2">—</span> {/* Corrected em-dash */}
-          <span>
-            {new Date(post.publishDate).toLocaleDateString("en-US", {
+            {new Date(displayDate).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
             })}
           </span>
         </div>
-        <p className="text-gray-600 mb-6 leading-relaxed">{post.excerpt}</p>
+        <p className="text-gray-600 mb-6 leading-relaxed">{displayExcerpt}</p>
         <div className="flex justify-between items-center">
           <Button
             asChild

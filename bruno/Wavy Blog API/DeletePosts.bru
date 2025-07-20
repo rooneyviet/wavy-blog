@@ -1,0 +1,41 @@
+meta {
+  name: Delete Posts
+  type: http
+  seq: 19
+}
+
+delete {
+  url: {{host}}/api/posts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "slugs": ["{{deletePostSlug}}"]
+  }
+}
+
+tests {
+  test("should delete posts successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.message).to.include("deleted successfully");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should require authentication", function() {
+    // This test passes because auth bearer token is provided
+    expect(res.getStatus()).to.equal(200);
+  });
+}

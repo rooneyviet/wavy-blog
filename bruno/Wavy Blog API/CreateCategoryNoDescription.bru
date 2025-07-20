@@ -1,0 +1,47 @@
+meta {
+  name: Create Category No Description
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{host}}/api/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "No Description Category"
+  }
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("noDescCategorySlug", jsonData.slug);
+  }
+}
+
+tests {
+  test("should create category without description successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.slug).to.be.a('string');
+    expect(data.name).to.equal("No Description Category");
+    expect(data.description).to.equal("");
+    expect(data.created_at).to.be.a('string');
+    expect(data.updated_at).to.be.a('string');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}

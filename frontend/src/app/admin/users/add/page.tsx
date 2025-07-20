@@ -4,6 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Users, Save } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -18,7 +19,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Added Select
+} from "@/components/ui/select";
 import { useAddUserStore, UserRole } from "@/stores/addUserStore";
 
 export default function AddUserPage() {
@@ -57,80 +58,116 @@ export default function AddUserPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content (Left) */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full border-0">
-            <CardHeader>
-              <CardTitle>User Details</CardTitle>
-              <CardDescription>
-                Fill in the basic information for the new user account.
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit}>
+        <div className="max-w-2xl mx-auto">
+          <Card className="bg-white rounded-xl shadow-lg border-0 overflow-hidden">
+            <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+              <CardTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-pink-600" />
+                Create New User
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Fill in the basic information for the new user account
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label
+                  htmlFor="name"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Full Name *
+                </Label>
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Enter user's full name"
+                  placeholder="e.g., John Smith"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  className="border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                 />
+                <p className="text-xs text-gray-500">
+                  Enter the user&apos;s full name as it should appear in the
+                  system
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Email Address *
+                </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter user's email"
+                  placeholder="e.g., john@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                 />
+                <p className="text-xs text-gray-500">
+                  This will be used for login and account notifications
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Password *
+                </Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter password"
+                  placeholder="Enter a secure password"
                   value={password_DO_NOT_LOG}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                 />
+                <p className="text-xs text-gray-500">
+                  Use a strong password with at least 8 characters
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Label
+                  htmlFor="confirm-password"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Confirm Password *
+                </Label>
                 <Input
                   id="confirm-password"
                   type="password"
-                  placeholder="Confirm password"
+                  placeholder="Confirm the password"
                   value={confirmPassword_DO_NOT_LOG}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  className="border-gray-200 focus:border-pink-500 focus:ring-pink-500"
                 />
+                <p className="text-xs text-gray-500">
+                  Re-enter the password to confirm it matches
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar (Right) */}
-        <div className="space-y-6">
-          <Card className="bg-white p-8 sm:p-10 md:p-6 rounded-xl shadow-lg w-full border-0">
-            <CardHeader>
-              <CardTitle>Create User</CardTitle>
-            </CardHeader>
-            <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label
+                  htmlFor="role"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  User Role *
+                </Label>
                 <Select
                   value={role}
                   onValueChange={(value) => setRole(value as UserRole)}
                 >
-                  <SelectTrigger id="role">
+                  <SelectTrigger
+                    id="role"
+                    className="border-gray-200 focus:border-pink-500 focus:ring-pink-500"
+                  >
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -138,19 +175,25 @@ export default function AddUserPage() {
                     <SelectItem value="Admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-gray-500">
+                  Authors can create posts, Admins have full access
+                </p>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button
-                type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white subscribe-button hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 h-auto"
-              >
-                Create User
-              </Button>
+            <CardFooter className="bg-gray-50/50 border-t border-gray-100 p-6">
+              <div className="flex gap-3 w-full">
+                <Button
+                  type="submit"
+                  className="flex-1 subscribe-button text-white hover:opacity-90 font-medium py-3 flex items-center justify-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Create User
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

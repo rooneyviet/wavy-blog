@@ -1,0 +1,35 @@
+meta {
+  name: Update Category
+  type: http
+  seq: 17
+}
+
+put {
+  url: {{host}}/api/categories/{{updateCategorySlug}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Updated Test Category",
+    "description": "This is an updated test category."
+  }
+}
+
+tests {
+  test("Status code is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response body contains updated category", function() {
+    const data = res.getBody();
+    expect(data).to.have.property("slug", "updated-test-category");
+    expect(data).to.have.property("name", "Updated Test Category");
+    expect(data).to.have.property("description", "This is an updated test category.");
+  });
+}
