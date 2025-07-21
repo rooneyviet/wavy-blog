@@ -58,7 +58,7 @@ All API endpoints are prefixed with `/api`
 | **URL**              | `/api/users/:username`                                          |
 | **Authentication**   | Required (Bearer token)                                         |
 | **Path Parameters**  | `username`: string                                              |
-| **Success Response** | 200: User object with userID, username, email, role, timestamps |
+| **Success Response** | 200: User object with userID, username, email, role, avatarURL, timestamps |
 | **Error Responses**  | 401: Unauthorized, 404: User not found                          |
 
 ### Update User
@@ -70,7 +70,8 @@ All API endpoints are prefixed with `/api`
 | **Authentication**   | Required (Bearer token)                                                                    |
 | **Authorization**    | User can update own profile, admin can update any user                                     |
 | **Path Parameters**  | `username`: string                                                                         |
-| **Request Body**     | `{"username": "string?", "email": "string?", "role": "string?"}`                           |
+| **Request Body**     | `{"username": "string?", "email": "string?", "role": "string?", "avatarURL": "string?"}`   |
+| **Validation**       | role: only admin can update, avatarURL: optional URL string                                |
 | **Success Response** | 200: `{"message": "User account updated successfully."}`                                   |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error |
 
@@ -97,6 +98,7 @@ All API endpoints are prefixed with `/api`
 | **Authorization**    | Admin role required                                              |
 | **Success Response** | 200: Array of user objects                                       |
 | **Error Responses**  | 401: Unauthorized, 403: Forbidden (not admin), 500: Server error |
+
 
 ## Post Management APIs
 
@@ -171,6 +173,7 @@ All API endpoints are prefixed with `/api`
 | **Validation**       | slugs: required array with minimum 1 item                                                                        |
 | **Success Response** | 200: `{"message": "Posts deleted successfully"}`                                                                 |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden for any post, 404: Any post not found, 500: Server error |
+
 
 ## Category Management APIs
 
@@ -309,6 +312,7 @@ All API endpoints are prefixed with `/api`
   "username": "string",
   "email": "string",
   "role": "string",
+  "avatarURL": "string",
   "createdAt": "timestamp",
   "updatedAt": "timestamp"
 }

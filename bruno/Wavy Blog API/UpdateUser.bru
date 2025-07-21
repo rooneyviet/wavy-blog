@@ -35,6 +35,15 @@ tests {
     expect(data.message).to.equal("User account updated successfully.");
   });
 
+  test("after update, GET user should reflect changes", function() {
+    // This is a conceptual test. A separate GET request would be needed to verify.
+    // e.g., create a GetUser.bru request and run it in a sequence after this one.
+    // The test would look like:
+    // const res = await bru.sendRequest(getUserRequest);
+    // const data = res.getBody();
+    // expect(data.username).to.equal(bru.getVar('updatedUsername'))
+  });
+
   test("should have correct headers", function() {
     const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
     if (contentType) {

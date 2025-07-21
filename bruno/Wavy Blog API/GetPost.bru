@@ -25,6 +25,12 @@ tests {
     expect(data.category).to.be.a('string');
     expect(data.createdAt).to.be.a('string');
     expect(data.updatedAt).to.be.a('string');
+    
+    // Check thumbnail URL field exists (can be string or empty)
+    expect(data).to.have.property('thumbnailURL');
+    if (data.thumbnailURL) {
+      expect(data.thumbnailURL).to.be.a('string');
+    }
   });
 
   test("should have correct headers", function() {

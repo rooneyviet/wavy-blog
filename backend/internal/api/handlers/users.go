@@ -29,6 +29,7 @@ type UserResponse struct {
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
+	AvatarURL string    `json:"avatarURL"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -40,6 +41,7 @@ func toUserResponse(user *domain.User) UserResponse {
 		Username:  user.Username,
 		Email:     user.Email,
 		Role:      user.Role,
+		AvatarURL: user.AvatarURL,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
@@ -258,9 +260,10 @@ func min(a, b int) int {
 }
 
 type UpdateUserInput struct {
-	Username string `json:"username"`
-	Email    string `json:"email" binding:"email"`
-	Role     string `json:"role"`
+	Username  string `json:"username"`
+	Email     string `json:"email" binding:"omitempty,email"`
+	Role      string `json:"role"`
+	AvatarURL string `json:"avatarURL"`
 }
 
 func (h *UserHandler) GetUser(c *gin.Context) {
@@ -308,9 +311,13 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// Admins can update roles
+	// Update fields if provided
 	if input.Role != "" && requestingRole == "admin" {
 		user.Role = input.Role
+	}
+	
+	if input.AvatarURL != user.AvatarURL {
+		user.AvatarURL = input.AvatarURL
 	}
 
 	// Note: Changing username or email would require more complex logic

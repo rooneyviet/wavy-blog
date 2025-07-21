@@ -37,6 +37,12 @@ tests {
     expect(data.user.userID).to.be.a('string');
     expect(data.user.username).to.be.a('string');
     expect(data.user.email).to.equal("test@example.com");
+    
+    // Check avatar URL field exists (can be string or empty)
+    expect(data.user).to.have.property('avatarURL');
+    if (data.user.avatarURL) {
+      expect(data.user.avatarURL).to.be.a('string');
+    }
   });
 
   test("should have correct headers", function() {

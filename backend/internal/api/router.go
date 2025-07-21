@@ -53,10 +53,12 @@ func SetupRouter(repo repository.Repository, cfg *config.Config, storageService 
 
 			// Protected routes
 			protected := posts.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
-			protected.POST("", postHandler.CreatePost)
-			protected.PUT("/:slug", postHandler.UpdatePost)
-			protected.DELETE("/:slug", postHandler.DeletePost)
-			protected.DELETE("", postHandler.DeletePosts)
+			{
+				protected.POST("", postHandler.CreatePost)
+				protected.PUT("/:slug", postHandler.UpdatePost)
+				protected.DELETE("/:slug", postHandler.DeletePost)
+				protected.DELETE("", postHandler.DeletePosts)
+			}
 		}
 
 		categories := api.Group("/categories")

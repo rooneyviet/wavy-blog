@@ -37,6 +37,7 @@
 | Email | String | User's email address | `"john@example.com"` |
 | PasswordHash | String | Hashed password | `"$2a$10$..."` |
 | Role | String | User role | `"user"` or `"admin"` |
+| AvatarURL | String | User's avatar/profile image URL | `"https://example.com/user-avatar.jpg"` |
 | CreatedAt | Timestamp | Creation timestamp | `"2024-01-15T10:30:00Z"` |
 | UpdatedAt | Timestamp | Last update timestamp | `"2024-01-15T10:30:00Z"` |
 

@@ -29,6 +29,12 @@ tests {
       expect(post.category).to.be.a('string');
       expect(post.createdAt).to.be.a('string');
       expect(post.updatedAt).to.be.a('string');
+      
+      // Check thumbnail URL field exists (can be string or empty)
+      expect(post).to.have.property('thumbnailURL');
+      if (post.thumbnailURL) {
+        expect(post.thumbnailURL).to.be.a('string');
+      }
     }
   });
 
