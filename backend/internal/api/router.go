@@ -75,8 +75,8 @@ func SetupRouter(repo repository.Repository, cfg *config.Config, storageService 
 
 		images := api.Group("/images")
 		{
-			// All image routes require authentication (admin or author)
-			protected := images.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
+			// All image routes require authentication and admin/author role
+			protected := images.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret), middleware.AdminOrAuthorMiddleware())
 			{
 				protected.POST("/upload", imageHandler.UploadImage)
 				protected.GET("", imageHandler.GetImages)

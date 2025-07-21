@@ -40,18 +40,7 @@ type DeleteImageInput struct {
 
 // UploadImage handles single image upload
 func (h *ImageHandler) UploadImage(c *gin.Context) {
-	username := c.GetString("username")
-	if username == "" {
-		Unauthorized(c, "Username not found in context. Please log in.")
-		return
-	}
-
-	// Check user role - only admin and author can upload
-	userRole := c.GetString("role")
-	if userRole != "admin" && userRole != "author" {
-		Forbidden(c, "Only admin and author users can upload images.")
-		return
-	}
+	email := c.GetString("email")
 
 	// Parse multipart form
 	err := c.Request.ParseMultipartForm(10 << 20) // 10 MB max
@@ -90,14 +79,14 @@ func (h *ImageHandler) UploadImage(c *gin.Context) {
 	// Upload to storage
 	imageMetadata, err := h.storageService.UploadImage(
 		c.Request.Context(),
-		username,
+		email,
 		fileHeader.Filename,
 		file,
 		fileHeader.Size,
 		fileHeader.Header.Get("Content-Type"),
 	)
 	if err != nil {
-		log.Printf("[ERROR] Failed to upload image for user '%s': %v", username, err)
+		log.Printf("[ERROR] Failed to upload image for user '%s': %v", email, err)
 		InternalServerError(c, "Failed to upload image: "+err.Error())
 		return
 	}
@@ -111,18 +100,8 @@ func (h *ImageHandler) UploadImage(c *gin.Context) {
 
 // GetImages returns paginated list of images - admin sees all images, author sees only their own
 func (h *ImageHandler) GetImages(c *gin.Context) {
-	username := c.GetString("username")
-	if username == "" {
-		Unauthorized(c, "Username not found in context. Please log in.")
-		return
-	}
-
-	// Check user role - only admin and author can access images
+	email := c.GetString("email")
 	userRole := c.GetString("role")
-	if userRole != "admin" && userRole != "author" {
-		Forbidden(c, "Only admin and author users can access images.")
-		return
-	}
 
 	// Parse pagination parameters
 	pageSize := 20 // default
@@ -154,9 +133,9 @@ func (h *ImageHandler) GetImages(c *gin.Context) {
 		}
 	} else {
 		// Author can only see their own images
-		paginatedImages, err = h.storageService.GetImages(c.Request.Context(), username, pageIndex, pageSize)
+		paginatedImages, err = h.storageService.GetImages(c.Request.Context(), email, pageIndex, pageSize)
 		if err != nil {
-			log.Printf("[ERROR] Failed to get images for user '%s': %v", username, err)
+			log.Printf("[ERROR] Failed to get images for user '%s': %v", email, err)
 			InternalServerError(c, "Failed to retrieve images: "+err.Error())
 			return
 		}
@@ -175,18 +154,8 @@ func (h *ImageHandler) GetImages(c *gin.Context) {
 
 // DeleteImage deletes a specific image - admin can delete any image, author can only delete their own
 func (h *ImageHandler) DeleteImage(c *gin.Context) {
-	username := c.GetString("username")
-	if username == "" {
-		Unauthorized(c, "Username not found in context. Please log in.")
-		return
-	}
-
-	// Check user role - only admin and author can delete images
+	email := c.GetString("email")
 	userRole := c.GetString("role")
-	if userRole != "admin" && userRole != "author" {
-		Forbidden(c, "Only admin and author users can delete images.")
-		return
-	}
 
 	var input DeleteImageInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -206,9 +175,9 @@ func (h *ImageHandler) DeleteImage(c *gin.Context) {
 		}
 	} else {
 		// Author can only delete their own images
-		err = h.storageService.DeleteImage(c.Request.Context(), username, input.ImagePath)
+		err = h.storageService.DeleteImage(c.Request.Context(), email, input.ImagePath)
 		if err != nil {
-			log.Printf("[ERROR] Failed to delete image '%s' for user '%s': %v", input.ImagePath, username, err)
+			log.Printf("[ERROR] Failed to delete image '%s' for user '%s': %v", input.ImagePath, email, err)
 			if strings.Contains(err.Error(), "unauthorized") {
 				Forbidden(c, "You are not authorized to delete this image.")
 				return
@@ -223,11 +192,7 @@ func (h *ImageHandler) DeleteImage(c *gin.Context) {
 
 // GetImageURL returns a presigned URL for accessing an image
 func (h *ImageHandler) GetImageURL(c *gin.Context) {
-	username := c.GetString("username")
-	if username == "" {
-		Unauthorized(c, "Username not found in context. Please log in.")
-		return
-	}
+	email := c.GetString("email")
 
 	imagePath := c.Query("imagePath")
 	if imagePath == "" {
@@ -236,9 +201,9 @@ func (h *ImageHandler) GetImageURL(c *gin.Context) {
 	}
 
 	// Get presigned URL
-	imageURL, err := h.storageService.GetImageURL(c.Request.Context(), username, imagePath)
+	imageURL, err := h.storageService.GetImageURL(c.Request.Context(), email, imagePath)
 	if err != nil {
-		log.Printf("[ERROR] Failed to get image URL for '%s' for user '%s': %v", imagePath, username, err)
+		log.Printf("[ERROR] Failed to get image URL for '%s' for user '%s': %v", imagePath, email, err)
 		if strings.Contains(err.Error(), "unauthorized") {
 			Forbidden(c, "You are not authorized to access this image.")
 			return

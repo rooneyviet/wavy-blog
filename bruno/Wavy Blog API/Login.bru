@@ -25,6 +25,11 @@ script:post-response {
   if (jsonData.user) {
     bru.setVar("user_id", jsonData.user.userID);
     bru.setVar("username", jsonData.user.username);
+    
+    // If user is admin, also set admin_access_token
+    if (jsonData.user.role === "admin") {
+      bru.setVar("admin_access_token", jsonData.access_token);
+    }
   }
 }
 

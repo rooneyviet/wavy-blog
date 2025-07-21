@@ -18,7 +18,8 @@ tests {
   test("should fail without authentication", function() {
     expect(res.getStatus()).to.equal(401);
     const data = res.getBody();
-    expect(data.message).to.include("unauthorized") || expect(data.message).to.include("authentication");
+    const message = data.message.toLowerCase();
+    expect(message.includes("unauthorized") || message.includes("authentication")).to.be.true;
   });
 
   test("should have correct headers", function() {
