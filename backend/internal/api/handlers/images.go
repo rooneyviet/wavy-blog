@@ -27,11 +27,10 @@ type UploadImageResponse struct {
 }
 
 type GetImagesResponse struct {
-	Images    []service.ImageMetadata `json:"images"`
-	Total     int                     `json:"total"`
 	PageIndex int                     `json:"pageIndex"`
 	PageSize  int                     `json:"pageSize"`
-	HasMore   bool                    `json:"hasMore"`
+	Total     int                     `json:"total"`
+	Images    []service.ImageMetadata `json:"images"`
 }
 
 type DeleteImageInput struct {
@@ -111,13 +110,16 @@ func (h *ImageHandler) GetImages(c *gin.Context) {
 		}
 	}
 
-	// Parse pageIndex parameter
-	pageIndex := 0 // default (0-based)
+	// Parse pageIndex parameter (1-based indexing)
+	pageIndex := 1 // default changed from 0 to 1 (1-based)
 	if pageIndexStr := c.Query("pageIndex"); pageIndexStr != "" {
-		if parsed, err := strconv.Atoi(pageIndexStr); err == nil && parsed >= 0 {
+		if parsed, err := strconv.Atoi(pageIndexStr); err == nil && parsed >= 1 {
 			pageIndex = parsed
 		}
 	}
+	
+	// Convert 1-based pageIndex to 0-based for storage service calls
+	zeroBasedPageIndex := pageIndex - 1
 
 	// Role-based image retrieval
 	var paginatedImages *service.PaginatedImages
@@ -125,7 +127,7 @@ func (h *ImageHandler) GetImages(c *gin.Context) {
 
 	if userRole == "admin" {
 		// Admin can see all images
-		paginatedImages, err = h.storageService.GetAllImages(c.Request.Context(), pageIndex, pageSize)
+		paginatedImages, err = h.storageService.GetAllImages(c.Request.Context(), zeroBasedPageIndex, pageSize)
 		if err != nil {
 			log.Printf("[ERROR] Failed to get all images for admin: %v", err)
 			InternalServerError(c, "Failed to retrieve images: "+err.Error())
@@ -133,7 +135,7 @@ func (h *ImageHandler) GetImages(c *gin.Context) {
 		}
 	} else {
 		// Author can only see their own images
-		paginatedImages, err = h.storageService.GetImages(c.Request.Context(), email, pageIndex, pageSize)
+		paginatedImages, err = h.storageService.GetImages(c.Request.Context(), email, zeroBasedPageIndex, pageSize)
 		if err != nil {
 			log.Printf("[ERROR] Failed to get images for user '%s': %v", email, err)
 			InternalServerError(c, "Failed to retrieve images: "+err.Error())
@@ -142,11 +144,10 @@ func (h *ImageHandler) GetImages(c *gin.Context) {
 	}
 
 	response := GetImagesResponse{
-		Images:    paginatedImages.Images,
-		Total:     paginatedImages.Total,
-		PageIndex: paginatedImages.PageIndex,
+		PageIndex: pageIndex,  // Return 1-based pageIndex
 		PageSize:  paginatedImages.PageSize,
-		HasMore:   paginatedImages.HasMore,
+		Total:     paginatedImages.Total,
+		Images:    paginatedImages.Images,
 	}
 
 	c.JSON(http.StatusOK, response)

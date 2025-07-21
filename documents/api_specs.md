@@ -132,7 +132,7 @@ All API endpoints are prefixed with `/api`
 | **Method**           | GET                                                                                                                                                                    |
 | **URL**              | `/api/posts`                                                                                                                                                           |
 | **Authentication**   | Not required                                                                                                                                                           |
-| **Query Parameters** | `postName`: string (optional, for filtering)<br>`pageSize`: integer (optional, 1-100, default: 10)<br>`pageIndex`: integer (optional, 0-based page number, default: 0) |
+| **Query Parameters** | `postName`: string (optional, for filtering)<br>`pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1) |
 | **Success Response** | 200: Paginated response object (see below)                                                                                                                             |
 | **Error Responses**  | 400: Invalid pagination parameters, 500: Server error                                                                                                                  |
 
@@ -273,7 +273,7 @@ All API endpoints are prefixed with `/api`
 | **URL**              | `/api/images`                                                                                                                       |
 | **Authentication**   | Required (Bearer token)                                                                                                             |
 | **Authorization**    | Admin or Author role required<br>**Admin**: Can see all images from all users<br>**Author**: Can only see their own uploaded images |
-| **Query Parameters** | `pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 0-based page number, default: 0)            |
+| **Query Parameters** | `pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1)            |
 | **Success Response** | 200: Paginated images response object (see Paginated Images Response schema)                                                        |
 | **Error Responses**  | 400: Invalid pagination parameters, 401: Unauthorized, 403: Forbidden (wrong role), 500: Server error                              |
 
@@ -339,6 +339,9 @@ All API endpoints are prefixed with `/api`
 
 ```json
 {
+  "pageIndex": 1,
+  "pageSize": 20,
+  "total": 100,
   "posts": [
     {
       "slug": "string",
@@ -352,10 +355,7 @@ All API endpoints are prefixed with `/api`
       "createdAt": "timestamp",
       "updatedAt": "timestamp"
     }
-  ],
-  "pageSize": 10,
-  "pageIndex": 0,
-  "hasNextPage": true
+  ]
 }
 ```
 
@@ -391,6 +391,9 @@ All API endpoints are prefixed with `/api`
 
 ```json
 {
+  "pageIndex": 1,
+  "pageSize": 20,
+  "total": 50,
   "images": [
     {
       "id": "string",
@@ -403,11 +406,7 @@ All API endpoints are prefixed with `/api`
       "url": "string",
       "path": "string"
     }
-  ],
-  "total": "number",
-  "pageIndex": "number",
-  "pageSize": "number",
-  "hasMore": "boolean"
+  ]
 }
 ```
 
@@ -450,8 +449,8 @@ All API endpoints are prefixed with `/api`
 | **Timestamp** | Date/time               | ISO 8601 format strings                  |
 | **UUID**      | User identifier         | String format                            |
 | **Role**      | User permission level   | "author" (default) or "admin"            |
-| **PageSize**  | Pagination limit        | Integer 1-100, defaults to 10            |
-| **PageIndex** | Current page number     | Integer ≥0, 0-based, defaults to 0       |
+| **PageSize**  | Pagination limit        | Integer 1-100, defaults to 20            |
+| **PageIndex** | Current page number     | Integer ≥1, 1-based, defaults to 1       |
 
 ## Authorization Rules
 

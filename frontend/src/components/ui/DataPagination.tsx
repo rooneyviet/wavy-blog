@@ -14,8 +14,8 @@ import {
 export interface PaginatedResponse<T> {
   items: T[];
   pageSize: number;
-  pageIndex: number;
-  hasNextPage: boolean;
+  pageIndex: number; // 1-based indexing
+  total: number;
 }
 
 export interface DataPaginationProps<T> {
@@ -31,25 +31,28 @@ export default function DataPagination<T>({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   
-  const { items, pageIndex, pageSize, hasNextPage } = data;
+  const { items, pageIndex, pageSize, total } = data;
+  
+  // Calculate if there are more pages
+  const hasNextPage = pageIndex * pageSize < total;
+  const totalPages = Math.ceil(total / pageSize);
 
   const buildUrl = (newPageIndex: number, newPageSize?: number) => {
     const params = new URLSearchParams(searchParams);
     const targetPageSize = newPageSize || pageSize;
-    const displayPage = newPageIndex + 1; // Convert to 1-based for URL
     
-    // Remove params if they are default values (page 1, pageSize 10)
-    if (displayPage === 1 && targetPageSize === 10) {
+    // Remove params if they are default values (page 1, pageSize 20)
+    if (newPageIndex === 1 && targetPageSize === 20) {
       params.delete('page');
       params.delete('pageSize');
     } else {
-      if (displayPage === 1) {
+      if (newPageIndex === 1) {
         params.delete('page');
       } else {
-        params.set('page', displayPage.toString());
+        params.set('page', newPageIndex.toString());
       }
       
-      if (targetPageSize === 10) {
+      if (targetPageSize === 20) {
         params.delete('pageSize');
       } else {
         params.set('pageSize', targetPageSize.toString());
@@ -70,7 +73,7 @@ export default function DataPagination<T>({
   };
 
   const handlePrevPage = () => {
-    if (pageIndex > 0) {
+    if (pageIndex > 1) {
       updateUrlParams(pageIndex - 1);
     }
   };
@@ -84,15 +87,13 @@ export default function DataPagination<T>({
   // Generate page numbers to display based on actual data
   const generatePageNumbers = () => {
     const pages = [];
-    const currentPage = pageIndex + 1; // Convert to 1-based for display
+    const currentPage = pageIndex; // Already 1-based
     
-    // Only show page 1 if we're not on it or if there's actually data
-    if (currentPage === 1 || items.length > 0) {
-      pages.push(1);
-    }
+    // Always show page 1
+    pages.push(1);
     
     // Show current page if it's not 1
-    if (currentPage > 1) {
+    if (currentPage > 1 && !pages.includes(currentPage)) {
       pages.push(currentPage);
     }
     
@@ -106,8 +107,8 @@ export default function DataPagination<T>({
 
   const pageNumbers = generatePageNumbers();
 
-  // Don't render pagination if there's no data and we're on page 0
-  if (items.length === 0 && pageIndex === 0 && !hasNextPage) {
+  // Don't render pagination if there's no data and we're on page 1
+  if (items.length === 0 && pageIndex === 1 && !hasNextPage) {
     return null;
   }
 
@@ -116,31 +117,31 @@ export default function DataPagination<T>({
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious 
-            href={pageIndex > 0 ? buildUrl(pageIndex - 1) : "#"}
+            href={pageIndex > 1 ? buildUrl(pageIndex - 1) : "#"}
             onClick={(e) => {
               e.preventDefault();
               handlePrevPage();
             }}
-            className={pageIndex === 0 ? "pointer-events-none opacity-50" : ""}
+            className={pageIndex === 1 ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
         
         {pageNumbers.map((pageNum) => (
           <PaginationItem key={pageNum}>
             <PaginationLink
-              href={buildUrl(pageNum - 1)} // Convert to 0-based for buildUrl
+              href={buildUrl(pageNum)}
               onClick={(e) => {
                 e.preventDefault();
-                handlePageChange(pageNum - 1); // Convert back to 0-based
+                handlePageChange(pageNum);
               }}
-              isActive={pageNum === pageIndex + 1}
+              isActive={pageNum === pageIndex}
             >
               {pageNum}
             </PaginationLink>
           </PaginationItem>
         ))}
         
-        {hasNextPage && pageNumbers.length > 0 && pageNumbers[pageNumbers.length - 1] < pageIndex + 3 && (
+        {hasNextPage && pageNumbers.length > 0 && pageNumbers[pageNumbers.length - 1] < pageIndex + 2 && (
           <PaginationItem>
             <PaginationEllipsis />
           </PaginationItem>

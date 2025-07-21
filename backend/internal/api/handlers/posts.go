@@ -154,22 +154,25 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 	postName := c.Query("postName")
 	
 	// Parse pagination parameters
-	pageSize := 10 // default
+	pageSize := 20 // default changed from 10 to 20
 	if pageSizeStr := c.Query("pageSize"); pageSizeStr != "" {
 		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 && parsed <= 100 {
 			pageSize = parsed
 		}
 	}
 	
-	// Parse pageIndex parameter
-	pageIndex := 0 // default (0-based)
+	// Parse pageIndex parameter (1-based indexing)
+	pageIndex := 1 // default changed from 0 to 1 (1-based)
 	if pageIndexStr := c.Query("pageIndex"); pageIndexStr != "" {
-		if parsed, err := strconv.Atoi(pageIndexStr); err == nil && parsed >= 0 {
+		if parsed, err := strconv.Atoi(pageIndexStr); err == nil && parsed >= 1 {
 			pageIndex = parsed
 		}
 	}
 	
-	posts, hasNextPage, err := h.repo.GetAllPosts(c.Request.Context(), &postName, pageSize, pageIndex)
+	// Convert 1-based pageIndex to 0-based for repository call
+	zeroBasedPageIndex := pageIndex - 1
+	
+	posts, total, err := h.repo.GetAllPosts(c.Request.Context(), &postName, pageSize, zeroBasedPageIndex)
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve posts: %v", err)
 		InternalServerError(c, "Failed to retrieve posts.")
@@ -177,10 +180,10 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 	}
 	
 	response := map[string]interface{}{
-		"posts": h.toPostListResponse(c, posts),
-		"pageSize": pageSize,
-		"pageIndex": pageIndex,
-		"hasNextPage": hasNextPage,
+		"pageIndex": pageIndex,  // Return 1-based pageIndex
+		"pageSize":  pageSize,
+		"total":     total,
+		"posts":     h.toPostListResponse(c, posts),
 	}
 	
 	c.JSON(http.StatusOK, response)

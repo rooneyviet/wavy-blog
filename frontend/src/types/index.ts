@@ -39,10 +39,29 @@ export interface LoginResponse {
 }
 
 export interface PaginatedPostsResponse {
-  posts: Post[];
+  pageIndex: number;  // 1-based indexing
   pageSize: number;
-  pageIndex: number;
-  hasNextPage: boolean;
+  total: number;
+  posts: Post[];
+}
+
+export interface ImageMetadata {
+  id: string;
+  name: string;
+  originalName: string;
+  size: number;
+  contentType: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  url: string;
+  path: string;
+}
+
+export interface PaginatedImagesResponse {
+  pageIndex: number;  // 1-based indexing
+  pageSize: number;
+  total: number;
+  images: ImageMetadata[];
 }
 
 export interface ApiError {

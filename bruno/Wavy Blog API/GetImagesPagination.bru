@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{host}}/api/images?pageSize=5&pageIndex=0
+  url: {{host}}/api/images?pageSize=5&pageIndex=1
   body: none
   auth: bearer
 }
@@ -16,7 +16,7 @@ auth:bearer {
 
 params:query {
   pageSize: 5
-  pageIndex: 0
+  pageIndex: 1
 }
 
 tests {
@@ -26,13 +26,20 @@ tests {
     expect(data.images).to.be.an('array');
     expect(data.images.length).to.be.at.most(5);
     expect(data.pageSize).to.equal(5);
-    expect(data.pageIndex).to.equal(0);
+    expect(data.pageIndex).to.equal(1); // 1-based indexing
   });
 
   test("should have correct pagination metadata", function() {
     const data = res.getBody();
     expect(data.total).to.be.a('number');
-    expect(data.hasMore).to.be.a('boolean');
+    // Verify no hasMore field
+    expect(data).to.not.have.property('hasMore');
+    
+    // Test required pagination fields
+    expect(data).to.have.property('pageIndex');
+    expect(data).to.have.property('pageSize');
+    expect(data).to.have.property('total');
+    expect(data).to.have.property('images');
   });
 
   test("should handle large page sizes", function() {
@@ -41,9 +48,9 @@ tests {
     expect(data.pageSize).to.be.at.most(100);
   });
 
-  test("should handle negative page index gracefully", function() {
-    // Should default to 0 for negative values
+  test("should handle invalid page index gracefully", function() {
+    // Should default to 1 for invalid values (1-based indexing)
     const data = res.getBody();
-    expect(data.pageIndex).to.be.at.least(0);
+    expect(data.pageIndex).to.be.at.least(1);
   });
 }

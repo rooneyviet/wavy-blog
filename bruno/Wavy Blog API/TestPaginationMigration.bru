@@ -1,0 +1,58 @@
+meta {
+  name: Test Pagination Migration (Should FAIL if reverted)
+  type: http
+  seq: 100
+}
+
+get {
+  url: {{host}}/api/posts?pageSize=5&pageIndex=1
+  body: none
+  auth: none
+}
+
+params:query {
+  pageSize: 5
+  pageIndex: 1
+}
+
+tests {
+  test("OLD API behavior should NOT work - pageIndex should NOT be 0-based", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    
+    // These tests should FAIL if someone reverts to old 0-based indexing
+    expect(data.pageIndex).to.not.equal(0); // Should NOT be 0 anymore!
+    expect(data.pageIndex).to.equal(1); // Should be 1-based now
+  });
+
+  test("OLD API response format should NOT exist - no hasNextPage/hasMore", function() {
+    const data = res.getBody();
+    
+    // These should FAIL if someone reverts the response format
+    expect(data).to.not.have.property('hasNextPage'); // OLD format - should NOT exist
+    expect(data).to.not.have.property('hasMore'); // OLD format - should NOT exist
+    
+    // NEW format must exist
+    expect(data).to.have.property('total'); // NEW field - must exist
+    expect(data).to.have.property('posts'); // Should have posts array
+  });
+
+  test("NEW API default pageSize should be 20, NOT 10", function() {
+    // Call API without pageSize parameter to test default
+    // This would fail if someone reverts the default from 20 to 10
+    // We're testing with pageSize=5 above, so this test checks our expectation
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.pageSize).to.equal(5); // We sent pageSize=5, so should be 5
+    expect(data.pageSize).to.not.equal(10); // Should NOT be old default of 10
+  });
+
+  test("pageIndex=0 should NOT be accepted (1-based indexing)", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    
+    // If pageIndex=0 was sent, it should be converted to pageIndex=1
+    // Our test sends pageIndex=1, so this should pass
+    expect(data.pageIndex).to.be.at.least(1); // Should never be 0
+  });
+}

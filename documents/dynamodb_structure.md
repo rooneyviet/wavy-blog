@@ -134,23 +134,28 @@ When the table is first created, the following default data is automatically see
 
 ## Pagination Implementation
 
-The `GetAllPosts` query supports pagination through:
+The `GetAllPosts` and `GetImages` APIs support pagination through:
 
-- **Page Size**: Configurable limit (1-100 items, default: 10)
-- **Page Index**: 0-based page numbering for user-friendly navigation
+- **Page Size**: Configurable limit (1-100 items, default: 20)
+- **Page Index**: 1-based page numbering for user-friendly navigation
+- **Total Count**: Total number of items available across all pages
 - **Internal Cursor Management**: DynamoDB's `LastEvaluatedKey` handled internally by backend
 - **Stateless**: No server-side state required for pagination
 
 ### Pagination Flow
 
-1. **First Request**: Client calls `/api/posts?pageSize=10&pageIndex=0`
-2. **Response**: Returns posts array plus `hasNextPage` boolean
-3. **Next Request**: Client calls `/api/posts?pageSize=10&pageIndex=1`
-4. **Continue**: Repeat until `hasNextPage: false`
+1. **First Request**: Client calls `/api/posts?pageSize=20&pageIndex=1`
+2. **Response**: Returns paginated object with `{pageIndex, pageSize, total, posts}`
+3. **Next Request**: Client calls `/api/posts?pageSize=20&pageIndex=2`
+4. **Continue**: Client can calculate maximum pages using `Math.ceil(total / pageSize)`
 
 ### Implementation Notes
 
-- Backend internally manages DynamoDB pagination cursors
-- For `pageIndex > 0`, backend skips previous pages by iterating through DynamoDB results
-- This approach trades some efficiency for API simplicity
+- **1-based Indexing**: API uses 1-based page numbers (pageIndex=1 is first page)
+- **Backend Conversion**: Handler converts 1-based to 0-based for internal DynamoDB operations
+- **Total Count**: Backend performs separate count query to determine total items
+- **Cursor Skipping**: For `pageIndex > 1`, backend skips previous pages by iterating through DynamoDB results
+- **Consistent Response Format**: Both posts and images APIs use identical pagination structure
+- **No hasMore/hasNextPage**: Clients calculate remaining pages using total count
+- This approach trades some efficiency for API simplicity and consistency
 - Consider caching or alternative strategies for very large page indices

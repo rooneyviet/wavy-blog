@@ -128,7 +128,7 @@ export const postQueries = {
   list: (pageSize?: number, pageIndex?: number, status?: string) =>
     queryOptions({
       queryKey: postKeys.list(
-        `page-${pageIndex || 0}-size-${pageSize || 10}-status-${status || "all"}`
+        `page-${pageIndex || 1}-size-${pageSize || 20}-status-${status || "all"}`
       ),
       queryFn: () => api.getPosts(pageSize, pageIndex, status),
     }),

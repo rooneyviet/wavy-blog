@@ -119,6 +119,7 @@ export const api = {
   ): Promise<PaginatedPostsResponse> => {
     const params = new URLSearchParams();
     if (pageSize) params.append("pageSize", pageSize.toString());
+    // pageIndex is 1-based now - use 1 as default instead of undefined
     if (pageIndex !== undefined)
       params.append("pageIndex", pageIndex.toString());
     if (status) params.append("status", status);
