@@ -1,0 +1,54 @@
+meta {
+  name: Get Own Images Only (Author)
+  type: http
+  seq: 60
+}
+
+get {
+  url: {{host}}/api/images?pageSize=10&pageIndex=0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:query {
+  pageSize: 10
+  pageIndex: 0
+}
+
+tests {
+  test("should get only own images as author", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.images).to.be.an('array');
+    expect(data.total).to.be.a('number');
+    expect(data.pageIndex).to.equal(0);
+    expect(data.pageSize).to.equal(10);
+  });
+
+  test("should only contain images uploaded by the author", function() {
+    const data = res.getBody();
+    const currentUser = bru.getVar("username") || "testuser";
+    
+    // All images should belong to the current user
+    data.images.forEach(function(image) {
+      expect(image.uploadedBy).to.equal(currentUser);
+      expect(image.path).to.include(currentUser + "/");
+    });
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should respect pagination", function() {
+    const data = res.getBody();
+    expect(data.images.length).to.be.at.most(10);
+  });
+}

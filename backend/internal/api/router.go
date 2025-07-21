@@ -6,9 +6,10 @@ import (
 	"github.com/wavy-blog/backend/internal/api/middleware"
 	"github.com/wavy-blog/backend/internal/config"
 	"github.com/wavy-blog/backend/internal/repository"
+	"github.com/wavy-blog/backend/internal/service"
 )
 
-func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
+func SetupRouter(repo repository.Repository, cfg *config.Config, storageService service.StorageService) *gin.Engine {
 	r := gin.Default()
 
 	// Share JWT secret with handlers
@@ -20,6 +21,7 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 	userHandler := handlers.NewUserHandler(repo, repo, cfg)
 	postHandler := handlers.NewPostHandler(repo, repo, repo)
 	categoryHandler := handlers.NewCategoryHandler(repo, repo)
+	imageHandler := handlers.NewImageHandler(storageService)
 
 	api := r.Group("/api")
 	{
@@ -67,6 +69,18 @@ func SetupRouter(repo repository.Repository, cfg *config.Config) *gin.Engine {
 			protected.POST("", middleware.AdminMiddleware(), categoryHandler.CreateCategory)
 			protected.PUT("/:slug", middleware.AdminMiddleware(), categoryHandler.UpdateCategory)
 			protected.DELETE("", middleware.AdminMiddleware(), categoryHandler.DeleteCategories)
+		}
+
+		images := api.Group("/images")
+		{
+			// All image routes require authentication (admin or author)
+			protected := images.Group("").Use(middleware.AuthMiddleware(repo, cfg.JWTSecret))
+			{
+				protected.POST("/upload", imageHandler.UploadImage)
+				protected.GET("", imageHandler.GetImages)
+				protected.DELETE("", imageHandler.DeleteImage)
+				protected.GET("/url", imageHandler.GetImageURL)
+			}
 		}
 	}
 

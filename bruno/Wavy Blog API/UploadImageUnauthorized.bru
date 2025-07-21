@@ -1,0 +1,30 @@
+meta {
+  name: Upload Image Unauthorized
+  type: http
+  seq: 55
+}
+
+post {
+  url: {{host}}/api/images/upload
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  image: @file(./test-image.jpg)
+}
+
+tests {
+  test("should fail without authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+    const data = res.getBody();
+    expect(data.message).to.include("unauthorized") || expect(data.message).to.include("authentication");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}

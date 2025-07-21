@@ -1,0 +1,60 @@
+meta {
+  name: Compare Admin vs Author Image Access
+  type: http
+  seq: 62
+}
+
+get {
+  url: {{host}}/api/images?pageSize=100&pageIndex=0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:query {
+  pageSize: 100
+  pageIndex: 0
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 200) {
+    bru.setVar("author_image_count", jsonData.total);
+    bru.setVar("author_images", JSON.stringify(jsonData.images));
+  }
+}
+
+tests {
+  test("should successfully get images as author", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.images).to.be.an('array');
+    expect(data.total).to.be.a('number');
+  });
+
+  test("should only show author's own images", function() {
+    const data = res.getBody();
+    const currentUser = bru.getVar("username") || "testuser";
+    
+    // Filter images that belong to current user
+    const ownImages = data.images.filter(image => 
+      image.uploadedBy === currentUser || image.path.startsWith(currentUser + "/")
+    );
+    
+    // All returned images should be author's own images
+    expect(ownImages.length).to.equal(data.images.length);
+  });
+
+  test("should have different count than admin (if multiple users exist)", function() {
+    const data = res.getBody();
+    // This test is informational - author should typically see fewer images than admin
+    // unless there's only one user in the system
+    console.log(`Author sees ${data.total} images`);
+    
+    // Store for comparison with admin results
+    expect(data.total).to.be.at.least(0);
+  });
+}

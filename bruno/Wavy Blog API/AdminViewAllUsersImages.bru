@@ -1,0 +1,85 @@
+meta {
+  name: Admin Can View All Users Images
+  type: http
+  seq: 63
+}
+
+get {
+  url: {{host}}/api/images?pageSize=50&pageIndex=0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_access_token}}
+}
+
+params:query {
+  pageSize: 50
+  pageIndex: 0
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 200) {
+    bru.setVar("admin_image_count", jsonData.total);
+    
+    // Extract unique uploaders
+    const uploaders = [...new Set(jsonData.images.map(img => img.uploadedBy))];
+    bru.setVar("unique_uploaders", JSON.stringify(uploaders));
+    bru.setVar("uploader_count", uploaders.length);
+  }
+}
+
+tests {
+  test("should get all images as admin", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.images).to.be.an('array');
+    expect(data.total).to.be.a('number');
+    expect(data.pageIndex).to.equal(0);
+    expect(data.pageSize).to.equal(50);
+  });
+
+  test("should potentially see images from multiple users", function() {
+    const data = res.getBody();
+    
+    if (data.images.length > 0) {
+      // Check if we have images from different users
+      const uploaders = [...new Set(data.images.map(img => img.uploadedBy))];
+      
+      // Log the unique uploaders for visibility
+      console.log(`Images from ${uploaders.length} different users: ${uploaders.join(', ')}`);
+      
+      // Admin should be able to see images regardless of who uploaded them
+      uploaders.forEach(uploader => {
+        expect(uploader).to.be.a('string');
+        expect(uploader.length).to.be.greaterThan(0);
+      });
+    }
+  });
+
+  test("should show total count >= author count", function() {
+    const data = res.getBody();
+    const authorCount = parseInt(bru.getVar("author_image_count") || "0");
+    
+    // Admin should see at least as many images as any individual author
+    expect(data.total).to.be.at.least(authorCount);
+  });
+
+  test("should have admin privilege metadata", function() {
+    const data = res.getBody();
+    
+    // Check that we can see the uploadedBy field for all images
+    data.images.forEach(function(image) {
+      expect(image).to.have.property('uploadedBy');
+      expect(image).to.have.property('path');
+      expect(image).to.have.property('url');
+      
+      // Path should follow the pattern: uploadedBy/filename
+      if (image.uploadedBy && image.path) {
+        expect(image.path).to.include(image.uploadedBy);
+      }
+    });
+  });
+}

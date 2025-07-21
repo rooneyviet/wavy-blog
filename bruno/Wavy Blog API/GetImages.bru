@@ -1,0 +1,60 @@
+meta {
+  name: Get Images
+  type: http
+  seq: 52
+}
+
+get {
+  url: {{host}}/api/images?pageSize=10&pageIndex=0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:query {
+  pageSize: 10
+  pageIndex: 0
+}
+
+tests {
+  test("should get images successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.images).to.be.an('array');
+    expect(data.total).to.be.a('number');
+    expect(data.pageIndex).to.equal(0);
+    expect(data.pageSize).to.equal(10);
+    expect(data.hasMore).to.be.a('boolean');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should return valid image objects", function() {
+    const data = res.getBody();
+    if (data.images.length > 0) {
+      const image = data.images[0];
+      expect(image.id).to.be.a('string');
+      expect(image.name).to.be.a('string');
+      expect(image.originalName).to.be.a('string');
+      expect(image.size).to.be.a('number');
+      expect(image.contentType).to.be.a('string');
+      expect(image.uploadedBy).to.be.a('string');
+      expect(image.uploadedAt).to.be.a('string');
+      expect(image.url).to.be.a('string');
+      expect(image.path).to.be.a('string');
+    }
+  });
+
+  test("should respect pagination parameters", function() {
+    const data = res.getBody();
+    expect(data.images.length).to.be.at.most(10);
+  });
+}

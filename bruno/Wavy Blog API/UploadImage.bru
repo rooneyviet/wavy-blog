@@ -1,0 +1,63 @@
+meta {
+  name: Upload Image
+  type: http
+  seq: 51
+}
+
+post {
+  url: {{host}}/api/images/upload
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:multipart-form {
+  image: @file(./test-image.jpg)
+}
+
+script:post-response {
+  const jsonData = res.getBody();
+  if (res.getStatus() === 201) {
+    bru.setVar("imageId", jsonData.image.id);
+    bru.setVar("imagePath", jsonData.image.path);
+    bru.setVar("imageName", jsonData.image.name);
+  }
+}
+
+tests {
+  test("should upload image successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+    const data = res.getBody();
+    expect(data.image).to.be.an('object');
+    expect(data.image.id).to.be.a('string');
+    expect(data.image.name).to.be.a('string');
+    expect(data.image.originalName).to.be.a('string');
+    expect(data.image.size).to.be.a('number');
+    expect(data.image.contentType).to.be.a('string');
+    expect(data.image.uploadedBy).to.be.a('string');
+    expect(data.image.uploadedAt).to.be.a('string');
+    expect(data.image.url).to.be.a('string');
+    expect(data.image.path).to.be.a('string');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should contain user's email in path", function() {
+    const data = res.getBody();
+    expect(data.image.path).to.include("test@example.com");
+  });
+
+  test("should have valid content type", function() {
+    const data = res.getBody();
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    expect(validTypes).to.include(data.image.contentType);
+  });
+}

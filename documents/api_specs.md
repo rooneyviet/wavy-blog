@@ -246,6 +246,59 @@ All API endpoints are prefixed with `/api`
 | **Success Response** | 200: `{"message": "Categories deleted successfully"}`                                                                       |
 | **Error Responses**  | 400: Invalid payload or constraints violated, 401: Unauthorized, 403: Forbidden, 404: Category not found, 500: Server error |
 
+## Image Management APIs
+
+### Upload Image
+
+| Field                | Value                                                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | POST                                                                                                                                |
+| **URL**              | `/api/images/upload`                                                                                                                |
+| **Authentication**   | Required (Bearer token)                                                                                                             |
+| **Authorization**    | Admin or Author role required                                                                                                       |
+| **Content Type**     | `multipart/form-data`                                                                                                               |
+| **Request Body**     | Form field `image`: File (JPEG, PNG, GIF, WebP)                                                                                     |
+| **File Constraints** | Max size: 10MB, Allowed types: JPEG, PNG, GIF, WebP                                                                                |
+| **Success Response** | 201: Image metadata object (see Image Object schema)                                                                                |
+| **Error Responses**  | 400: Invalid file type/size or payload, 401: Unauthorized, 403: Forbidden (wrong role), 500: Server error                          |
+
+### Get Images (Paginated)
+
+| Field                | Value                                                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                                                                 |
+| **URL**              | `/api/images`                                                                                                                       |
+| **Authentication**   | Required (Bearer token)                                                                                                             |
+| **Authorization**    | Admin or Author role required<br>**Admin**: Can see all images from all users<br>**Author**: Can only see their own uploaded images |
+| **Query Parameters** | `pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 0-based page number, default: 0)            |
+| **Success Response** | 200: Paginated images response object (see Paginated Images Response schema)                                                        |
+| **Error Responses**  | 400: Invalid pagination parameters, 401: Unauthorized, 403: Forbidden (wrong role), 500: Server error                              |
+
+### Delete Image
+
+| Field                | Value                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Method**           | DELETE                                                                                                            |
+| **URL**              | `/api/images`                                                                                                     |
+| **Authentication**   | Required (Bearer token)                                                                                           |
+| **Authorization**    | Admin or Author role required<br>**Admin**: Can delete any image<br>**Author**: Can only delete their own images |
+| **Request Body**     | `{"imagePath": "string"}`                                                                                         |
+| **Validation**       | imagePath: required                                                                                               |
+| **Success Response** | 200: `{"message": "Image deleted successfully."}`                                                                 |
+| **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden (wrong role or not own image), 500: Server error          |
+
+### Get Image URL
+
+| Field                | Value                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                                               |
+| **URL**              | `/api/images/url`                                                                                                 |
+| **Authentication**   | Required (Bearer token)                                                                                           |
+| **Authorization**    | Admin or Author role required, can only access own images                                                         |
+| **Query Parameters** | `imagePath`: string (required, path to the image)                                                                 |
+| **Success Response** | 200: `{"url": "string"}` (presigned URL valid for 1 hour)                                                         |
+| **Error Responses**  | 400: Missing imagePath parameter, 401: Unauthorized, 403: Forbidden (wrong role or not own image), 500: Server error |
+
 ## Response Schemas
 
 ### User Object
@@ -311,6 +364,64 @@ All API endpoints are prefixed with `/api`
   "description": "string",
   "created_at": "timestamp",
   "updated_at": "timestamp"
+}
+```
+
+### Image Object
+
+```json
+{
+  "id": "string",
+  "name": "string",
+  "originalName": "string",
+  "size": "number",
+  "contentType": "string",
+  "uploadedBy": "string",
+  "uploadedAt": "timestamp",
+  "url": "string",
+  "path": "string"
+}
+```
+
+### Paginated Images Response
+
+```json
+{
+  "images": [
+    {
+      "id": "string",
+      "name": "string",
+      "originalName": "string",
+      "size": "number",
+      "contentType": "string",
+      "uploadedBy": "string",
+      "uploadedAt": "timestamp",
+      "url": "string",
+      "path": "string"
+    }
+  ],
+  "total": "number",
+  "pageIndex": "number",
+  "pageSize": "number",
+  "hasMore": "boolean"
+}
+```
+
+### Upload Image Response
+
+```json
+{
+  "image": {
+    "id": "string",
+    "name": "string",
+    "originalName": "string",
+    "size": "number",
+    "contentType": "string",
+    "uploadedBy": "string",
+    "uploadedAt": "timestamp",
+    "url": "string",
+    "path": "string"
+  }
 }
 ```
 
