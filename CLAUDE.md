@@ -6,6 +6,7 @@
 - **Frontend lint:** `docker compose -f docker-compose.dev.yml run --rm frontend yarn lint`
 - **Frontend build:** `docker compose -f docker-compose.dev.yml run --rm frontend yarn build`
 - **Frontend install package:** `docker compose -f docker-compose.dev.yml run --rm frontend add {package_name}`
+- **Frontend check types:** `docker compose -f docker-compose.dev.yml run --rm frontend yarn tsc`
 - **Run single API test:** `bru run "Login.bru" --env demo`
 - **Run test sequence:** `bru run "Login.bru" "CreatePost.bru" --env demo`
 - **Go commands:** All Go commands run in Docker: Example:`docker compose -f docker-compose.dev.yml build api-backend`
@@ -17,7 +18,7 @@
 ## Code Style Guidelines
 
 - **TypeScript:** Use strict typing, avoid `any`
-- **Components:** PascalCase files/exports, functional components with hooks. Use shadcn, or create custom components.
+- **Components:** PascalCase files/exports, functional components with hooks. Use shadcn, prefer to use shadcn rather than create custom components.
 - **Variables/Functions:** camelCase, constants UPPER_SNAKE_CASE
 - **Imports:** Absolute paths with `@/` prefix, group by external/internal
 - **Error Handling:** Explicit error handling, custom error types for Go
