@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -278,13 +279,40 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 }
 
 func (h *UserHandler) GetUsers(c *gin.Context) {
-	users, err := h.repo.GetAllUsers(c.Request.Context())
+	// Parse pagination parameters
+	pageSize := 20 // default
+	if pageSizeStr := c.Query("pageSize"); pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 && parsed <= 100 {
+			pageSize = parsed
+		}
+	}
+	
+	// Parse pageIndex parameter (1-based indexing)
+	pageIndex := 1 // default
+	if pageIndexStr := c.Query("pageIndex"); pageIndexStr != "" {
+		if parsed, err := strconv.Atoi(pageIndexStr); err == nil && parsed >= 1 {
+			pageIndex = parsed
+		}
+	}
+	
+	// Convert 1-based pageIndex to 0-based for repository call
+	zeroBasedPageIndex := pageIndex - 1
+	
+	users, total, err := h.repo.GetAllUsersPaginated(c.Request.Context(), pageSize, zeroBasedPageIndex)
 	if err != nil {
-		log.Printf("[ERROR] Failed to retrieve all users: %v", err)
+		log.Printf("[ERROR] Failed to retrieve users: %v", err)
 		InternalServerError(c, "Failed to retrieve users.")
 		return
 	}
-	c.JSON(http.StatusOK, toUserListResponse(users))
+	
+	response := map[string]interface{}{
+		"pageIndex": pageIndex,  // Return 1-based pageIndex
+		"pageSize":  pageSize,
+		"total":     total,
+		"users":     toUserListResponse(users),
+	}
+	
+	c.JSON(http.StatusOK, response)
 }
 
 

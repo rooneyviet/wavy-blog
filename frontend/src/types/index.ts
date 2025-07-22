@@ -64,6 +64,13 @@ export interface PaginatedImagesResponse {
   images: ImageMetadata[];
 }
 
+export interface PaginatedUsersResponse {
+  pageIndex: number;  // 1-based indexing
+  pageSize: number;
+  total: number;
+  users: User[];
+}
+
 export interface ApiError {
   message: string;
 }

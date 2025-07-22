@@ -90,14 +90,15 @@ All API endpoints are prefixed with `/api`
 
 ### Get All Users (Admin Only)
 
-| Field                | Value                                                            |
-| -------------------- | ---------------------------------------------------------------- |
-| **Method**           | GET                                                              |
-| **URL**              | `/api/users`                                                     |
-| **Authentication**   | Required (Bearer token)                                          |
-| **Authorization**    | Admin role required                                              |
-| **Success Response** | 200: Array of user objects                                       |
-| **Error Responses**  | 401: Unauthorized, 403: Forbidden (not admin), 500: Server error |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                               |
+| **URL**              | `/api/users`                                                                                      |
+| **Authentication**   | Required (Bearer token)                                                                           |
+| **Authorization**    | Admin role required                                                                               |
+| **Query Parameters** | `pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1) |
+| **Success Response** | 200: Paginated response object (see below)                                                        |
+| **Error Responses**  | 400: Invalid pagination parameters, 401: Unauthorized, 403: Forbidden (not admin), 500: Server error |
 
 
 ## Post Management APIs
@@ -132,7 +133,7 @@ All API endpoints are prefixed with `/api`
 | **Method**           | GET                                                                                                                                                                    |
 | **URL**              | `/api/posts`                                                                                                                                                           |
 | **Authentication**   | Not required                                                                                                                                                           |
-| **Query Parameters** | `postName`: string (optional, for filtering)<br>`pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1) |
+| **Query Parameters** | `postName`: string (optional, for filtering)<br>`categorySlug`: string (optional, for filtering by category)<br>`pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1) |
 | **Success Response** | 200: Paginated response object (see below)                                                                                                                             |
 | **Error Responses**  | 400: Invalid pagination parameters, 500: Server error                                                                                                                  |
 
@@ -352,6 +353,27 @@ All API endpoints are prefixed with `/api`
       "category": "string",
       "thumbnailURL": "string",
       "status": "string",
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp"
+    }
+  ]
+}
+```
+
+### Paginated Users Response
+
+```json
+{
+  "pageIndex": 1,
+  "pageSize": 20,
+  "total": 50,
+  "users": [
+    {
+      "userID": "string",
+      "username": "string",
+      "email": "string",
+      "role": "string",
+      "avatarURL": "string",
       "createdAt": "timestamp",
       "updatedAt": "timestamp"
     }

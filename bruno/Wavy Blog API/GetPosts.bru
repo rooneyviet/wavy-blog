@@ -12,6 +12,7 @@ get {
 
 params:query {
   ~postName: test-post
+  ~categorySlug: technology
   ~pageSize: 10
   ~pageIndex: 1
 }
@@ -73,5 +74,23 @@ tests {
     // Verify no hasNextPage or hasMore fields
     expect(data).to.not.have.property('hasNextPage');
     expect(data).to.not.have.property('hasMore');
+  });
+
+  test("should filter by categorySlug when provided", function() {
+    const data = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    
+    // If categorySlug is provided in query and posts are returned
+    if (req.getUrl().includes('categorySlug=') && data.posts.length > 0) {
+      const categorySlugMatch = req.getUrl().match(/categorySlug=([^&]*)/);
+      if (categorySlugMatch) {
+        const requestedCategory = decodeURIComponent(categorySlugMatch[1]);
+        
+        // All returned posts should belong to the requested category
+        data.posts.forEach(function(post) {
+          expect(post.category).to.equal(requestedCategory);
+        });
+      }
+    }
   });
 }

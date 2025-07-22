@@ -152,7 +152,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 
 func (h *PostHandler) GetPosts(c *gin.Context) {
 	postName := c.Query("postName")
-	
+	categorySlug := c.Query("categorySlug")
 	// Parse pagination parameters
 	pageSize := 20 // default changed from 10 to 20
 	if pageSizeStr := c.Query("pageSize"); pageSizeStr != "" {
@@ -172,7 +172,7 @@ func (h *PostHandler) GetPosts(c *gin.Context) {
 	// Convert 1-based pageIndex to 0-based for repository call
 	zeroBasedPageIndex := pageIndex - 1
 	
-	posts, total, err := h.repo.GetAllPosts(c.Request.Context(), &postName, pageSize, zeroBasedPageIndex)
+	posts, total, err := h.repo.GetAllPosts(c.Request.Context(), &postName, &categorySlug, pageSize, zeroBasedPageIndex)
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve posts: %v", err)
 		InternalServerError(c, "Failed to retrieve posts.")
