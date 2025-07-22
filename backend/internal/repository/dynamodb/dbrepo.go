@@ -542,12 +542,10 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string, catego
 
 	// Determine which index to use based on categorySlug
 	if categorySlug != nil && *categorySlug != "" {
-		// Use GSI2 for category-based filtering
 		keyCondExpr = "GSI2PK = :pk"
 		indexName = GSI2
 		exprAttrVals[":pk"] = &types.AttributeValueMemberS{Value: "POSTS_BY_CAT#" + *categorySlug}
 	} else {
-		// Use GSI3 for all posts
 		keyCondExpr = "EntityType = :type"
 		indexName = GSI3
 		exprAttrVals[":type"] = &types.AttributeValueMemberS{Value: "POST"}
@@ -569,27 +567,21 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string, catego
 		ExpressionAttributeValues: exprAttrVals,
 		Select:                    types.SelectCount,
 	}
-
 	if filterExpression != nil {
 		countQueryInput.FilterExpression = filterExpression
 	}
 
-	// Count total matching posts
 	totalCount := 0
 	var countLastEvaluatedKey map[string]types.AttributeValue
-	
 	for {
 		if countLastEvaluatedKey != nil {
 			countQueryInput.ExclusiveStartKey = countLastEvaluatedKey
 		}
-
 		countResult, err := r.Client.Query(ctx, countQueryInput)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to count posts: %w", err)
 		}
-
 		totalCount += int(countResult.Count)
-		
 		if countResult.LastEvaluatedKey == nil {
 			break
 		}
@@ -602,54 +594,48 @@ func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string, catego
 		IndexName:                 aws.String(indexName),
 		KeyConditionExpression:    aws.String(keyCondExpr),
 		ExpressionAttributeValues: exprAttrVals,
-		Limit:                     aws.Int32(int32(pageSize)),
 		ScanIndexForward:          aws.Bool(false), // Sort descending (newest first)
 	}
-
 	if filterExpression != nil {
 		queryInput.FilterExpression = filterExpression
 	}
 
-	// For pageIndex > 0, we need to skip previous pages
 	var allPosts []*domain.Post
 	var lastEvaluatedKey map[string]types.AttributeValue
-	itemsToSkip := pageIndex * pageSize
-	itemsSkipped := 0
+	currentPage := 0
 
-	for {
+	// Paginate through results until we reach the desired page
+	for currentPage <= pageIndex {
+		// Set the limit to pageSize for the target page
+		if currentPage == pageIndex {
+			queryInput.Limit = aws.Int32(int32(pageSize))
+		} else {
+			// For previous pages, we can fetch just the keys to be more efficient
+			// but for simplicity, we fetch full items and discard
+			queryInput.Limit = aws.Int32(int32(pageSize))
+		}
+
 		if lastEvaluatedKey != nil {
 			queryInput.ExclusiveStartKey = lastEvaluatedKey
 		}
 
 		result, err := r.Client.Query(ctx, queryInput)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to query posts: %w", err)
+			return nil, 0, fmt.Errorf("failed to query posts for page %d: %w", currentPage, err)
 		}
 
-		var currentBatch []*domain.Post
-		err = attributevalue.UnmarshalListOfMaps(result.Items, &currentBatch)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to unmarshal posts: %w", err)
-		}
-
-		// Apply skipping logic for pagination
-		for _, post := range currentBatch {
-			if itemsSkipped < itemsToSkip {
-				itemsSkipped++
-				continue
-			}
-			allPosts = append(allPosts, post)
-			if len(allPosts) >= pageSize {
-				break
+		if currentPage == pageIndex {
+			err = attributevalue.UnmarshalListOfMaps(result.Items, &allPosts)
+			if err != nil {
+				return nil, 0, fmt.Errorf("failed to unmarshal posts: %w", err)
 			}
 		}
 
-		// If we have enough posts or no more data, break
-		if len(allPosts) >= pageSize || result.LastEvaluatedKey == nil {
-			break
+		if result.LastEvaluatedKey == nil {
+			break // No more pages
 		}
-
 		lastEvaluatedKey = result.LastEvaluatedKey
+		currentPage++
 	}
 
 	return allPosts, totalCount, nil

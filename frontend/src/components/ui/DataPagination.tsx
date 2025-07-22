@@ -23,42 +23,41 @@ export interface DataPaginationProps<T> {
   className?: string;
 }
 
-export default function DataPagination<T>({ 
-  data, 
-  className 
+export default function DataPagination<T>({
+  data,
+  className,
 }: DataPaginationProps<T>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  
+
   const { items, pageIndex, pageSize, total } = data;
-  
+
   // Calculate if there are more pages
   const hasNextPage = pageIndex * pageSize < total;
-  const totalPages = Math.ceil(total / pageSize);
 
   const buildUrl = (newPageIndex: number, newPageSize?: number) => {
     const params = new URLSearchParams(searchParams);
     const targetPageSize = newPageSize || pageSize;
-    
+
     // Remove params if they are default values (page 1, pageSize 20)
     if (newPageIndex === 1 && targetPageSize === 20) {
-      params.delete('page');
-      params.delete('pageSize');
+      params.delete("pageIndex");
+      params.delete("pageSize");
     } else {
       if (newPageIndex === 1) {
-        params.delete('page');
+        params.delete("pageIndex");
       } else {
-        params.set('page', newPageIndex.toString());
+        params.set("pageIndex", newPageIndex.toString());
       }
-      
+
       if (targetPageSize === 20) {
-        params.delete('pageSize');
+        params.delete("pageSize");
       } else {
-        params.set('pageSize', targetPageSize.toString());
+        params.set("pageSize", targetPageSize.toString());
       }
     }
-    
+
     const queryString = params.toString();
     return queryString ? `${pathname}?${queryString}` : pathname;
   };
@@ -88,20 +87,20 @@ export default function DataPagination<T>({
   const generatePageNumbers = () => {
     const pages = [];
     const currentPage = pageIndex; // Already 1-based
-    
+
     // Always show page 1
     pages.push(1);
-    
+
     // Show current page if it's not 1
     if (currentPage > 1 && !pages.includes(currentPage)) {
       pages.push(currentPage);
     }
-    
+
     // Show next page only if hasNextPage is true
     if (hasNextPage && !pages.includes(currentPage + 1)) {
       pages.push(currentPage + 1);
     }
-    
+
     return pages.sort((a, b) => a - b);
   };
 
@@ -116,7 +115,7 @@ export default function DataPagination<T>({
     <Pagination className={className}>
       <PaginationContent>
         <PaginationItem>
-          <PaginationPrevious 
+          <PaginationPrevious
             href={pageIndex > 1 ? buildUrl(pageIndex - 1) : "#"}
             onClick={(e) => {
               e.preventDefault();
@@ -125,7 +124,7 @@ export default function DataPagination<T>({
             className={pageIndex === 1 ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
-        
+
         {pageNumbers.map((pageNum) => (
           <PaginationItem key={pageNum}>
             <PaginationLink
@@ -140,15 +139,17 @@ export default function DataPagination<T>({
             </PaginationLink>
           </PaginationItem>
         ))}
-        
-        {hasNextPage && pageNumbers.length > 0 && pageNumbers[pageNumbers.length - 1] < pageIndex + 2 && (
-          <PaginationItem>
-            <PaginationEllipsis />
-          </PaginationItem>
-        )}
-        
+
+        {hasNextPage &&
+          pageNumbers.length > 0 &&
+          pageNumbers[pageNumbers.length - 1] < pageIndex + 2 && (
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+          )}
+
         <PaginationItem>
-          <PaginationNext 
+          <PaginationNext
             href={hasNextPage ? buildUrl(pageIndex + 1) : "#"}
             onClick={(e) => {
               e.preventDefault();

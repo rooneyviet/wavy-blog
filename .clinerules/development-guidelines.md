@@ -27,7 +27,7 @@
 - **Styling:** Tailwind CSS only, no CSS modules
 - **Validation:** Zod form and input validation.
 
-## 1. Core Principles
+## Core Principles
 
 - **Separation of Concerns (SoC):**
 - **Dependency Inversion Principle (DIP):**
