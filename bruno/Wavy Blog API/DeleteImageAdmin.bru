@@ -1,0 +1,42 @@
+meta {
+  name: Delete Any Image (Admin Only)
+  type: http
+  seq: 59
+}
+
+delete {
+  url: {{host}}/api/images
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{admin_access_token}}
+}
+
+body:json {
+  {
+    "imagePath": "{{any_image_path}}"
+  }
+}
+
+tests {
+  test("should delete any image as admin", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.message).to.equal("Image deleted successfully.");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should work even for images not owned by admin", function() {
+    // This test assumes the image path belongs to another user
+    // Admin should still be able to delete it
+    expect(res.getStatus()).to.not.equal(403);
+  });
+}

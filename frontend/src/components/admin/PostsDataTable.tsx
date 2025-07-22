@@ -3,13 +3,10 @@
 import * as React from "react";
 import {
   ColumnDef,
-  ColumnFiltersState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -36,7 +33,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
-import { Post } from "@/types";
+import { Post, Category } from "@/types";
 import { usePostMutations } from "@/lib/queries/posts";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -69,9 +66,41 @@ interface PostsDataTableProps {
   isLoading?: boolean;
   isError?: boolean;
   error?: Error | null;
+  filters?: {
+    postName: string;
+    categorySlug: string;
+    pageSize: number;
+    pageIndex: number;
+  };
+  categories?: Category[];
+  categoriesLoading?: boolean;
+  onFiltersChange?: (filters: Partial<{
+    postName: string;
+    categorySlug: string;
+    pageSize: number;
+    pageIndex: number;
+  }>) => void;
+  onSearch?: (postName: string) => void;
+  pagination?: {
+    total: number;
+    pageIndex: number;
+    pageSize: number;
+    onPageChange: (pageIndex: number) => void;
+  };
 }
 
-export default function PostsDataTable({ posts, isLoading = false, isError = false, error }: PostsDataTableProps) {
+export default function PostsDataTable({ 
+  posts, 
+  isLoading = false, 
+  isError = false, 
+  error,
+  filters,
+  categories = [],
+  categoriesLoading = false,
+  onFiltersChange,
+  onSearch,
+  pagination
+}: PostsDataTableProps) {
   const { accessToken } = useAuthStore();
   const { deleteOne, deleteMany } = usePostMutations();
   const adminPosts = React.useMemo(
@@ -80,9 +109,6 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
   );
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -90,6 +116,12 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
   const [selectedPostSlugs, setSelectedPostSlugs] = React.useState<string[]>([]);
   const [showSingleDeleteDialog, setShowSingleDeleteDialog] = React.useState(false);
   const [singleDeletePost, setSingleDeletePost] = React.useState<AdminPost | null>(null);
+  const [searchValue, setSearchValue] = React.useState(filters?.postName || "");
+
+  // Update search value when filters change
+  React.useEffect(() => {
+    setSearchValue(filters?.postName || "");
+  }, [filters?.postName]);
 
   const handleSingleDelete = React.useCallback((post: AdminPost) => {
     setSingleDeletePost(post);
@@ -236,16 +268,15 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
     data: adminPosts,
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    // Remove internal pagination and filtering since we're using external pagination
+    manualPagination: true,
+    manualFiltering: true,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
     },
@@ -290,10 +321,15 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search posts..."
-                value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-                onChange={(event) =>
-                  table.getColumn("title")?.setFilterValue(event.target.value)
-                }
+                value={searchValue}
+                onChange={(event) => {
+                  setSearchValue(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    onSearch?.(event.currentTarget.value);
+                  }
+                }}
                 className="pl-10 pr-4 py-3 border-gray-200 focus:border-pink-500 focus:ring-pink-500"
               />
             </div>
@@ -302,11 +338,22 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
               <option>Published</option>
               <option>Draft</option>
             </select>
-            <select className="px-4 py-3 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-pink-500 bg-white">
-              <option>All Categories</option>
-              <option>Technology</option>
-              <option>Design</option>
-              <option>Business</option>
+            <select 
+              className="px-4 py-3 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-pink-500 bg-white"
+              value={filters?.categorySlug || ""}
+              onChange={(e) => onFiltersChange?.({ categorySlug: e.target.value })}
+              disabled={categoriesLoading}
+            >
+              <option value="">All Categories</option>
+              {categoriesLoading ? (
+                <option disabled>Loading categories...</option>
+              ) : (
+                categories.map((category) => (
+                  <option key={category.slug} value={category.slug}>
+                    {category.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
           
@@ -440,52 +487,114 @@ export default function PostsDataTable({ posts, isLoading = false, isError = fal
         </Table>
       </div>
       {/* Enhanced Pagination */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-700">
-            <span>Showing</span>
-            <select className="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
-            </select>
-            <span>of {table.getFilteredRowModel().rows.length} posts</span>
-            {table.getFilteredSelectedRowModel().rows.length > 0 && (
-              <span className="ml-4 text-pink-600 font-medium">
-                {table.getFilteredSelectedRowModel().rows.length} selected
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              <Button size="sm" className="bg-pink-500 text-white hover:bg-pink-600">1</Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">2</Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">3</Button>
-              <span className="px-2 text-gray-500">...</span>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">12</Button>
+      {pagination && (
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <span>Showing</span>
+              <select 
+                className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+                value={pagination.pageSize}
+                onChange={(e) => onFiltersChange?.({ pageSize: parseInt(e.target.value) })}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              <span>of {pagination.total} posts</span>
+              {table.getFilteredSelectedRowModel().rows.length > 0 && (
+                <span className="ml-4 text-pink-600 font-medium">
+                  {table.getFilteredSelectedRowModel().rows.length} selected
+                </span>
+              )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Next
-            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
+                disabled={pagination.pageIndex <= 1}
+                className="border-gray-300 text-gray-600 hover:bg-gray-100"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {/* Generate page buttons dynamically */}
+                {(() => {
+                  const totalPages = Math.ceil(pagination.total / pagination.pageSize);
+                  const currentPage = pagination.pageIndex;
+                  const pages = [];
+                  
+                  // Show first page
+                  if (totalPages > 0) {
+                    pages.push(
+                      <Button 
+                        key={1}
+                        size="sm" 
+                        onClick={() => pagination.onPageChange(1)}
+                        className={currentPage === 1 ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
+                      >
+                        1
+                      </Button>
+                    );
+                  }
+                  
+                  // Show ellipsis if needed
+                  if (currentPage > 3) {
+                    pages.push(<span key="ellipsis1" className="px-2 text-gray-500">...</span>);
+                  }
+                  
+                  // Show current page and neighbors
+                  for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                    pages.push(
+                      <Button 
+                        key={i}
+                        size="sm" 
+                        onClick={() => pagination.onPageChange(i)}
+                        className={currentPage === i ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
+                      >
+                        {i}
+                      </Button>
+                    );
+                  }
+                  
+                  // Show ellipsis if needed
+                  if (currentPage < totalPages - 2) {
+                    pages.push(<span key="ellipsis2" className="px-2 text-gray-500">...</span>);
+                  }
+                  
+                  // Show last page
+                  if (totalPages > 1) {
+                    pages.push(
+                      <Button 
+                        key={totalPages}
+                        size="sm" 
+                        onClick={() => pagination.onPageChange(totalPages)}
+                        className={currentPage === totalPages ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
+                      >
+                        {totalPages}
+                      </Button>
+                    );
+                  }
+                  
+                  return pages;
+                })()}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
+                disabled={pagination.pageIndex >= Math.ceil(pagination.total / pagination.pageSize)}
+                className="border-gray-300 text-gray-600 hover:bg-gray-100"
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <ConfirmationDialog
         open={showSingleDeleteDialog}

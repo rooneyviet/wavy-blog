@@ -15,11 +15,16 @@ export async function GET(request: NextRequest) {
       apiUrl.searchParams.append("status", status);
     }
     
-    // Pass through pagination parameters
+    // Pass through pagination and filter parameters
     const pageSize = searchParams.get("pageSize");
     const pageIndex = searchParams.get("pageIndex");
+    const postName = searchParams.get("postName");
+    const categorySlug = searchParams.get("categorySlug");
+    
     if (pageSize) apiUrl.searchParams.append("pageSize", pageSize);
     if (pageIndex) apiUrl.searchParams.append("pageIndex", pageIndex);
+    if (postName) apiUrl.searchParams.append("postName", postName);
+    if (categorySlug) apiUrl.searchParams.append("categorySlug", categorySlug);
     
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

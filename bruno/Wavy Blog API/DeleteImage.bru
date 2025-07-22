@@ -1,0 +1,46 @@
+meta {
+  name: Delete Image
+  type: http
+  seq: 54
+}
+
+delete {
+  url: {{host}}/api/images
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "imagePath": "{{imagePath}}"
+  }
+}
+
+tests {
+  test("should delete image successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.message).to.equal("Image deleted successfully.");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should fail with invalid imagePath", function() {
+    // This would be tested separately with invalid path
+    // expect(res.getStatus()).to.equal(403);
+  });
+
+  test("should fail without authentication", function() {
+    // This would be tested separately without auth token
+    // expect(res.getStatus()).to.equal(401);
+  });
+}

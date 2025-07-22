@@ -1,0 +1,73 @@
+meta {
+  name: Get Images
+  type: http
+  seq: 52
+}
+
+get {
+  url: {{host}}/api/images?pageSize=10&pageIndex=1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:query {
+  pageSize: 10
+  pageIndex: 1
+}
+
+tests {
+  test("should get images successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    
+    // Test response structure  
+    expect(data).to.have.property('pageIndex');
+    expect(data).to.have.property('pageSize');
+    expect(data).to.have.property('total');
+    expect(data).to.have.property('images');
+    
+    // Test field types
+    expect(data.images).to.be.an('array');
+    expect(data.total).to.be.a('number');
+    expect(data.pageIndex).to.equal(1); // 1-based indexing
+    expect(data.pageSize).to.equal(10);
+    
+    // Verify no hasMore field
+    expect(data).to.not.have.property('hasMore');
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should return valid image objects", function() {
+    const data = res.getBody();
+    if (data.images.length > 0) {
+      const image = data.images[0];
+      expect(image.id).to.be.a('string');
+      expect(image.name).to.be.a('string');
+      expect(image.originalName).to.be.a('string');
+      expect(image.size).to.be.a('number');
+      expect(image.contentType).to.be.a('string');
+      expect(image.uploadedBy).to.be.a('string');
+      expect(image.uploadedAt).to.be.a('string');
+      expect(image.url).to.be.a('string');
+      expect(image.path).to.be.a('string');
+    }
+  });
+
+  test("should respect pagination parameters", function() {
+    const data = res.getBody();
+    expect(data.images.length).to.be.at.most(10);
+    
+    // Test 1-based pagination  
+    expect(data.pageIndex).to.be.at.least(1);
+  });
+}

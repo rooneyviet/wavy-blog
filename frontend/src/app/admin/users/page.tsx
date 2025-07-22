@@ -74,18 +74,38 @@ function transformUserToAdminUser(user: User): AdminUser {
 export default function ListUsersPage() {
   const { accessToken } = useAuthStore();
   const { deleteOne } = useUserMutations();
+  const [filters, setFilters] = React.useState({
+    username: "",
+    role: "",
+    pageSize: 20,
+    pageIndex: 1,
+  });
 
   const {
-    data: users = [],
+    data: usersResponse,
     isLoading,
     isError,
     error,
-  } = useQuery(userQueries.list(accessToken || ""));
+  } = useQuery(userQueries.list(accessToken || "", filters));
+
+  const users = usersResponse?.users || [];
+  const total = usersResponse?.total || 0;
+  const currentPageIndex = usersResponse?.pageIndex || 1;
+  const currentPageSize = usersResponse?.pageSize || 20;
 
   const adminUsers = React.useMemo(
     () => users.map(transformUserToAdminUser),
     [users]
   );
+
+  const handleFiltersChange = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters, pageIndex: 1 })); // Reset to page 1 when filters change
+  };
+
+  const handlePageChange = (pageIndex: number) => {
+    setFilters(prev => ({ ...prev, pageIndex }));
+  };
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -250,16 +270,15 @@ export default function ListUsersPage() {
     data: adminUsers,
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    // Remove internal pagination and filtering since we're using external pagination
+    manualPagination: true,
+    manualFiltering: true,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
     },
@@ -464,12 +483,17 @@ export default function ListUsersPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-700">
             <span>Showing</span>
-            <select className="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
-              <option>10</option>
-              <option>25</option>
-              <option>50</option>
+            <select 
+              className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+              value={currentPageSize}
+              onChange={(e) => handleFiltersChange({ pageSize: parseInt(e.target.value) })}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
             </select>
-            <span>of {table.getFilteredRowModel().rows.length} users</span>
+            <span>of {total} users</span>
             {table.getFilteredSelectedRowModel().rows.length > 0 && (
               <span className="ml-4 text-pink-600 font-medium">
                 {table.getFilteredSelectedRowModel().rows.length} selected
@@ -481,32 +505,79 @@ export default function ListUsersPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => handlePageChange(currentPageIndex - 1)}
+              disabled={currentPageIndex <= 1}
               className="border-gray-300 text-gray-600 hover:bg-gray-100"
             >
               Previous
             </Button>
             <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                className="bg-pink-500 text-white hover:bg-pink-600"
-              >
-                1
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:bg-gray-100"
-              >
-                2
-              </Button>
+              {/* Generate page buttons dynamically */}
+              {(() => {
+                const totalPages = Math.ceil(total / currentPageSize);
+                const currentPage = currentPageIndex;
+                const pages = [];
+                
+                // Show first page
+                if (totalPages > 0) {
+                  pages.push(
+                    <Button 
+                      key={1}
+                      size="sm" 
+                      onClick={() => handlePageChange(1)}
+                      className={currentPage === 1 ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
+                    >
+                      1
+                    </Button>
+                  );
+                }
+                
+                // Show ellipsis if needed
+                if (currentPage > 3) {
+                  pages.push(<span key="ellipsis1" className="px-2 text-gray-500">...</span>);
+                }
+                
+                // Show current page and neighbors
+                for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                  pages.push(
+                    <Button 
+                      key={i}
+                      size="sm" 
+                      onClick={() => handlePageChange(i)}
+                      className={currentPage === i ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
+                    >
+                      {i}
+                    </Button>
+                  );
+                }
+                
+                // Show ellipsis if needed
+                if (currentPage < totalPages - 2) {
+                  pages.push(<span key="ellipsis2" className="px-2 text-gray-500">...</span>);
+                }
+                
+                // Show last page
+                if (totalPages > 1) {
+                  pages.push(
+                    <Button 
+                      key={totalPages}
+                      size="sm" 
+                      onClick={() => handlePageChange(totalPages)}
+                      className={currentPage === totalPages ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
+                    >
+                      {totalPages}
+                    </Button>
+                  );
+                }
+                
+                return pages;
+              })()}
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => handlePageChange(currentPageIndex + 1)}
+              disabled={currentPageIndex >= Math.ceil(total / currentPageSize)}
               className="border-gray-300 text-gray-600 hover:bg-gray-100"
             >
               Next

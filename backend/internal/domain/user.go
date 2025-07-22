@@ -10,6 +10,7 @@ type User struct {
 	Email                 string    `json:"email" dynamodbav:"Email"`
 	PasswordHash          string    `json:"-" dynamodbav:"PasswordHash"`
 	Role                  string    `json:"role" dynamodbav:"Role"`
+	AvatarURL             string    `json:"avatarURL" dynamodbav:"AvatarURL"`
 	RefreshToken          string    `json:"-" dynamodbav:"RefreshToken"`
 	RefreshTokenExpiresAt time.Time `json:"-" dynamodbav:"RefreshTokenExpiresAt"`
 	CreatedAt             time.Time `json:"createdAt" dynamodbav:"CreatedAt"`

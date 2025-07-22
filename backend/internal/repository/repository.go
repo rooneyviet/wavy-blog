@@ -13,6 +13,7 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, userID string) (*domain.User, error)
 	GetUserByRefreshToken(ctx context.Context, refreshToken string) (*domain.User, error)
 	GetAllUsers(ctx context.Context) ([]*domain.User, error)
+	GetAllUsersPaginated(ctx context.Context, pageSize int, pageIndex int) ([]*domain.User, int, error)
 	UpdateUser(ctx context.Context, user *domain.User) error
 	UpdateUserRefreshToken(ctx context.Context, userID string, refreshToken string, expiresAt time.Time) error
 	DeleteUser(ctx context.Context, userID string) error
@@ -22,7 +23,7 @@ type PostRepository interface {
 	CreatePost(ctx context.Context, post *domain.Post) error
 	GetPostBySlug(ctx context.Context, slug string) (*domain.Post, error)
 	GetPostsByUser(ctx context.Context, username string, postName *string) ([]*domain.Post, error)
-	GetAllPosts(ctx context.Context, postName *string, pageSize int, pageIndex int) ([]*domain.Post, bool, error)
+	GetAllPosts(ctx context.Context, postName *string, categorySlug *string, pageSize int, pageIndex int) ([]*domain.Post, int, error)
 	GetPostsByCategory(ctx context.Context, categorySlug string) ([]*domain.Post, error)
 	UpdatePost(ctx context.Context, oldSlug string, post *domain.Post) error
 	DeletePost(ctx context.Context, slug string) error

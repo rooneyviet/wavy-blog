@@ -346,6 +346,98 @@ func (r *DynamoDBRepo) GetAllUsers(ctx context.Context) ([]*domain.User, error) 
 	return users, nil
 }
 
+func (r *DynamoDBRepo) GetAllUsersPaginated(ctx context.Context, pageSize int, pageIndex int) ([]*domain.User, int, error) {
+	keyCondExpr := "EntityType = :type"
+	exprAttrVals := map[string]types.AttributeValue{
+		":type": &types.AttributeValueMemberS{Value: "USER"},
+	}
+
+	// First, count total users (for pagination info)
+	countQueryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(r.TableName),
+		IndexName:                 aws.String(GSI3),
+		KeyConditionExpression:    aws.String(keyCondExpr),
+		ExpressionAttributeValues: exprAttrVals,
+		Select:                    types.SelectCount,
+	}
+
+	// Count total matching users
+	totalCount := 0
+	var countLastEvaluatedKey map[string]types.AttributeValue
+	
+	for {
+		if countLastEvaluatedKey != nil {
+			countQueryInput.ExclusiveStartKey = countLastEvaluatedKey
+		}
+
+		countResult, err := r.Client.Query(ctx, countQueryInput)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to count users: %w", err)
+		}
+
+		totalCount += int(countResult.Count)
+		
+		if countResult.LastEvaluatedKey == nil {
+			break
+		}
+		countLastEvaluatedKey = countResult.LastEvaluatedKey
+	}
+
+	// Now get the actual users for this page
+	queryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(r.TableName),
+		IndexName:                 aws.String(GSI3),
+		KeyConditionExpression:    aws.String(keyCondExpr),
+		ExpressionAttributeValues: exprAttrVals,
+		Limit:                     aws.Int32(int32(pageSize)),
+		ScanIndexForward:          aws.Bool(false), // Sort descending (newest first)
+	}
+
+	// For pageIndex > 0, we need to skip previous pages
+	var allUsers []*domain.User
+	var lastEvaluatedKey map[string]types.AttributeValue
+	itemsToSkip := pageIndex * pageSize
+	itemsSkipped := 0
+
+	for {
+		if lastEvaluatedKey != nil {
+			queryInput.ExclusiveStartKey = lastEvaluatedKey
+		}
+
+		result, err := r.Client.Query(ctx, queryInput)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to query users: %w", err)
+		}
+
+		var currentBatch []*domain.User
+		err = attributevalue.UnmarshalListOfMaps(result.Items, &currentBatch)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to unmarshal users: %w", err)
+		}
+
+		// Apply skipping logic for pagination
+		for _, user := range currentBatch {
+			if itemsSkipped < itemsToSkip {
+				itemsSkipped++
+				continue
+			}
+			allUsers = append(allUsers, user)
+			if len(allUsers) >= pageSize {
+				break
+			}
+		}
+
+		// If we have enough users or no more data, break
+		if len(allUsers) >= pageSize || result.LastEvaluatedKey == nil {
+			break
+		}
+
+		lastEvaluatedKey = result.LastEvaluatedKey
+	}
+
+	return allUsers, totalCount, nil
+}
+
 func (r *DynamoDBRepo) SlugExists(ctx context.Context, slug string) (bool, error) {
 	result, err := r.Client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
@@ -443,75 +535,110 @@ func (r *DynamoDBRepo) GetPostBySlug(ctx context.Context, slug string) (*domain.
 	return &post, nil
 }
 
-func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string, pageSize int, pageIndex int) ([]*domain.Post, bool, error) {
-	keyCondExpr := "EntityType = :type"
-	exprAttrVals := map[string]types.AttributeValue{
-		":type": &types.AttributeValueMemberS{Value: "POST"},
+func (r *DynamoDBRepo) GetAllPosts(ctx context.Context, postName *string, categorySlug *string, pageSize int, pageIndex int) ([]*domain.Post, int, error) {
+	var keyCondExpr string
+	var indexName string
+	exprAttrVals := make(map[string]types.AttributeValue)
+
+	// Determine which index to use based on categorySlug
+	if categorySlug != nil && *categorySlug != "" {
+		keyCondExpr = "GSI2PK = :pk"
+		indexName = GSI2
+		exprAttrVals[":pk"] = &types.AttributeValueMemberS{Value: "POSTS_BY_CAT#" + *categorySlug}
+	} else {
+		keyCondExpr = "EntityType = :type"
+		indexName = GSI3
+		exprAttrVals[":type"] = &types.AttributeValueMemberS{Value: "POST"}
 	}
 
-	queryInput := &dynamodb.QueryInput{
-		TableName:              aws.String(r.TableName),
-		IndexName:              aws.String(GSI3),
-		KeyConditionExpression: aws.String(keyCondExpr),
-		ExpressionAttributeValues: exprAttrVals,
-		Limit:                  aws.Int32(int32(pageSize + 1)), // Fetch one extra to check if there's a next page
-	}
-
+	// Add postName filter if provided
+	var filterExpression *string
 	if postName != nil && *postName != "" {
-		queryInput.FilterExpression = aws.String("contains(Title, :title)")
+		filterExpr := "contains(Title, :title)"
+		filterExpression = &filterExpr
 		exprAttrVals[":title"] = &types.AttributeValueMemberS{Value: *postName}
 	}
 
-	// For pageIndex > 0, we need to skip previous pages
-	// This is inefficient for large pageIndex values, but works for basic pagination
+	// First, count total posts (for pagination info)
+	countQueryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(r.TableName),
+		IndexName:                 aws.String(indexName),
+		KeyConditionExpression:    aws.String(keyCondExpr),
+		ExpressionAttributeValues: exprAttrVals,
+		Select:                    types.SelectCount,
+	}
+	if filterExpression != nil {
+		countQueryInput.FilterExpression = filterExpression
+	}
+
+	totalCount := 0
+	var countLastEvaluatedKey map[string]types.AttributeValue
+	for {
+		if countLastEvaluatedKey != nil {
+			countQueryInput.ExclusiveStartKey = countLastEvaluatedKey
+		}
+		countResult, err := r.Client.Query(ctx, countQueryInput)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to count posts: %w", err)
+		}
+		totalCount += int(countResult.Count)
+		if countResult.LastEvaluatedKey == nil {
+			break
+		}
+		countLastEvaluatedKey = countResult.LastEvaluatedKey
+	}
+
+	// Now get the actual posts for this page
+	queryInput := &dynamodb.QueryInput{
+		TableName:                 aws.String(r.TableName),
+		IndexName:                 aws.String(indexName),
+		KeyConditionExpression:    aws.String(keyCondExpr),
+		ExpressionAttributeValues: exprAttrVals,
+		ScanIndexForward:          aws.Bool(false), // Sort descending (newest first)
+	}
+	if filterExpression != nil {
+		queryInput.FilterExpression = filterExpression
+	}
+
 	var allPosts []*domain.Post
 	var lastEvaluatedKey map[string]types.AttributeValue
-	itemsToSkip := pageIndex * pageSize
-	itemsSkipped := 0
+	currentPage := 0
 
-	for {
+	// Paginate through results until we reach the desired page
+	for currentPage <= pageIndex {
+		// Set the limit to pageSize for the target page
+		if currentPage == pageIndex {
+			queryInput.Limit = aws.Int32(int32(pageSize))
+		} else {
+			// For previous pages, we can fetch just the keys to be more efficient
+			// but for simplicity, we fetch full items and discard
+			queryInput.Limit = aws.Int32(int32(pageSize))
+		}
+
 		if lastEvaluatedKey != nil {
 			queryInput.ExclusiveStartKey = lastEvaluatedKey
 		}
 
 		result, err := r.Client.Query(ctx, queryInput)
 		if err != nil {
-			return nil, false, fmt.Errorf("failed to query all posts: %w", err)
+			return nil, 0, fmt.Errorf("failed to query posts for page %d: %w", currentPage, err)
 		}
 
-		var currentBatch []*domain.Post
-		err = attributevalue.UnmarshalListOfMaps(result.Items, &currentBatch)
-		if err != nil {
-			return nil, false, fmt.Errorf("failed to unmarshal posts: %w", err)
-		}
-
-		// Apply filtering and skipping logic
-		for _, post := range currentBatch {
-			if itemsSkipped < itemsToSkip {
-				itemsSkipped++
-				continue
-			}
-			allPosts = append(allPosts, post)
-			if len(allPosts) >= pageSize+1 { // We fetched one extra to check hasNextPage
-				break
+		if currentPage == pageIndex {
+			err = attributevalue.UnmarshalListOfMaps(result.Items, &allPosts)
+			if err != nil {
+				return nil, 0, fmt.Errorf("failed to unmarshal posts: %w", err)
 			}
 		}
 
-		// If we have enough posts or no more data, break
-		if len(allPosts) >= pageSize+1 || result.LastEvaluatedKey == nil {
-			break
+		if result.LastEvaluatedKey == nil {
+			break // No more pages
 		}
-
 		lastEvaluatedKey = result.LastEvaluatedKey
+		currentPage++
 	}
 
-	// Determine if there's a next page
-	hasNextPage := len(allPosts) > pageSize
-	if hasNextPage {
-		allPosts = allPosts[:pageSize] // Remove the extra item
-	}
-
-	return allPosts, hasNextPage, nil
+	return allPosts, totalCount, nil
 }
 
 func (r *DynamoDBRepo) GetPostsByUser(ctx context.Context, username string, postName *string) ([]*domain.Post, error) {

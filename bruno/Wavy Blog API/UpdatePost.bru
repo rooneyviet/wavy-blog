@@ -42,6 +42,11 @@ tests {
     expect(data.authorID).to.be.a('string');
     expect(data.createdAt).to.be.a('string');
     expect(data.updatedAt).to.be.a('string');
+    
+    // Check thumbnail URL is returned and matches what was sent
+    expect(data).to.have.property('thumbnailURL');
+    expect(data.thumbnailURL).to.be.a('string');
+    expect(data.thumbnailURL).to.equal('http://example.com/updated-thumbnail.jpg');
   });
 
   test("should have correct headers", function() {

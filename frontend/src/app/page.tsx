@@ -64,9 +64,20 @@ const popularArticlesData: Pick<
   },
 ];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const queryClient = getQueryClient();
-  await queryClient.prefetchQuery(postQueries.list(undefined, undefined, "published"));
+
+  const params = await searchParams;
+  const pageIndex = parseInt(String(params.pageIndex ?? "1"), undefined);
+  const pageSize = parseInt(String(params.pageSize ?? "20"), undefined);
+
+  await queryClient.prefetchQuery(
+    postQueries.list(pageSize, pageIndex, "published")
+  );
   const dehydratedState = dehydrate(queryClient);
 
   return (

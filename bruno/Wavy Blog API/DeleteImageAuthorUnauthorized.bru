@@ -1,0 +1,42 @@
+meta {
+  name: Delete Other User Image (Author - Should Fail)
+  type: http
+  seq: 61
+}
+
+delete {
+  url: {{host}}/api/images
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "imagePath": "admin@example.com/some-admin-image-id-filename.jpg"
+  }
+}
+
+tests {
+  test("should fail to delete other user's image as author", function() {
+    expect(res.getStatus()).to.equal(403);
+    const data = res.getBody();
+    expect(data.message).to.include("unauthorized") || expect(data.message).to.include("not authorized");
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should return proper error message", function() {
+    const data = res.getBody();
+    expect(data.message).to.be.a('string');
+    expect(data.message.toLowerCase()).to.include("authorized");
+  });
+}

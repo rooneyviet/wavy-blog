@@ -58,7 +58,7 @@ All API endpoints are prefixed with `/api`
 | **URL**              | `/api/users/:username`                                          |
 | **Authentication**   | Required (Bearer token)                                         |
 | **Path Parameters**  | `username`: string                                              |
-| **Success Response** | 200: User object with userID, username, email, role, timestamps |
+| **Success Response** | 200: User object with userID, username, email, role, avatarURL, timestamps |
 | **Error Responses**  | 401: Unauthorized, 404: User not found                          |
 
 ### Update User
@@ -70,7 +70,8 @@ All API endpoints are prefixed with `/api`
 | **Authentication**   | Required (Bearer token)                                                                    |
 | **Authorization**    | User can update own profile, admin can update any user                                     |
 | **Path Parameters**  | `username`: string                                                                         |
-| **Request Body**     | `{"username": "string?", "email": "string?", "role": "string?"}`                           |
+| **Request Body**     | `{"username": "string?", "email": "string?", "role": "string?", "avatarURL": "string?"}`   |
+| **Validation**       | role: only admin can update, avatarURL: optional URL string                                |
 | **Success Response** | 200: `{"message": "User account updated successfully."}`                                   |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden, 404: Not found, 500: Server error |
 
@@ -89,14 +90,16 @@ All API endpoints are prefixed with `/api`
 
 ### Get All Users (Admin Only)
 
-| Field                | Value                                                            |
-| -------------------- | ---------------------------------------------------------------- |
-| **Method**           | GET                                                              |
-| **URL**              | `/api/users`                                                     |
-| **Authentication**   | Required (Bearer token)                                          |
-| **Authorization**    | Admin role required                                              |
-| **Success Response** | 200: Array of user objects                                       |
-| **Error Responses**  | 401: Unauthorized, 403: Forbidden (not admin), 500: Server error |
+| Field                | Value                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                               |
+| **URL**              | `/api/users`                                                                                      |
+| **Authentication**   | Required (Bearer token)                                                                           |
+| **Authorization**    | Admin role required                                                                               |
+| **Query Parameters** | `pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1) |
+| **Success Response** | 200: Paginated response object (see below)                                                        |
+| **Error Responses**  | 400: Invalid pagination parameters, 401: Unauthorized, 403: Forbidden (not admin), 500: Server error |
+
 
 ## Post Management APIs
 
@@ -130,7 +133,7 @@ All API endpoints are prefixed with `/api`
 | **Method**           | GET                                                                                                                                                                    |
 | **URL**              | `/api/posts`                                                                                                                                                           |
 | **Authentication**   | Not required                                                                                                                                                           |
-| **Query Parameters** | `postName`: string (optional, for filtering)<br>`pageSize`: integer (optional, 1-100, default: 10)<br>`pageIndex`: integer (optional, 0-based page number, default: 0) |
+| **Query Parameters** | `postName`: string (optional, for filtering)<br>`categorySlug`: string (optional, for filtering by category)<br>`pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1) |
 | **Success Response** | 200: Paginated response object (see below)                                                                                                                             |
 | **Error Responses**  | 400: Invalid pagination parameters, 500: Server error                                                                                                                  |
 
@@ -171,6 +174,7 @@ All API endpoints are prefixed with `/api`
 | **Validation**       | slugs: required array with minimum 1 item                                                                        |
 | **Success Response** | 200: `{"message": "Posts deleted successfully"}`                                                                 |
 | **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden for any post, 404: Any post not found, 500: Server error |
+
 
 ## Category Management APIs
 
@@ -246,6 +250,59 @@ All API endpoints are prefixed with `/api`
 | **Success Response** | 200: `{"message": "Categories deleted successfully"}`                                                                       |
 | **Error Responses**  | 400: Invalid payload or constraints violated, 401: Unauthorized, 403: Forbidden, 404: Category not found, 500: Server error |
 
+## Image Management APIs
+
+### Upload Image
+
+| Field                | Value                                                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | POST                                                                                                                                |
+| **URL**              | `/api/images/upload`                                                                                                                |
+| **Authentication**   | Required (Bearer token)                                                                                                             |
+| **Authorization**    | Admin or Author role required                                                                                                       |
+| **Content Type**     | `multipart/form-data`                                                                                                               |
+| **Request Body**     | Form field `image`: File (JPEG, PNG, GIF, WebP)                                                                                     |
+| **File Constraints** | Max size: 10MB, Allowed types: JPEG, PNG, GIF, WebP                                                                                |
+| **Success Response** | 201: Image metadata object (see Image Object schema)                                                                                |
+| **Error Responses**  | 400: Invalid file type/size or payload, 401: Unauthorized, 403: Forbidden (wrong role), 500: Server error                          |
+
+### Get Images (Paginated)
+
+| Field                | Value                                                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                                                                 |
+| **URL**              | `/api/images`                                                                                                                       |
+| **Authentication**   | Required (Bearer token)                                                                                                             |
+| **Authorization**    | Admin or Author role required<br>**Admin**: Can see all images from all users<br>**Author**: Can only see their own uploaded images |
+| **Query Parameters** | `pageSize`: integer (optional, 1-100, default: 20)<br>`pageIndex`: integer (optional, 1-based page number, default: 1)            |
+| **Success Response** | 200: Paginated images response object (see Paginated Images Response schema)                                                        |
+| **Error Responses**  | 400: Invalid pagination parameters, 401: Unauthorized, 403: Forbidden (wrong role), 500: Server error                              |
+
+### Delete Image
+
+| Field                | Value                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Method**           | DELETE                                                                                                            |
+| **URL**              | `/api/images`                                                                                                     |
+| **Authentication**   | Required (Bearer token)                                                                                           |
+| **Authorization**    | Admin or Author role required<br>**Admin**: Can delete any image<br>**Author**: Can only delete their own images |
+| **Request Body**     | `{"imagePath": "string"}`                                                                                         |
+| **Validation**       | imagePath: required                                                                                               |
+| **Success Response** | 200: `{"message": "Image deleted successfully."}`                                                                 |
+| **Error Responses**  | 400: Invalid payload, 401: Unauthorized, 403: Forbidden (wrong role or not own image), 500: Server error          |
+
+### Get Image URL
+
+| Field                | Value                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Method**           | GET                                                                                                               |
+| **URL**              | `/api/images/url`                                                                                                 |
+| **Authentication**   | Required (Bearer token)                                                                                           |
+| **Authorization**    | Admin or Author role required, can only access own images                                                         |
+| **Query Parameters** | `imagePath`: string (required, path to the image)                                                                 |
+| **Success Response** | 200: `{"url": "string"}` (presigned URL valid for 1 hour)                                                         |
+| **Error Responses**  | 400: Missing imagePath parameter, 401: Unauthorized, 403: Forbidden (wrong role or not own image), 500: Server error |
+
 ## Response Schemas
 
 ### User Object
@@ -256,6 +313,7 @@ All API endpoints are prefixed with `/api`
   "username": "string",
   "email": "string",
   "role": "string",
+  "avatarURL": "string",
   "createdAt": "timestamp",
   "updatedAt": "timestamp"
 }
@@ -282,6 +340,9 @@ All API endpoints are prefixed with `/api`
 
 ```json
 {
+  "pageIndex": 1,
+  "pageSize": 20,
+  "total": 100,
   "posts": [
     {
       "slug": "string",
@@ -295,10 +356,28 @@ All API endpoints are prefixed with `/api`
       "createdAt": "timestamp",
       "updatedAt": "timestamp"
     }
-  ],
-  "pageSize": 10,
-  "pageIndex": 0,
-  "hasNextPage": true
+  ]
+}
+```
+
+### Paginated Users Response
+
+```json
+{
+  "pageIndex": 1,
+  "pageSize": 20,
+  "total": 50,
+  "users": [
+    {
+      "userID": "string",
+      "username": "string",
+      "email": "string",
+      "role": "string",
+      "avatarURL": "string",
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp"
+    }
+  ]
 }
 ```
 
@@ -311,6 +390,63 @@ All API endpoints are prefixed with `/api`
   "description": "string",
   "created_at": "timestamp",
   "updated_at": "timestamp"
+}
+```
+
+### Image Object
+
+```json
+{
+  "id": "string",
+  "name": "string",
+  "originalName": "string",
+  "size": "number",
+  "contentType": "string",
+  "uploadedBy": "string",
+  "uploadedAt": "timestamp",
+  "url": "string",
+  "path": "string"
+}
+```
+
+### Paginated Images Response
+
+```json
+{
+  "pageIndex": 1,
+  "pageSize": 20,
+  "total": 50,
+  "images": [
+    {
+      "id": "string",
+      "name": "string",
+      "originalName": "string",
+      "size": "number",
+      "contentType": "string",
+      "uploadedBy": "string",
+      "uploadedAt": "timestamp",
+      "url": "string",
+      "path": "string"
+    }
+  ]
+}
+```
+
+### Upload Image Response
+
+```json
+{
+  "image": {
+    "id": "string",
+    "name": "string",
+    "originalName": "string",
+    "size": "number",
+    "contentType": "string",
+    "uploadedBy": "string",
+    "uploadedAt": "timestamp",
+    "url": "string",
+    "path": "string"
+  }
 }
 ```
 
@@ -335,8 +471,8 @@ All API endpoints are prefixed with `/api`
 | **Timestamp** | Date/time               | ISO 8601 format strings                  |
 | **UUID**      | User identifier         | String format                            |
 | **Role**      | User permission level   | "author" (default) or "admin"            |
-| **PageSize**  | Pagination limit        | Integer 1-100, defaults to 10            |
-| **PageIndex** | Current page number     | Integer ≥0, 0-based, defaults to 0       |
+| **PageSize**  | Pagination limit        | Integer 1-100, defaults to 20            |
+| **PageIndex** | Current page number     | Integer ≥1, 1-based, defaults to 1       |
 
 ## Authorization Rules
 

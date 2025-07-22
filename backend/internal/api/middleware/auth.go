@@ -62,6 +62,7 @@ func AuthMiddleware(repo repository.UserRepository, secretKey string) gin.Handle
 
 		c.Set("userID", user.UserID)
 		c.Set("username", user.Username)
+		c.Set("email", user.Email)
 		c.Set("role", user.Role)
 		c.Next()
 	}
@@ -72,6 +73,18 @@ func AdminMiddleware() gin.HandlerFunc {
 		role := c.GetString("role")
 		if role != "admin" {
 			handlers.Forbidden(c, "You must be an administrator to perform this action.")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
+func AdminOrAuthorMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role := c.GetString("role")
+		if role != "admin" && role != "author" {
+			handlers.Forbidden(c, "Only admin and author users can perform this action.")
 			c.Abort()
 			return
 		}

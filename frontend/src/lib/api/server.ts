@@ -77,7 +77,7 @@ async function fetchFromServerWithCookies<T>(
   console.log(`[API] Making request to: ${url}`);
   console.log(`[API] Cookie header being sent: ${cookieHeader}`);
   console.log(`[API] Request options:`, JSON.stringify(options, null, 2));
-  
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -88,11 +88,7 @@ async function fetchFromServerWithCookies<T>(
       },
     });
 
-    console.log(`[API] Response status: ${response.status} ${response.statusText}`);
-    console.log(`[API] Response headers:`, Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
-      console.error(`[API] API Error: ${response.status} ${response.statusText}`);
       const errorBody = await response.json().catch(() => ({}));
       console.error(`[API] Error body:`, errorBody);
       const error = new Error(
@@ -119,9 +115,10 @@ export const api = {
   ): Promise<PaginatedPostsResponse> => {
     const params = new URLSearchParams();
     if (pageSize) params.append("pageSize", pageSize.toString());
-    if (pageIndex !== undefined)
-      params.append("pageIndex", pageIndex.toString());
+    // pageIndex is 1-based now - use 1 as default instead of undefined
+    if (pageIndex) params.append("pageIndex", pageIndex.toString());
     if (status) params.append("status", status);
+    console.log("params", params);
 
     const query = params.toString();
     return fetchFromServer(`/posts${query ? `?${query}` : ""}`);

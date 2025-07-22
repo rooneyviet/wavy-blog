@@ -15,7 +15,25 @@ export async function GET(request: NextRequest) {
 
     const accessToken = authHeader.substring(7); // Remove "Bearer " prefix
     
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    // Extract query parameters
+    const { searchParams } = new URL(request.url);
+    const username = searchParams.get("username");
+    const role = searchParams.get("role");
+    const pageSize = searchParams.get("pageSize");
+    const pageIndex = searchParams.get("pageIndex");
+
+    // Build query parameters for backend API
+    const params = new URLSearchParams();
+    if (username) params.append("username", username);
+    if (role) params.append("role", role);
+    if (pageSize) params.append("pageSize", pageSize);
+    if (pageIndex) params.append("pageIndex", pageIndex);
+
+    const url = params.toString() 
+      ? `${API_BASE_URL}/api/users?${params.toString()}` 
+      : `${API_BASE_URL}/api/users`;
+    
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

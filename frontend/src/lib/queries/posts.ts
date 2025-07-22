@@ -18,9 +18,32 @@ export const postKeys = {
 };
 
 const fetchPostsAdmin = async (
-  accessToken: string
-): Promise<{ posts: Post[] }> => {
-  const response = await fetch("/api/posts", {
+  accessToken: string,
+  options: {
+    postName?: string;
+    categorySlug?: string;
+    pageSize?: number;
+    pageIndex?: number;
+  } = {}
+): Promise<{
+  posts: Post[];
+  total: number;
+  pageIndex: number;
+  pageSize: number;
+}> => {
+  const params = new URLSearchParams();
+  if (options.postName && options.postName !== "")
+    params.append("postName", options.postName);
+  if (options.categorySlug && options.categorySlug !== "")
+    params.append("categorySlug", options.categorySlug);
+  if (options.pageSize) params.append("pageSize", options.pageSize.toString());
+  if (options.pageIndex)
+    params.append("pageIndex", options.pageIndex.toString());
+  console.log("AHAHHAHAAAAA", params.toString());
+  const url = params.toString()
+    ? `/api/posts?${params.toString()}`
+    : "/api/posts";
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -128,7 +151,7 @@ export const postQueries = {
   list: (pageSize?: number, pageIndex?: number, status?: string) =>
     queryOptions({
       queryKey: postKeys.list(
-        `page-${pageIndex || 0}-size-${pageSize || 10}-status-${status || "all"}`
+        `page-${pageIndex || 1}-size-${pageSize || 20}-status-${status || "all"}`
       ),
       queryFn: () => api.getPosts(pageSize, pageIndex, status),
     }),
@@ -151,10 +174,18 @@ export const postQueries = {
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
   // Add other post-related queries here
-  admin: (accessToken: string) =>
+  admin: (
+    accessToken: string,
+    options: {
+      postName?: string;
+      categorySlug?: string;
+      pageSize?: number;
+      pageIndex?: number;
+    } = {}
+  ) =>
     queryOptions({
-      queryKey: postKeys.admin(),
-      queryFn: () => fetchPostsAdmin(accessToken),
+      queryKey: [...postKeys.admin(), options],
+      queryFn: () => fetchPostsAdmin(accessToken, options),
     }),
 };
 

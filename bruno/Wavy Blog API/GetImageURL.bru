@@ -1,0 +1,46 @@
+meta {
+  name: Get Image URL
+  type: http
+  seq: 53
+}
+
+get {
+  url: {{host}}/api/images/url?imagePath={{imagePath}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+params:query {
+  imagePath: {{imagePath}}
+}
+
+tests {
+  test("should get image URL successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+    const data = res.getBody();
+    expect(data.url).to.be.a('string');
+    expect(data.url).to.match(/^https?:\/\//);
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+
+  test("should return presigned URL with expiration", function() {
+    const data = res.getBody();
+    // Presigned URLs should contain signature parameters
+    expect(data.url).to.include("X-Amz-");
+  });
+
+  test("should fail with missing imagePath", function() {
+    // This would be tested separately without imagePath parameter
+    // expect(res.getStatus()).to.equal(400);
+  });
+}

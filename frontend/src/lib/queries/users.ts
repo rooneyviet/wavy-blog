@@ -1,15 +1,31 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User } from "@/types";
+import { User, PaginatedUsersResponse } from "@/types";
 import { handleUnauthorizedResponse } from "@/lib/utils/auth";
 import { toast } from "sonner";
 
 export const userKeys = {
   all: ["users"] as const,
   lists: () => [...userKeys.all, "list"] as const,
+  list: (filters: string) => [...userKeys.lists(), { filters }] as const,
 };
 
-const fetchUsers = async (accessToken: string): Promise<User[]> => {
-  const response = await fetch("/api/users", {
+const fetchUsers = async (
+  accessToken: string,
+  options: {
+    username?: string;
+    role?: string;
+    pageSize?: number;
+    pageIndex?: number;
+  } = {}
+): Promise<PaginatedUsersResponse> => {
+  const params = new URLSearchParams();
+  if (options.username) params.append("username", options.username);
+  if (options.role) params.append("role", options.role);
+  if (options.pageSize) params.append("pageSize", options.pageSize.toString());
+  if (options.pageIndex) params.append("pageIndex", options.pageIndex.toString());
+
+  const url = params.toString() ? `/api/users?${params.toString()}` : "/api/users";
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -47,10 +63,17 @@ const deleteUser = async (username: string, accessToken: string): Promise<void> 
 };
 
 export const userQueries = {
-  list: (accessToken: string) =>
+  list: (accessToken: string, options: {
+    username?: string;
+    role?: string;
+    pageSize?: number;
+    pageIndex?: number;
+  } = {}) =>
     queryOptions({
-      queryKey: userKeys.lists(),
-      queryFn: () => fetchUsers(accessToken),
+      queryKey: userKeys.list(
+        `page-${options.pageIndex || 1}-size-${options.pageSize || 20}-username-${options.username || ""}-role-${options.role || ""}`
+      ),
+      queryFn: () => fetchUsers(accessToken, options),
       //enabled: !!accessToken,
     }),
 };

@@ -9,13 +9,13 @@ import DataPagination from "@/components/ui/DataPagination";
 
 export default function PostList() {
   const searchParams = useSearchParams();
-  
-  // Get values directly from URL params (URL is 1-based, convert to 0-based for backend)
-  const urlPage = parseInt(searchParams.get('page') || '1'); // Default to page 1 in URL
-  const pageIndex = urlPage - 1; // Convert to 0-based for backend
-  const pageSize = parseInt(searchParams.get('pageSize') || '10');
 
-  const { data: response } = useQuery(postQueries.list(pageSize, pageIndex, "published"));
+  const pageIndex = parseInt(searchParams.get("pageIndex") || "1");
+  const pageSize = parseInt(searchParams.get("pageSize") || "20");
+
+  const { data: response } = useQuery(
+    postQueries.list(pageSize, pageIndex, "published")
+  );
 
   if (!response) {
     // This should ideally not be reached if using Suspense, but as a fallback
@@ -28,14 +28,19 @@ export default function PostList() {
     );
   }
 
-  const { posts, pageSize: responsePageSize, pageIndex: responsePageIndex, hasNextPage } = response;
+  const {
+    posts,
+    pageSize: responsePageSize,
+    pageIndex: responsePageIndex,
+    total,
+  } = response;
 
   // Transform the response to match the generic pagination interface
   const paginationData = {
     items: posts,
     pageSize: responsePageSize,
     pageIndex: responsePageIndex,
-    hasNextPage,
+    total,
   };
 
   return (
@@ -49,11 +54,8 @@ export default function PostList() {
               isFeatured={index % 2 === 0}
             />
           ))}
-          
-          <DataPagination<Post> 
-            data={paginationData} 
-            className="mt-8" 
-          />
+
+          <DataPagination<Post> data={paginationData} className="mt-8" />
         </>
       ) : (
         <div className="text-center py-12">

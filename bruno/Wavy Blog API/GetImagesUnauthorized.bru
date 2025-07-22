@@ -1,0 +1,27 @@
+meta {
+  name: Get Images Unauthorized
+  type: http
+  seq: 56
+}
+
+get {
+  url: {{host}}/api/images
+  body: none
+  auth: none
+}
+
+tests {
+  test("should fail without authentication", function() {
+    expect(res.getStatus()).to.equal(401);
+    const data = res.getBody();
+    const message = data.message.toLowerCase();
+    expect(message.includes("unauthorized") || message.includes("authentication")).to.be.true;
+  });
+
+  test("should have correct headers", function() {
+    const contentType = res.getHeader("Content-Type") || res.getHeader("content-type");
+    if (contentType) {
+      expect(contentType).to.include("application/json");
+    }
+  });
+}

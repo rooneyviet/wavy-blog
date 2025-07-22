@@ -12,16 +12,34 @@ get {
 
 params:query {
   ~postName: test-post
+  ~categorySlug: technology
+  ~pageSize: 10
+  ~pageIndex: 1
 }
 
 tests {
   test("should get posts successfully", function() {
     expect(res.getStatus()).to.equal(200);
     const data = res.getBody();
-    expect(data).to.be.an('array');
     
-    if (data.length > 0) {
-      const post = data[0];
+    // Test paginated response structure
+    expect(data).to.be.an('object');
+    expect(data).to.have.property('pageIndex');
+    expect(data).to.have.property('pageSize');
+    expect(data).to.have.property('total');
+    expect(data).to.have.property('posts');
+    
+    // Test pagination fields
+    expect(data.pageIndex).to.be.a('number');
+    expect(data.pageSize).to.be.a('number');
+    expect(data.total).to.be.a('number');
+    expect(data.posts).to.be.an('array');
+    
+    // Test that pageIndex is 1-based
+    expect(data.pageIndex).to.be.at.least(1);
+    
+    if (data.posts.length > 0) {
+      const post = data.posts[0];
       expect(post.slug).to.be.a('string');
       expect(post.title).to.be.a('string');
       expect(post.content).to.be.a('string');
@@ -29,6 +47,12 @@ tests {
       expect(post.category).to.be.a('string');
       expect(post.createdAt).to.be.a('string');
       expect(post.updatedAt).to.be.a('string');
+      
+      // Check thumbnail URL field exists (can be string or empty)
+      expect(post).to.have.property('thumbnailURL');
+      if (post.thumbnailURL) {
+        expect(post.thumbnailURL).to.be.a('string');
+      }
     }
   });
 
@@ -39,10 +63,34 @@ tests {
     }
   });
 
-  test("should handle empty results", function() {
+  test("should handle pagination correctly", function() {
     const data = res.getBody();
-    expect(data).to.be.an('array');
-    // Even empty arrays should return 200 OK
     expect(res.getStatus()).to.equal(200);
+    expect(data).to.have.property('pageIndex');
+    expect(data).to.have.property('pageSize');
+    expect(data).to.have.property('total');
+    expect(data).to.have.property('posts');
+    
+    // Verify no hasNextPage or hasMore fields
+    expect(data).to.not.have.property('hasNextPage');
+    expect(data).to.not.have.property('hasMore');
+  });
+
+  test("should filter by categorySlug when provided", function() {
+    const data = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    
+    // If categorySlug is provided in query and posts are returned
+    if (req.getUrl().includes('categorySlug=') && data.posts.length > 0) {
+      const categorySlugMatch = req.getUrl().match(/categorySlug=([^&]*)/);
+      if (categorySlugMatch) {
+        const requestedCategory = decodeURIComponent(categorySlugMatch[1]);
+        
+        // All returned posts should belong to the requested category
+        data.posts.forEach(function(post) {
+          expect(post.category).to.equal(requestedCategory);
+        });
+      }
+    }
   });
 }
