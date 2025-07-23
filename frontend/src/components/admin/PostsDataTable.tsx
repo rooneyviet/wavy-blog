@@ -10,7 +10,18 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, Search, Filter, Download, Trash2, Eye, Edit, Plus, FileText } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Search,
+  Filter,
+  Download,
+  Trash2,
+  Eye,
+  Edit,
+  Plus,
+  FileText,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +44,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
+import DataPagination from "@/components/ui/DataPagination";
 import { Post, Category } from "@/types";
 import { usePostMutations } from "@/lib/queries/posts";
 import { useAuthStore } from "@/stores/authStore";
@@ -59,8 +71,6 @@ function transformPostToAdminPost(post: Post): AdminPost {
   };
 }
 
-
-
 interface PostsDataTableProps {
   posts: Post[];
   isLoading?: boolean;
@@ -74,12 +84,14 @@ interface PostsDataTableProps {
   };
   categories?: Category[];
   categoriesLoading?: boolean;
-  onFiltersChange?: (filters: Partial<{
-    postName: string;
-    categorySlug: string;
-    pageSize: number;
-    pageIndex: number;
-  }>) => void;
+  onFiltersChange?: (
+    filters: Partial<{
+      postName: string;
+      categorySlug: string;
+      pageSize: number;
+      pageIndex: number;
+    }>,
+  ) => void;
   onSearch?: (postName: string) => void;
   pagination?: {
     total: number;
@@ -89,23 +101,23 @@ interface PostsDataTableProps {
   };
 }
 
-export default function PostsDataTable({ 
-  posts, 
-  isLoading = false, 
-  isError = false, 
+export default function PostsDataTable({
+  posts,
+  isLoading = false,
+  isError = false,
   error,
   filters,
   categories = [],
   categoriesLoading = false,
   onFiltersChange,
   onSearch,
-  pagination
+  pagination,
 }: PostsDataTableProps) {
   const { accessToken } = useAuthStore();
   const { deleteOne, deleteMany } = usePostMutations();
   const adminPosts = React.useMemo(
     () => posts.map(transformPostToAdminPost),
-    [posts]
+    [posts],
   );
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -113,9 +125,13 @@ export default function PostsDataTable({
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const [selectedPostSlugs, setSelectedPostSlugs] = React.useState<string[]>([]);
-  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = React.useState(false);
-  const [singleDeletePost, setSingleDeletePost] = React.useState<AdminPost | null>(null);
+  const [selectedPostSlugs, setSelectedPostSlugs] = React.useState<string[]>(
+    [],
+  );
+  const [showSingleDeleteDialog, setShowSingleDeleteDialog] =
+    React.useState(false);
+  const [singleDeletePost, setSingleDeletePost] =
+    React.useState<AdminPost | null>(null);
   const [searchValue, setSearchValue] = React.useState(filters?.postName || "");
 
   // Update search value when filters change
@@ -139,130 +155,149 @@ export default function PostsDataTable({
     setSingleDeletePost(null);
   };
 
-  const columns: ColumnDef<AdminPost>[] = React.useMemo(() => [
-    {
-      id: "select",
-      header: ({ table }) => (
-        <div className="flex items-center justify-center w-12 px-2 py-2">
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center w-12 px-2 py-2">
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Title
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("title")}</div>
-      ),
-    },
-    {
-      accessorKey: "authorName",
-      header: "Author",
-      cell: ({ row }) => {
-        const authorName = row.getValue("authorName") as string;
-        return <div>{authorName}</div>;
-      },
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue("category")}</div>
-      ),
-    },
-    {
-      accessorKey: "publishDate",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Publish Date
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("publishDate"));
-        const formatted = date.toLocaleDateString();
-        return <div className="text-left font-medium">{formatted}</div>;
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${
-            status === 'published' 
-              ? 'bg-green-100 text-green-800 border border-green-200' 
-              : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-          }`}>
-            {status}
-          </span>
-        );
-      },
-    },
-    {
-      id: "actions",
-      enableHiding: false,
-      cell: ({ row }) => {
-        const post = row.original;
-        return (
-          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <Link href={`/blog/${post.slug}`} target="_blank">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600">
-                <Eye className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href={`/admin/posts/${post.slug}/edit`}>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-              onClick={() => handleSingleDelete(post)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+  const columns: ColumnDef<AdminPost>[] = React.useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <div className="flex items-center justify-center w-12 px-2 py-2">
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && "indeterminate")
+              }
+              onCheckedChange={(value) =>
+                table.toggleAllPageRowsSelected(!!value)
+              }
+              aria-label="Select all"
+            />
           </div>
-        );
+        ),
+        cell: ({ row }) => (
+          <div className="flex items-center justify-center w-12 px-2 py-2">
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Select row"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        enableHiding: false,
       },
-    },
-  ], [handleSingleDelete]);
+      {
+        accessorKey: "title",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Title
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("title")}</div>
+        ),
+      },
+      {
+        accessorKey: "authorName",
+        header: "Author",
+        cell: ({ row }) => {
+          const authorName = row.getValue("authorName") as string;
+          return <div>{authorName}</div>;
+        },
+      },
+      {
+        accessorKey: "category",
+        header: "Category",
+        cell: ({ row }) => (
+          <div className="capitalize">{row.getValue("category")}</div>
+        ),
+      },
+      {
+        accessorKey: "publishDate",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Publish Date
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const date = new Date(row.getValue("publishDate"));
+          const formatted = date.toLocaleDateString();
+          return <div className="text-left font-medium">{formatted}</div>;
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.getValue("status") as string;
+          return (
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${
+                status === "published"
+                  ? "bg-green-100 text-green-800 border border-green-200"
+                  : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+              }`}
+            >
+              {status}
+            </span>
+          );
+        },
+      },
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const post = row.original;
+          return (
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <Link href={`/blog/${post.slug}`} target="_blank">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href={`/admin/posts/${post.slug}/edit`}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                onClick={() => handleSingleDelete(post)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [handleSingleDelete],
+  );
 
   const table = useReactTable({
     data: adminPosts,
@@ -313,7 +348,7 @@ export default function PostsDataTable({
           <FileText className="w-6 h-6 text-pink-600" />
           Posts Management
         </h2>
-        
+
         {/* Enhanced Filters Section */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-1 gap-4 w-full md:w-auto">
@@ -326,7 +361,7 @@ export default function PostsDataTable({
                   setSearchValue(event.target.value);
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
+                  if (event.key === "Enter") {
                     onSearch?.(event.currentTarget.value);
                   }
                 }}
@@ -338,10 +373,12 @@ export default function PostsDataTable({
               <option>Published</option>
               <option>Draft</option>
             </select>
-            <select 
+            <select
               className="px-4 py-3 border border-gray-200 rounded-lg focus:border-pink-500 focus:ring-pink-500 bg-white"
               value={filters?.categorySlug || ""}
-              onChange={(e) => onFiltersChange?.({ categorySlug: e.target.value })}
+              onChange={(e) =>
+                onFiltersChange?.({ categorySlug: e.target.value })
+              }
               disabled={categoriesLoading}
             >
               <option value="">All Categories</option>
@@ -356,7 +393,7 @@ export default function PostsDataTable({
               )}
             </select>
           </div>
-          
+
           <div className="flex gap-3">
             {Object.keys(rowSelection).length > 0 && (
               <ConfirmationDialog
@@ -368,13 +405,20 @@ export default function PostsDataTable({
                 onConfirm={confirmDelete}
                 variant="destructive"
               >
-                <Button variant="destructive" onClick={handleDeleteClick} className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteClick}
+                  className="flex items-center gap-2"
+                >
                   <Trash2 className="w-4 h-4" />
                   Delete Selected ({Object.keys(rowSelection).length})
                 </Button>
               </ConfirmationDialog>
             )}
-            <Button variant="outline" className="flex items-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
               <Download className="w-4 h-4" />
               Export
             </Button>
@@ -386,7 +430,10 @@ export default function PostsDataTable({
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 border-gray-300">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-gray-300"
+                >
                   <Filter className="w-4 h-4" />
                   Columns <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
@@ -422,12 +469,15 @@ export default function PostsDataTable({
               <TableRow key={headerGroup.id} className="border-none">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-semibold text-gray-700 uppercase tracking-wider py-4">
+                    <TableHead
+                      key={header.id}
+                      className="font-semibold text-gray-700 uppercase tracking-wider py-4"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -447,7 +497,9 @@ export default function PostsDataTable({
                   <div className="text-center">
                     <p className="text-red-600 mb-2">Failed to load posts</p>
                     <p className="text-sm text-muted-foreground">
-                      {error instanceof Error ? error.message : "Unknown error occurred"}
+                      {error instanceof Error
+                        ? error.message
+                        : "Unknown error occurred"}
                     </p>
                   </div>
                 </TableCell>
@@ -466,7 +518,7 @@ export default function PostsDataTable({
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}
@@ -492,10 +544,12 @@ export default function PostsDataTable({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-gray-700">
               <span>Showing</span>
-              <select 
+              <select
                 className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
                 value={pagination.pageSize}
-                onChange={(e) => onFiltersChange?.({ pageSize: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  onFiltersChange?.({ pageSize: parseInt(e.target.value) })
+                }
               >
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -509,89 +563,15 @@ export default function PostsDataTable({
                 </span>
               )}
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
-                disabled={pagination.pageIndex <= 1}
-                className="border-gray-300 text-gray-600 hover:bg-gray-100"
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {/* Generate page buttons dynamically */}
-                {(() => {
-                  const totalPages = Math.ceil(pagination.total / pagination.pageSize);
-                  const currentPage = pagination.pageIndex;
-                  const pages = [];
-                  
-                  // Show first page
-                  if (totalPages > 0) {
-                    pages.push(
-                      <Button 
-                        key={1}
-                        size="sm" 
-                        onClick={() => pagination.onPageChange(1)}
-                        className={currentPage === 1 ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
-                      >
-                        1
-                      </Button>
-                    );
-                  }
-                  
-                  // Show ellipsis if needed
-                  if (currentPage > 3) {
-                    pages.push(<span key="ellipsis1" className="px-2 text-gray-500">...</span>);
-                  }
-                  
-                  // Show current page and neighbors
-                  for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-                    pages.push(
-                      <Button 
-                        key={i}
-                        size="sm" 
-                        onClick={() => pagination.onPageChange(i)}
-                        className={currentPage === i ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
-                      >
-                        {i}
-                      </Button>
-                    );
-                  }
-                  
-                  // Show ellipsis if needed
-                  if (currentPage < totalPages - 2) {
-                    pages.push(<span key="ellipsis2" className="px-2 text-gray-500">...</span>);
-                  }
-                  
-                  // Show last page
-                  if (totalPages > 1) {
-                    pages.push(
-                      <Button 
-                        key={totalPages}
-                        size="sm" 
-                        onClick={() => pagination.onPageChange(totalPages)}
-                        className={currentPage === totalPages ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
-                      >
-                        {totalPages}
-                      </Button>
-                    );
-                  }
-                  
-                  return pages;
-                })()}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
-                disabled={pagination.pageIndex >= Math.ceil(pagination.total / pagination.pageSize)}
-                className="border-gray-300 text-gray-600 hover:bg-gray-100"
-              >
-                Next
-              </Button>
-            </div>
+
+            <DataPagination
+              data={{
+                items: posts,
+                pageIndex: pagination.pageIndex,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+              }}
+            />
           </div>
         </div>
       )}

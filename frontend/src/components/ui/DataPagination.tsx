@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Pagination,
@@ -83,22 +84,33 @@ export default function DataPagination<T>({
     }
   };
 
-  // Generate page numbers to display based on actual data
+  // Calculate total pages
+  const totalPages = Math.ceil(total / pageSize);
+  const currentPage = pageIndex;
+
+  // Generate page numbers to display
   const generatePageNumbers = () => {
     const pages = [];
-    const currentPage = pageIndex; // Already 1-based
 
-    // Always show page 1
-    pages.push(1);
-
-    // Show current page if it's not 1
-    if (currentPage > 1 && !pages.includes(currentPage)) {
-      pages.push(currentPage);
+    // Show first page
+    if (totalPages > 0) {
+      pages.push(1);
     }
 
-    // Show next page only if hasNextPage is true
-    if (hasNextPage && !pages.includes(currentPage + 1)) {
-      pages.push(currentPage + 1);
+    // Show current page and neighbors
+    for (
+      let i = Math.max(2, currentPage - 1);
+      i <= Math.min(totalPages - 1, currentPage + 1);
+      i++
+    ) {
+      if (!pages.includes(i)) {
+        pages.push(i);
+      }
+    }
+
+    // Show last page
+    if (totalPages > 1 && !pages.includes(totalPages)) {
+      pages.push(totalPages);
     }
 
     return pages.sort((a, b) => a - b);
@@ -112,7 +124,7 @@ export default function DataPagination<T>({
   }
 
   return (
-    <Pagination className={className}>
+    <Pagination className={`justify-end ${className || ""}`}>
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
@@ -125,28 +137,37 @@ export default function DataPagination<T>({
           />
         </PaginationItem>
 
-        {pageNumbers.map((pageNum) => (
-          <PaginationItem key={pageNum}>
-            <PaginationLink
-              href={buildUrl(pageNum)}
-              onClick={(e) => {
-                e.preventDefault();
-                handlePageChange(pageNum);
-              }}
-              isActive={pageNum === pageIndex}
-            >
-              {pageNum}
-            </PaginationLink>
-          </PaginationItem>
-        ))}
+        {pageNumbers.map((pageNum, index) => {
+          const showEllipsisBefore =
+            index > 0 && pageNum - pageNumbers[index - 1] > 1;
 
-        {hasNextPage &&
-          pageNumbers.length > 0 &&
-          pageNumbers[pageNumbers.length - 1] < pageIndex + 2 && (
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-          )}
+          return (
+            <React.Fragment key={pageNum}>
+              {showEllipsisBefore && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              <PaginationItem>
+                <PaginationLink
+                  href={buildUrl(pageNum)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(pageNum);
+                  }}
+                  isActive={pageNum === pageIndex}
+                  className={
+                    pageNum === pageIndex
+                      ? "bg-pink-500 text-white hover:bg-pink-600 hover:text-white border border-pink-500"
+                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }
+                >
+                  {pageNum}
+                </PaginationLink>
+              </PaginationItem>
+            </React.Fragment>
+          );
+        })}
 
         <PaginationItem>
           <PaginationNext

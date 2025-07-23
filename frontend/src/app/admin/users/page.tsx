@@ -5,13 +5,10 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ColumnDef,
-  ColumnFiltersState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -48,6 +45,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
+import DataPagination from "@/components/ui/DataPagination";
 import { User } from "@/types";
 import { userQueries, useUserMutations } from "@/lib/queries/users";
 import { useAuthStore } from "@/stores/authStore";
@@ -88,28 +86,24 @@ export default function ListUsersPage() {
     error,
   } = useQuery(userQueries.list(accessToken || "", filters));
 
-  const users = usersResponse?.users || [];
+  const users = React.useMemo(
+    () => usersResponse?.users || [],
+    [usersResponse?.users],
+  );
   const total = usersResponse?.total || 0;
   const currentPageIndex = usersResponse?.pageIndex || 1;
   const currentPageSize = usersResponse?.pageSize || 20;
 
   const adminUsers = React.useMemo(
     () => users.map(transformUserToAdminUser),
-    [users]
+    [users],
   );
 
   const handleFiltersChange = (newFilters: Partial<typeof filters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters, pageIndex: 1 })); // Reset to page 1 when filters change
-  };
-
-  const handlePageChange = (pageIndex: number) => {
-    setFilters(prev => ({ ...prev, pageIndex }));
+    setFilters((prev) => ({ ...prev, ...newFilters, pageIndex: 1 })); // Reset to page 1 when filters change
   };
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -263,7 +257,7 @@ export default function ListUsersPage() {
         },
       },
     ],
-    [handleSingleDelete]
+    [handleSingleDelete],
   );
 
   const table = useReactTable({
@@ -417,7 +411,7 @@ export default function ListUsersPage() {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -458,7 +452,7 @@ export default function ListUsersPage() {
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}
@@ -483,10 +477,12 @@ export default function ListUsersPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-700">
             <span>Showing</span>
-            <select 
+            <select
               className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
               value={currentPageSize}
-              onChange={(e) => handleFiltersChange({ pageSize: parseInt(e.target.value) })}
+              onChange={(e) =>
+                handleFiltersChange({ pageSize: parseInt(e.target.value) })
+              }
             >
               <option value={10}>10</option>
               <option value={20}>20</option>
@@ -501,88 +497,14 @@ export default function ListUsersPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPageIndex - 1)}
-              disabled={currentPageIndex <= 1}
-              className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {/* Generate page buttons dynamically */}
-              {(() => {
-                const totalPages = Math.ceil(total / currentPageSize);
-                const currentPage = currentPageIndex;
-                const pages = [];
-                
-                // Show first page
-                if (totalPages > 0) {
-                  pages.push(
-                    <Button 
-                      key={1}
-                      size="sm" 
-                      onClick={() => handlePageChange(1)}
-                      className={currentPage === 1 ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
-                    >
-                      1
-                    </Button>
-                  );
-                }
-                
-                // Show ellipsis if needed
-                if (currentPage > 3) {
-                  pages.push(<span key="ellipsis1" className="px-2 text-gray-500">...</span>);
-                }
-                
-                // Show current page and neighbors
-                for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
-                  pages.push(
-                    <Button 
-                      key={i}
-                      size="sm" 
-                      onClick={() => handlePageChange(i)}
-                      className={currentPage === i ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
-                    >
-                      {i}
-                    </Button>
-                  );
-                }
-                
-                // Show ellipsis if needed
-                if (currentPage < totalPages - 2) {
-                  pages.push(<span key="ellipsis2" className="px-2 text-gray-500">...</span>);
-                }
-                
-                // Show last page
-                if (totalPages > 1) {
-                  pages.push(
-                    <Button 
-                      key={totalPages}
-                      size="sm" 
-                      onClick={() => handlePageChange(totalPages)}
-                      className={currentPage === totalPages ? "bg-pink-500 text-white hover:bg-pink-600" : "bg-white text-gray-600 hover:bg-gray-100"}
-                    >
-                      {totalPages}
-                    </Button>
-                  );
-                }
-                
-                return pages;
-              })()}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPageIndex + 1)}
-              disabled={currentPageIndex >= Math.ceil(total / currentPageSize)}
-              className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Next
-            </Button>
-          </div>
+          <DataPagination
+            data={{
+              items: users,
+              pageIndex: currentPageIndex,
+              pageSize: currentPageSize,
+              total: total,
+            }}
+          />
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, PaginatedUsersResponse } from "@/types";
+import { PaginatedUsersResponse } from "@/types";
 import { handleUnauthorizedResponse } from "@/lib/utils/auth";
 import { toast } from "sonner";
 

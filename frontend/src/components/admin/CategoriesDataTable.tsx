@@ -10,11 +10,20 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, Search, Filter, Download, Trash2, Edit, Plus, FolderOpen } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Search,
+  Filter,
+  Download,
+  Trash2,
+  Edit,
+  Plus,
+  FolderOpen,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +46,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { SkeletonRows } from "@/components/ui/skeleton-rows";
+import DataPagination from "@/components/ui/DataPagination";
 import { Category } from "@/types";
 import {
   categoryQueries,
@@ -72,12 +82,12 @@ export default function CategoriesDataTable() {
 
   const adminCategories = React.useMemo(
     () => categories.map(transformCategoryToAdminCategory),
-    [categories]
+    [categories],
   );
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -193,13 +203,17 @@ export default function CategoriesDataTable() {
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <Link href={`/admin/categories/${category.slug}/edit`}>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600"
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
               </Link>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
                 onClick={() => handleSingleDelete(category)}
               >
@@ -210,7 +224,7 @@ export default function CategoriesDataTable() {
         },
       },
     ],
-    [handleSingleDelete]
+    [handleSingleDelete],
   );
 
   const table = useReactTable({
@@ -219,7 +233,6 @@ export default function CategoriesDataTable() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -263,7 +276,7 @@ export default function CategoriesDataTable() {
           <FolderOpen className="w-6 h-6 text-pink-600" />
           Categories Management
         </h2>
-        
+
         {/* Enhanced Filters Section */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-1 gap-4 w-full md:w-auto">
@@ -271,7 +284,9 @@ export default function CategoriesDataTable() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search categories..."
-                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                value={
+                  (table.getColumn("name")?.getFilterValue() as string) ?? ""
+                }
                 onChange={(event) =>
                   table.getColumn("name")?.setFilterValue(event.target.value)
                 }
@@ -279,7 +294,7 @@ export default function CategoriesDataTable() {
               />
             </div>
           </div>
-          
+
           <div className="flex gap-3">
             {Object.keys(rowSelection).length > 0 && (
               <ConfirmationDialog
@@ -291,13 +306,20 @@ export default function CategoriesDataTable() {
                 onConfirm={confirmDelete}
                 variant="destructive"
               >
-                <Button variant="destructive" onClick={handleDeleteClick} className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteClick}
+                  className="flex items-center gap-2"
+                >
                   <Trash2 className="w-4 h-4" />
                   Delete Selected ({Object.keys(rowSelection).length})
                 </Button>
               </ConfirmationDialog>
             )}
-            <Button variant="outline" className="flex items-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
               <Download className="w-4 h-4" />
               Export
             </Button>
@@ -309,7 +331,10 @@ export default function CategoriesDataTable() {
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 border-gray-300">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-gray-300"
+                >
                   <Filter className="w-4 h-4" />
                   Columns <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
@@ -345,12 +370,15 @@ export default function CategoriesDataTable() {
               <TableRow key={headerGroup.id} className="border-none">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-semibold text-gray-700 uppercase tracking-wider py-4">
+                    <TableHead
+                      key={header.id}
+                      className="font-semibold text-gray-700 uppercase tracking-wider py-4"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -393,7 +421,7 @@ export default function CategoriesDataTable() {
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}
@@ -423,38 +451,22 @@ export default function CategoriesDataTable() {
               <option>25</option>
               <option>50</option>
             </select>
-            <span>of {table.getFilteredRowModel().rows.length} categories</span>
+            <span>of {categories.length} categories</span>
             {table.getFilteredSelectedRowModel().rows.length > 0 && (
               <span className="ml-4 text-pink-600 font-medium">
                 {table.getFilteredSelectedRowModel().rows.length} selected
               </span>
             )}
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              <Button size="sm" className="bg-pink-500 text-white hover:bg-pink-600">1</Button>
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">2</Button>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="border-gray-300 text-gray-600 hover:bg-gray-100"
-            >
-              Next
-            </Button>
-          </div>
+
+          <DataPagination
+            data={{
+              items: categories,
+              pageIndex: 1,
+              pageSize: 20,
+              total: categories.length,
+            }}
+          />
         </div>
       </div>
 
